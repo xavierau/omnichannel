@@ -1,0 +1,23 @@
+# Documentation Rules
+
+This project follows a strict documentation structure to ensure clarity and maintainability.
+
+## Directory Structure
+All documentation must be located in the `doc/` directory at the project root.
+The `doc/` directory must contain the following subdirectories:
+- `api/`: For API specifications and endpoint definitions.
+- `design/`: For UI/UX designs and design system guidelines.
+- `requirements/`: For product requirements and user stories.
+- `technical/`: For technical guides and setup instructions.
+
+## Index File
+- A `doc/index.md` file must exist and serve as the entry point for all documentation.
+- When adding new documentation files, you MUST update `doc/index.md` to include a link and a brief description of the new file.
+
+## Format
+- All documentation must be written in Markdown (`.md`).
+
+## Implementation Consistency
+- When implementing code, ALWAYS refer back to the documentation in `doc/` to ensure consistency and maintainability.
+- If the implementation deviates from the documentation, update the documentation to reflect the changes.
+
