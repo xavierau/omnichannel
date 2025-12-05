@@ -7,6 +7,7 @@ import {
   Min,
   ValidateNested,
   IsArray,
+  IsUrl,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -53,7 +54,10 @@ export class HeaderConfigDto {
 
   @ValidateIf((o) => o.type !== 'text')
   @IsOptional()
-  @IsString({ message: 'Media URL must be a string' })
+  @IsUrl(
+    { protocols: ['https'], require_protocol: true },
+    { message: 'Media URL must be a valid HTTPS URL' }
+  )
   mediaUrl?: string;
 }
 

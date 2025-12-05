@@ -119,6 +119,7 @@ describe('BroadcastQueue', () => {
       findScheduledBroadcasts: jest.fn(),
       incrementMetric: jest.fn(),
       markCompleted: jest.fn(),
+      markCompletedAtomic: jest.fn().mockResolvedValue({ success: true, wasUpdated: false }),
     } as unknown as jest.Mocked<BroadcastRepository>;
 
     mockSseService = {
@@ -133,6 +134,7 @@ describe('BroadcastQueue', () => {
 
     mockCustomerRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
     } as unknown as jest.Mocked<CustomerRepository>;
 
     mockMessagingService = {
@@ -384,6 +386,7 @@ describe('BroadcastQueue Job Processors', () => {
       findScheduledBroadcasts: jest.fn(),
       incrementMetric: jest.fn(),
       markCompleted: jest.fn(),
+      markCompletedAtomic: jest.fn().mockResolvedValue({ success: true, wasUpdated: false }),
     } as unknown as jest.Mocked<BroadcastRepository>;
 
     mockSseService = {
@@ -398,6 +401,7 @@ describe('BroadcastQueue Job Processors', () => {
 
     mockCustomerRepository = {
       findById: jest.fn(),
+      findByIds: jest.fn(),
     } as unknown as jest.Mocked<CustomerRepository>;
 
     mockMessagingService = {
@@ -477,9 +481,11 @@ describe('BroadcastQueue Job Processors', () => {
       });
 
       mockBroadcastRepository.findById.mockResolvedValue(broadcast);
-      mockCustomerRepository.findById
-        .mockResolvedValueOnce({ id: 'customer-1', name: 'John', whatsappNumber: '+1234567890', tenantId, customFields: {}, tags: [], createdAt: new Date(), updatedAt: new Date() } as any)
-        .mockResolvedValueOnce({ id: 'customer-2', name: 'Jane', whatsappNumber: '+0987654321', tenantId, customFields: {}, tags: [], createdAt: new Date(), updatedAt: new Date() } as any);
+      // Now using batch findByIds instead of individual findById calls
+      mockCustomerRepository.findByIds.mockResolvedValue([
+        { id: 'customer-1', name: 'John', whatsappNumber: '+1234567890', tenantId, customFields: {}, tags: [], createdAt: new Date(), updatedAt: new Date() } as any,
+        { id: 'customer-2', name: 'Jane', whatsappNumber: '+0987654321', tenantId, customFields: {}, tags: [], createdAt: new Date(), updatedAt: new Date() } as any,
+      ]);
       mockBroadcastRepository.update.mockResolvedValue(broadcast);
 
       const mockJob = {
@@ -490,6 +496,11 @@ describe('BroadcastQueue Job Processors', () => {
 
       await sendBroadcastProcessor(mockJob);
 
+      // Verify batch lookup was used instead of N+1 individual lookups
+      expect(mockCustomerRepository.findByIds).toHaveBeenCalledWith(
+        ['customer-1', 'customer-2'],
+        tenantId
+      );
       expect(mockQueue.add).toHaveBeenCalledTimes(2);
     });
 
@@ -573,12 +584,14 @@ describe('BroadcastQueue Job Processors', () => {
         sentCount: 1, // Already processed (simulating post-increment state)
       });
 
+      // Mock atomic completion - returns wasUpdated: true when this worker completes the broadcast
+      mockBroadcastRepository.markCompletedAtomic.mockResolvedValue({
+        success: true,
+        wasUpdated: true,
+      });
       // After sending, findById is called to check progress - return with sentCount=1
-      mockBroadcastRepository.findById
-        .mockResolvedValueOnce(broadcast)
-        .mockResolvedValueOnce(broadcast); // Called again after markCompleted for final emit
+      mockBroadcastRepository.findById.mockResolvedValue(broadcast);
       mockBroadcastRepository.incrementMetric.mockResolvedValue();
-      mockBroadcastRepository.markCompleted.mockResolvedValue(true);
 
       const mockJob = {
         data: {
@@ -603,7 +616,8 @@ describe('BroadcastQueue Job Processors', () => {
 
       await processRecipientProcessor(mockJob);
 
-      expect(mockBroadcastRepository.markCompleted).toHaveBeenCalledWith('broadcast-1', tenantId);
+      // Verify atomic completion was called
+      expect(mockBroadcastRepository.markCompletedAtomic).toHaveBeenCalledWith('broadcast-1', tenantId);
     });
 
     it('should emit SSE progress update', async () => {

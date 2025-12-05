@@ -405,6 +405,77 @@ export class BroadcastRepository {
   }
 
   /**
+   * Atomically mark a broadcast as completed if all recipients have been processed.
+   * Uses database-level atomic operation to prevent race conditions from concurrent
+   * worker processes trying to mark the same broadcast as completed.
+   *
+   * This method checks that:
+   * 1. The broadcast exists and belongs to the tenant
+   * 2. The broadcast is currently in SENDING status
+   * 3. The total processed count (sentCount + failedCount) >= totalRecipients
+   * 4. The broadcast has not already been marked as completed
+   *
+   * @param id - The broadcast ID
+   * @param tenantId - The tenant ID for isolation
+   * @returns Object with success flag and whether the broadcast was updated
+   */
+  async markCompletedAtomic(
+    id: string,
+    tenantId: string
+  ): Promise<{ success: boolean; wasUpdated: boolean }> {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Acquire pessimistic lock to prevent race condition
+      const broadcast = await queryRunner.manager
+        .createQueryBuilder(Broadcast, 'broadcast')
+        .setLock('pessimistic_write')
+        .where('broadcast.id = :id', { id })
+        .andWhere('broadcast.tenant_id = :tenantId', { tenantId })
+        .getOne();
+
+      if (!broadcast) {
+        await queryRunner.rollbackTransaction();
+        return { success: false, wasUpdated: false };
+      }
+
+      // Check if already completed or not in a state that can be completed
+      if (broadcast.status === BroadcastStatus.COMPLETED) {
+        await queryRunner.rollbackTransaction();
+        return { success: true, wasUpdated: false };
+      }
+
+      if (broadcast.status !== BroadcastStatus.SENDING) {
+        await queryRunner.rollbackTransaction();
+        return { success: false, wasUpdated: false };
+      }
+
+      // Check if all recipients have been processed
+      const totalProcessed = (broadcast.sentCount || 0) + (broadcast.failedCount || 0);
+      if (totalProcessed < broadcast.totalRecipients) {
+        await queryRunner.rollbackTransaction();
+        return { success: true, wasUpdated: false };
+      }
+
+      // Mark as completed
+      await queryRunner.manager.update(Broadcast, { id }, {
+        status: BroadcastStatus.COMPLETED,
+        completedAt: new Date(),
+      });
+
+      await queryRunner.commitTransaction();
+      return { success: true, wasUpdated: true };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /**
    * Atomically updates broadcast status with pessimistic locking.
    * Prevents race conditions in concurrent status transitions.
    *

@@ -74,6 +74,29 @@ export class CustomerRepository {
     });
   }
 
+  /**
+   * Find multiple customers by their IDs with tenant isolation.
+   * This is the batch alternative to individual findById calls.
+   * Prevents N+1 queries when resolving multiple customers.
+   *
+   * @param ids - Array of customer IDs to find
+   * @param tenantId - The tenant ID for isolation
+   * @returns Array of found customers (may be less than requested if some don't exist)
+   */
+  async findByIds(ids: string[], tenantId: string): Promise<Customer[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    return this.repository.find({
+      where: {
+        id: In(ids),
+        tenantId,
+      },
+      relations: ['tags'],
+    });
+  }
+
   async findByWhatsApp(
     whatsappNumber: string,
     tenantId: string

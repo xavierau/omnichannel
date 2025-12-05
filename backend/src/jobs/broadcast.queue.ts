@@ -12,6 +12,57 @@ import { BroadcastStatus, RecipientType } from '../features/broadcasts/enums';
 import { Customer } from '../features/customers/customer.entity';
 import { Broadcast, TemplateVariablesConfig, VariableConfig } from '../features/broadcasts/broadcast.entity';
 import { TemplateVariables, VariableValue } from '../features/messaging/interfaces/messaging-provider.interface';
+import { ForbiddenException } from '../shared/exceptions/http-exceptions';
+
+/**
+ * Maximum number of group members to process in a single batch.
+ * This prevents memory exhaustion for very large groups.
+ */
+const MAX_GROUP_BATCH_SIZE = 1000;
+
+/**
+ * Masks a phone number for logging purposes to protect PII.
+ * Shows only the last 4 digits.
+ *
+ * @param phone - The phone number to mask
+ * @returns Masked phone number (e.g., "+1****7890")
+ */
+function maskPhoneNumber(phone: string): string {
+  if (!phone || phone.length < 4) {
+    return '****';
+  }
+  const visibleDigits = phone.slice(-4);
+  const maskedPart = '*'.repeat(Math.max(0, phone.length - 4));
+  return maskedPart + visibleDigits;
+}
+
+/**
+ * Sanitizes a customer field value for safe template substitution.
+ * Prevents potential injection attacks and ensures safe string conversion.
+ *
+ * @param value - The raw field value
+ * @returns Sanitized string value
+ */
+function sanitizeFieldValue(value: unknown): string {
+  if (value === undefined || value === null) {
+    return '';
+  }
+
+  // Convert to string
+  const strValue = String(value);
+
+  // Remove potentially dangerous characters for template injection
+  // Strip control characters and null bytes
+  const sanitized = strValue
+    .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
+    .replace(/\{\{/g, '') // Remove template syntax that could cause injection
+    .replace(/\}\}/g, '')
+    .trim();
+
+  // Limit length to prevent excessively long values
+  const MAX_FIELD_LENGTH = 1000;
+  return sanitized.slice(0, MAX_FIELD_LENGTH);
+}
 
 /**
  * Job types for the broadcast queue.
@@ -285,8 +336,8 @@ export class BroadcastQueue {
       return;
     }
 
-    // Validate channel account
-    const channelAccountId = broadcast.channelAccountId;
+    // Validate channel account with tenant authorization
+    let channelAccountId = broadcast.channelAccountId;
     if (!channelAccountId) {
       // If no channel account specified, get the primary WhatsApp channel account
       const primaryAccount = await this.channelAccountRepository.findPrimaryByTenantAndChannel(
@@ -301,6 +352,26 @@ export class BroadcastQueue {
         channelAccountId: primaryAccount.id,
       });
       broadcast.channelAccountId = primaryAccount.id;
+      channelAccountId = primaryAccount.id;
+    } else {
+      // CRITICAL: Validate that the explicit channel account belongs to this tenant
+      const channelAccount = await this.channelAccountRepository.findByIdAndTenant(
+        channelAccountId,
+        tenantId
+      );
+      if (!channelAccount) {
+        logger.error('Channel account authorization failed', {
+          broadcastId,
+          tenantId,
+          channelAccountId,
+        });
+        throw new ForbiddenException(
+          'Channel account does not exist or does not belong to this tenant'
+        );
+      }
+      if (!channelAccount.isActive) {
+        throw new Error('Channel account is not active. Please configure an active channel account.');
+      }
     }
 
     // Update status to SENDING if not already
@@ -378,11 +449,12 @@ export class BroadcastQueue {
       customerFields,
     } = job.data;
 
+    // FIXED: Mask phone number in logs to protect PII
     logger.debug('Processing recipient', {
       jobId: job.id,
       broadcastId,
       customerId,
-      customerPhone,
+      customerPhone: maskPhoneNumber(customerPhone),
       channelAccountId,
     });
 
@@ -426,25 +498,22 @@ export class BroadcastQueue {
       });
     }
 
-    // Check if all recipients have been processed
+    // Check if all recipients have been processed using atomic operation
+    // This prevents race conditions from concurrent workers
+    const completionResult = await this.broadcastRepository.markCompletedAtomic(
+      broadcastId,
+      tenantId
+    );
+
+    // Always fetch the latest broadcast state for progress emission
     const broadcast = await this.broadcastRepository.findById(tenantId, broadcastId);
 
     if (broadcast) {
       // Emit progress update
       this.emitProgress(broadcast);
 
-      // Check if broadcast is complete
-      const totalProcessed = (broadcast.sentCount || 0) + (broadcast.failedCount || 0);
-
-      if (totalProcessed >= broadcast.totalRecipients) {
-        await this.broadcastRepository.markCompleted(broadcastId, tenantId);
-
-        // Emit final progress with completed status
-        const completedBroadcast = await this.broadcastRepository.findById(tenantId, broadcastId);
-        if (completedBroadcast) {
-          this.emitProgress(completedBroadcast);
-        }
-
+      // If this worker successfully marked the broadcast as completed, log it
+      if (completionResult.wasUpdated) {
         auditLogger.info('Broadcast completed', {
           action: 'broadcast.completed',
           broadcastId,
@@ -458,6 +527,8 @@ export class BroadcastQueue {
 
   /**
    * Resolve recipients based on recipient type.
+   * Uses batch operations to prevent N+1 queries.
+   * Implements pagination for large groups to prevent memory exhaustion.
    */
   private async resolveRecipients(
     tenantId: string,
@@ -466,21 +537,48 @@ export class BroadcastQueue {
     customerIds: string[] | null
   ): Promise<Customer[]> {
     if (recipientType === RecipientType.GROUP && groupId) {
-      // Get all members from the group
-      const result = await this.groupRepository.getMembers(tenantId, groupId, 1, 10000);
-      return result.data;
+      // Get all members from the group with pagination to handle large groups
+      const allCustomers: Customer[] = [];
+      let page = 1;
+      let hasMore = true;
+
+      while (hasMore) {
+        const result = await this.groupRepository.getMembers(
+          tenantId,
+          groupId,
+          page,
+          MAX_GROUP_BATCH_SIZE
+        );
+
+        allCustomers.push(...result.data);
+
+        // Check if there are more pages
+        hasMore = page < result.totalPages;
+        page++;
+
+        // Safety limit to prevent infinite loops
+        if (page > 1000) {
+          logger.warn('Group pagination limit reached', {
+            groupId,
+            tenantId,
+            pagesProcessed: page - 1,
+            totalCustomers: allCustomers.length,
+          });
+          break;
+        }
+      }
+
+      return allCustomers;
     }
 
     if (recipientType === RecipientType.CUSTOMERS && customerIds) {
-      // Get customers by IDs
-      const customers: Customer[] = [];
-      for (const customerId of customerIds) {
-        const customer = await this.customerRepository.findById(customerId, tenantId);
-        if (customer) {
-          customers.push(customer);
-        }
+      // FIXED: Batch lookup to prevent N+1 queries
+      // Previously this was doing individual lookups in a loop
+      if (customerIds.length === 0) {
+        return [];
       }
-      return customers;
+
+      return this.customerRepository.findByIds(customerIds, tenantId);
     }
 
     return [];
@@ -532,6 +630,7 @@ export class BroadcastQueue {
 
   /**
    * Resolve a single variable configuration.
+   * Applies sanitization to customer field values to prevent injection attacks.
    *
    * @param config - Variable configuration
    * @param customerFields - Customer's custom fields
@@ -542,14 +641,15 @@ export class BroadcastQueue {
     customerFields: Record<string, unknown>
   ): VariableValue {
     if (config.sourceType === 'static') {
+      // Static values are presumed safe as they come from admin configuration
       return { type: 'text', value: config.staticValue || '' };
     }
 
     if (config.sourceType === 'customer_field' && config.customerField) {
       const fieldValue = customerFields[config.customerField];
-      const value = fieldValue !== undefined && fieldValue !== null
-        ? String(fieldValue)
-        : '';
+      // FIXED: Sanitize customer field values before template substitution
+      // This prevents potential injection attacks from user-controlled data
+      const value = sanitizeFieldValue(fieldValue);
       return { type: 'text', value };
     }
 

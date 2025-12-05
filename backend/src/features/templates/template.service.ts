@@ -11,13 +11,16 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '../../shared/exceptions/http-exceptions';
 import { auditLogger } from '../../config/logger.config';
+import { ChannelAccountRepository } from '../channel-accounts/channel-account.repository';
 
 @singleton()
 export class TemplateService {
   constructor(
-    @inject(TemplateRepository) private templateRepository: TemplateRepository
+    @inject(TemplateRepository) private templateRepository: TemplateRepository,
+    @inject(ChannelAccountRepository) private channelAccountRepository: ChannelAccountRepository
   ) {}
 
   /**
@@ -53,11 +56,25 @@ export class TemplateService {
 
   /**
    * Create a new template group.
+   * Validates channel account ownership before creation.
    */
   async createTemplate(
     dto: CreateTemplateGroupDto,
     tenantId: string
   ): Promise<WhatsAppTemplateGroup> {
+    // CRITICAL: Validate channel account belongs to the tenant if provided
+    if (dto.channelAccountId) {
+      const channelAccount = await this.channelAccountRepository.findByIdAndTenant(
+        dto.channelAccountId,
+        tenantId
+      );
+      if (!channelAccount) {
+        throw new ForbiddenException(
+          'Channel account does not exist or does not belong to this tenant'
+        );
+      }
+    }
+
     // Check for duplicate template name within the same channel account
     const exists = await this.templateRepository.existsByName(
       dto.name,
