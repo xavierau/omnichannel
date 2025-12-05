@@ -126,3 +126,42 @@ export const csrfTokenLimiter = rateLimit({
     'Too many CSRF token requests. Please try again later.'
   ),
 });
+
+/**
+ * Rate limiter for broadcast send/schedule actions.
+ * Prevents abuse of resource-intensive broadcast operations.
+ * 10 requests per minute per user.
+ */
+export const broadcastActionLimiter = rateLimit({
+  windowMs: RATE_LIMIT_CONSTANTS.BROADCAST_SEND.WINDOW_MS,
+  max: RATE_LIMIT_CONSTANTS.BROADCAST_SEND.MAX_REQUESTS,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => {
+    // Use user ID if available, otherwise fall back to IP
+    const user = req.user as { id?: string } | undefined;
+    return `broadcast:${user?.id || req.ip}`;
+  },
+  handler: createRateLimitHandler(
+    'Too many broadcast actions. Please wait before sending more broadcasts.'
+  ),
+});
+
+/**
+ * Strict rate limiter for broadcast bulk operations.
+ * Prevents abuse of bulk pause/cancel/delete operations.
+ * 5 requests per minute per user.
+ */
+export const broadcastBulkLimiter = rateLimit({
+  windowMs: RATE_LIMIT_CONSTANTS.BROADCAST_BULK.WINDOW_MS,
+  max: RATE_LIMIT_CONSTANTS.BROADCAST_BULK.MAX_REQUESTS,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => {
+    const user = req.user as { id?: string } | undefined;
+    return `broadcast_bulk:${user?.id || req.ip}`;
+  },
+  handler: createRateLimitHandler(
+    'Too many bulk operations. Please wait before performing more bulk actions.'
+  ),
+});

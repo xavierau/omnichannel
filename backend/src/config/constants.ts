@@ -74,6 +74,18 @@ export const RATE_LIMIT_CONSTANTS = {
     WINDOW_MS: 60 * 1000, // 1 minute
     MAX_REQUESTS: 60,
   },
+
+  // Broadcast send/schedule actions - strict to prevent abuse
+  BROADCAST_SEND: {
+    WINDOW_MS: 60 * 1000, // 1 minute
+    MAX_REQUESTS: 10,
+  },
+
+  // Broadcast bulk operations - very strict
+  BROADCAST_BULK: {
+    WINDOW_MS: 60 * 1000, // 1 minute
+    MAX_REQUESTS: 5,
+  },
 } as const;
 
 export const DB_CONSTANTS = {

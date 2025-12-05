@@ -12,6 +12,12 @@ import roleRoutes from '@features/roles/role.routes';
 import permissionRoutes from '@features/permissions/permission.routes';
 import customerRoutes from '@features/customers/customer.routes';
 import tagRoutes from '@features/tags/tag.routes';
+import broadcastRoutes from '@features/broadcasts/broadcast.routes';
+import templateRoutes from '@features/templates/template.routes';
+import groupRoutes from '@features/groups/group.routes';
+import mediaRoutes from '@features/media/media.routes';
+import { createChannelAccountRoutes } from '@features/channel-accounts/channel-account.routes';
+import { createWebhookRoutes } from '@features/webhooks/webhook.routes';
 
 /**
  * Creates and configures the Express application
@@ -72,6 +78,10 @@ export function createApp(): Application {
     });
   });
 
+  // Webhook routes (must be before json body parser for raw body access)
+  // These routes handle provider callbacks and have their own body parsing
+  app.use('/webhooks', createWebhookRoutes());
+
   // API routes
   // Note: CSRF protection is applied at route level, not globally
   // This allows exempting login/register routes while protecting others
@@ -81,8 +91,11 @@ export function createApp(): Application {
   app.use('/api/permissions', permissionRoutes);
   app.use('/api/customers', customerRoutes);
   app.use('/api/tags', tagRoutes);
-  // app.use('/api/broadcasts', broadcastRoutes);
-  // app.use('/api/templates', templateRoutes);
+  app.use('/api/broadcasts', broadcastRoutes);
+  app.use('/api/templates', templateRoutes);
+  app.use('/api/groups', groupRoutes);
+  app.use('/api/media', mediaRoutes);
+  app.use('/api/channel-accounts', createChannelAccountRoutes());
 
   // Global error handler (must be last)
   app.use(errorHandler);

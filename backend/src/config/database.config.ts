@@ -8,6 +8,11 @@ import { RefreshToken } from '@features/auth/entities/refresh-token.entity';
 import { Tenant } from '@features/tenants/tenant.entity';
 import { Tag } from '@features/tags/tag.entity';
 import { Customer } from '@features/customers/customer.entity';
+import { Broadcast } from '@features/broadcasts/broadcast.entity';
+import { WhatsAppTemplateGroup } from '@features/templates/template-group.entity';
+import { TemplateTranslation } from '@features/templates/template-translation.entity';
+import { CustomerGroup } from '@features/groups/group.entity';
+import { Media } from '@features/media/media.entity';
 import { logger } from './logger.config';
 import { DB_CONSTANTS } from './constants';
 
@@ -80,7 +85,20 @@ const dataSourceOptions: PostgresConnectionOptions = {
   database: databaseConfig.database,
   synchronize: false, // Never use synchronize in production
   logging: process.env.NODE_ENV === 'development',
-  entities: [User, Role, Permission, RefreshToken, Tenant, Tag, Customer],
+  entities: [
+    User,
+    Role,
+    Permission,
+    RefreshToken,
+    Tenant,
+    Tag,
+    Customer,
+    Broadcast,
+    WhatsAppTemplateGroup,
+    TemplateTranslation,
+    CustomerGroup,
+    Media,
+  ],
   migrations: [__dirname + '/../database/migrations/*.{js,ts}'],
   subscribers: [],
 

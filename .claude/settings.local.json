@@ -52,7 +52,8 @@
       "Bash(grep:*)",
       "Bash(mkdir:*)",
       "Bash(node:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npx ts-node:*)"
     ],
     "deny": [],
     "ask": []
