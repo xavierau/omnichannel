@@ -1,0 +1,91 @@
+import express, { Application } from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import { errorHandler } from '@middleware/error-handler';
+import { requestContextMiddleware } from '@middleware/request-context';
+import { generalLimiter } from '@middleware/rate-limiter';
+import { configurePassport } from '@config/passport.config';
+import authRoutes from '@features/auth/auth.routes';
+import userRoutes from '@features/users/user.routes';
+import roleRoutes from '@features/roles/role.routes';
+import permissionRoutes from '@features/permissions/permission.routes';
+import customerRoutes from '@features/customers/customer.routes';
+import tagRoutes from '@features/tags/tag.routes';
+
+/**
+ * Creates and configures the Express application
+ *
+ * Security Features:
+ * - Helmet: Security headers (CSP, X-Frame-Options, etc.)
+ * - CORS: Cross-Origin Resource Sharing with credentials
+ * - Rate Limiting: Global and per-route limits
+ * - CSRF Protection: Double-submit cookie pattern for state-changing routes
+ *
+ * CSRF Protection Notes:
+ * - CSRF tokens are obtained via GET /api/auth/csrf-token
+ * - Tokens must be included in X-CSRF-Token header for POST/PUT/PATCH/DELETE
+ * - Login and Register routes are exempt (no existing session)
+ * - See auth.routes.ts and user.routes.ts for protected routes
+ */
+export function createApp(): Application {
+  const app = express();
+
+  // Request context middleware (must be first to attach correlation ID)
+  app.use(requestContextMiddleware);
+
+  // Security headers
+  app.use(helmet());
+
+  // CORS configuration
+  // credentials: true is required for CSRF cookies to work cross-origin
+  app.use(
+    cors({
+      origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+      credentials: true, // Allow cookies (required for CSRF and refresh tokens)
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+      exposedHeaders: ['X-CSRF-Token'],
+    })
+  );
+
+  // Body parsing
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+
+  // Cookie parser for httpOnly refresh tokens and CSRF tokens
+  app.use(cookieParser());
+
+  // Configure Passport
+  const passport = configurePassport();
+  app.use(passport.initialize());
+
+  // Global rate limiting
+  app.use(generalLimiter);
+
+  // Health check endpoint
+  app.get('/health', (req, res) => {
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+    });
+  });
+
+  // API routes
+  // Note: CSRF protection is applied at route level, not globally
+  // This allows exempting login/register routes while protecting others
+  app.use('/api/auth', authRoutes);
+  app.use('/api/users', userRoutes);
+  app.use('/api/roles', roleRoutes);
+  app.use('/api/permissions', permissionRoutes);
+  app.use('/api/customers', customerRoutes);
+  app.use('/api/tags', tagRoutes);
+  // app.use('/api/broadcasts', broadcastRoutes);
+  // app.use('/api/templates', templateRoutes);
+
+  // Global error handler (must be last)
+  app.use(errorHandler);
+
+  return app;
+}
