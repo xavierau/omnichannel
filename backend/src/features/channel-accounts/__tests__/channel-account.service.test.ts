@@ -8,6 +8,8 @@ import { MessagingService } from '../../messaging/services/messaging.service';
 import { ProviderRegistry } from '../../messaging/provider-registry';
 import { ChannelAccount, ChannelAccountStatus } from '../channel-account.entity';
 import { IMessagingProvider, CredentialVerificationResult } from '../../messaging/interfaces/messaging-provider.interface';
+import { Channel } from '../../channels/channel.entity';
+import { Provider } from '../../providers/provider.entity';
 
 // Mock logger
 jest.mock('../../../config/logger.config', () => ({
@@ -152,8 +154,8 @@ describe('ChannelAccountService', () => {
       status: ChannelAccountStatus.CONNECTED,
       isActive: true,
       isPrimary: false,
-      channel: mockChannel as any,
-      provider: mockProviderEntity as any,
+      channel: mockChannel as unknown as Channel,
+      provider: mockProviderEntity as unknown as Provider,
       createdAt: new Date(),
       updatedAt: new Date(),
       lastTestedAt: new Date(),
@@ -162,8 +164,8 @@ describe('ChannelAccountService', () => {
     };
 
     beforeEach(() => {
-      mockChannelRepo.findByCode.mockResolvedValue(mockChannel as any);
-      mockProviderRepo.findByCode.mockResolvedValue(mockProviderEntity as any);
+      mockChannelRepo.findByCode.mockResolvedValue(mockChannel as unknown as Channel);
+      mockProviderRepo.findByCode.mockResolvedValue(mockProviderEntity as unknown as Provider);
       mockCredentialService.encryptCredentials.mockResolvedValue({
         encrypted: 'encrypted-creds',
         iv: 'iv-123',
@@ -348,7 +350,7 @@ describe('ChannelAccountService', () => {
       mockChannelRepo.findByCode.mockResolvedValue({
         ...mockChannel,
         isActive: false,
-      } as any);
+      } as unknown as Channel);
 
       await expect(service.create(tenantId, createDto)).rejects.toThrow(
         "Channel 'whatsapp' is not active"

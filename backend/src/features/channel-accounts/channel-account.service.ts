@@ -467,6 +467,7 @@ export class ChannelAccountService {
    * @param tenantId - Tenant ID
    * @returns Webhook URL
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getWebhookUrl(id: string, tenantId: string): string {
     const baseUrl = process.env.API_BASE_URL || 'http://localhost:3000';
     // For Meta, webhook is account-agnostic; for others may be per-account
@@ -504,7 +505,7 @@ export class ChannelAccountService {
           account.webhookSecretIv
         );
         verifyToken = decrypted.verifyToken as string;
-      } catch (error) {
+      } catch {
         // If decryption fails, generate a new token
         logger.warn('Failed to decrypt existing verify token, generating new one', {
           channelAccountId: id,
@@ -598,7 +599,7 @@ export class ChannelAccountService {
       if (credentials.appId) {
         response.credentials.appId = credentials.appId as string;
       }
-    } catch (error) {
+    } catch {
       logger.warn('Failed to decrypt credentials for response', {
         channelAccountId: account.id,
       });

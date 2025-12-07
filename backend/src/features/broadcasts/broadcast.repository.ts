@@ -1,4 +1,4 @@
-import { Repository, In, LessThanOrEqual, QueryRunner } from 'typeorm';
+import { Repository, In, LessThanOrEqual } from 'typeorm';
 import { singleton } from 'tsyringe';
 import { AppDataSource } from '@config/database.config';
 import { Broadcast } from './broadcast.entity';

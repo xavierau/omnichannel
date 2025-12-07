@@ -5,7 +5,7 @@ import { GroupRepository } from '../groups/group.repository';
 import { CustomerRepository } from '../customers/customer.repository';
 import { Broadcast, TemplateVariablesConfig } from './broadcast.entity';
 import { BroadcastStatus, RecipientType } from './enums';
-import { TemplateStatus } from '../templates/enums';
+import { TemplateStatus, TemplateCategory } from '../templates/enums';
 import { CreateBroadcastDto } from './dto/create-broadcast.dto';
 import { UpdateBroadcastDto } from './dto/update-broadcast.dto';
 import {
@@ -887,7 +887,7 @@ export class BroadcastService {
     tenantId: string,
     templateId: string,
     language: string
-  ): Promise<{ templateName: string; templateCategory: any }> {
+  ): Promise<{ templateName: string; templateCategory: TemplateCategory }> {
     const template = await this.templateRepository.findById(tenantId, templateId);
 
     if (!template) {

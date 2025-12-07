@@ -19,6 +19,7 @@ export function IsFutureDate(validationOptions?: ValidationOptions) {
       propertyName: propertyName,
       options: validationOptions,
       validator: {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         validate(value: unknown, args: ValidationArguments) {
           if (!(value instanceof Date)) {
             return false;
