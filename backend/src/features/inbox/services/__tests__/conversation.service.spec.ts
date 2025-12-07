@@ -4,6 +4,7 @@ import { ConversationRepository } from '../../repositories/conversation.reposito
 import { ConversationAssignmentRepository } from '../../repositories/conversation-assignment.repository';
 import { TeamService } from '../../../teams/services/team.service';
 import { Conversation } from '../../entities/conversation.entity';
+import { ConversationAssignment } from '../../entities/conversation-assignment.entity';
 import { ConversationStatus, AssignmentAction } from '../../enums';
 import {
   NotFoundException,
@@ -192,9 +193,9 @@ describe('ConversationService', () => {
       });
       conversationRepository.findById.mockResolvedValueOnce(mockConversation);
       conversationRepository.findById.mockResolvedValueOnce(updatedConversation);
-      assignmentRepository.create.mockResolvedValue({} as any);
+      assignmentRepository.create.mockResolvedValue({} as unknown as ConversationAssignment);
 
-      const result = await service.pickupConversation(tenantId, conversationId, userId);
+      await service.pickupConversation(tenantId, conversationId, userId);
 
       expect(conversationRepository.assignAtomic).toHaveBeenCalledWith(
         tenantId,
@@ -261,9 +262,9 @@ describe('ConversationService', () => {
         previousAssignedToId: userId,
       });
       conversationRepository.findById.mockResolvedValueOnce(releasedConversation);
-      assignmentRepository.create.mockResolvedValue({} as any);
+      assignmentRepository.create.mockResolvedValue({} as unknown as ConversationAssignment);
 
-      const result = await service.releaseConversation(tenantId, conversationId, userId);
+      await service.releaseConversation(tenantId, conversationId, userId);
 
       expect(conversationRepository.assignAtomic).toHaveBeenCalledWith(
         tenantId,
@@ -318,9 +319,9 @@ describe('ConversationService', () => {
         previousAssignedToId: userId,
       });
       conversationRepository.findById.mockResolvedValueOnce(transferredConversation);
-      assignmentRepository.create.mockResolvedValue({} as any);
+      assignmentRepository.create.mockResolvedValue({} as unknown as ConversationAssignment);
 
-      const result = await service.assignConversation(
+      await service.assignConversation(
         tenantId,
         conversationId,
         targetUserId,

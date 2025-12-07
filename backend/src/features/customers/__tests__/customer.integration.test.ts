@@ -41,8 +41,9 @@ const TEST_UUIDS = {
 // (The codebase has two identical HttpException definitions)
 const testErrorHandler = (
   err: Error & { statusCode?: number; errors?: Record<string, unknown>[] },
-  req: Request,
+  _req: Request,
   res: Response,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _next: NextFunction
 ) => {
   // Check for statusCode property (present on both HttpException versions)

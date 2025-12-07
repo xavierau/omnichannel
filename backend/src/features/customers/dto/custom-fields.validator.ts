@@ -115,7 +115,7 @@ export function IsValidCustomFields(validationOptions?: ValidationOptions) {
 
           return true;
         },
-        defaultMessage(_args: ValidationArguments) {
+        defaultMessage() {
           return `customFields must be an object with max ${MAX_CUSTOM_FIELDS_SIZE} bytes, max ${MAX_CUSTOM_FIELDS_DEPTH} levels of nesting, max ${MAX_CUSTOM_FIELDS_KEYS} keys, and only primitive values`;
         },
       },

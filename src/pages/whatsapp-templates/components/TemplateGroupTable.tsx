@@ -242,12 +242,6 @@ export function TemplateGroupTable({
     },
   })
 
-  // Create stable primitive for comparison to avoid re-running on every render
-  const selectedRowIds = React.useMemo(
-    () => Object.keys(rowSelection).sort().join(","),
-    [rowSelection]
-  )
-
   // Skip initial mount notification
   const isFirstRender = React.useRef(true)
 
@@ -264,7 +258,7 @@ export function TemplateGroupTable({
       )
       onSelectionChange(selectedRows)
     }
-  }, [selectedRowIds, onSelectionChange, data])
+  }, [rowSelection, onSelectionChange, data])
 
   if (isLoading) {
     return (

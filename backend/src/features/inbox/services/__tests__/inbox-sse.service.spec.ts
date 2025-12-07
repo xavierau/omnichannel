@@ -434,7 +434,6 @@ describe('InboxSseService', () => {
       service.closeAllConnections(tenantId);
 
       // Advance time - should NOT trigger heartbeat
-      const dataLength = res.writtenData.length;
       jest.advanceTimersByTime(60000);
 
       // Only the initial writes should exist, no new heartbeats

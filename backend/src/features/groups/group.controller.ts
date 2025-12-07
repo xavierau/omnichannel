@@ -120,7 +120,7 @@ export class GroupController {
     const { id } = req.params;
     const tenantId = req.tenantId!;
 
-    const group = await this.groupService.updateGroup(id, req.body, tenantId);
+    await this.groupService.updateGroup(id, req.body, tenantId);
 
     // Get updated member count
     const groupWithCount = await this.groupService.getGroup(tenantId, id);
