@@ -72,19 +72,13 @@ describe('CSRF Protection Integration Tests', () => {
       });
 
       // Error handler
-      app.use(
-        (
-          err: any,
-          req: express.Request,
-          res: express.Response,
-          next: express.NextFunction
-        ) => {
-          res.status(err.statusCode || 500).json({
-            statusCode: err.statusCode || 500,
-            message: err.message,
-          });
-        }
-      );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+      app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+        res.status(err.statusCode || 500).json({
+          statusCode: err.statusCode || 500,
+          message: err.message,
+        });
+      });
     });
 
     it('should reject POST without CSRF token', async () => {
@@ -204,16 +198,10 @@ describe('CSRF Protection Integration Tests', () => {
         res.json({ method: 'DELETE', success: true });
       });
 
-      app.use(
-        (
-          err: any,
-          req: express.Request,
-          res: express.Response,
-          next: express.NextFunction
-        ) => {
-          res.status(err.statusCode || 500).json({ message: err.message });
-        }
-      );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+      app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+        res.status(err.statusCode || 500).json({ message: err.message });
+      });
     });
 
     it('should allow GET without CSRF token', async () => {
@@ -294,16 +282,10 @@ describe('CSRF Protection Integration Tests', () => {
         res.json({ success: true });
       });
 
-      app.use(
-        (
-          err: any,
-          req: express.Request,
-          res: express.Response,
-          next: express.NextFunction
-        ) => {
-          res.status(err.statusCode || 500).json({ message: err.message });
-        }
-      );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+      app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+        res.status(err.statusCode || 500).json({ message: err.message });
+      });
 
       // Get token with custom cookie name
       const tokenResponse = await request(app).get('/csrf-token').expect(200);
@@ -362,16 +344,10 @@ describe('CSRF Protection Integration Tests', () => {
         res.json({ success: true, id: req.body.id });
       });
 
-      app.use(
-        (
-          err: any,
-          req: express.Request,
-          res: express.Response,
-          next: express.NextFunction
-        ) => {
-          res.status(err.statusCode || 500).json({ message: err.message });
-        }
-      );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+      app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+        res.status(err.statusCode || 500).json({ message: err.message });
+      });
 
       // Get token
       const tokenResponse = await request(app).get('/csrf-token').expect(200);

@@ -43,6 +43,7 @@ export function TemplatePreview({
 
   const { headerText, body, buttonUrls } = React.useMemo(
     () => substituteTemplateVariables(template, variableConfig, selectedCustomer),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [template, variableConfig, selectedCustomer, refreshKey]
   )
 

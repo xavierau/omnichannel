@@ -150,7 +150,7 @@ export class AuthController {
           accessToken,
         },
       });
-    } catch (error) {
+    } catch {
       res.clearCookie('refreshToken');
       return res.status(401).json({
         statusCode: 401,
@@ -166,7 +166,7 @@ export class AuthController {
     if (refreshToken) {
       try {
         await this.authService.logout(refreshToken, user?.id);
-      } catch (error) {
+      } catch {
         // Ignore errors during logout
       }
     }

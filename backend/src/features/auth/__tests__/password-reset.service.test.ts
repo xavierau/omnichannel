@@ -98,6 +98,7 @@ describe('AuthService - Password Reset', () => {
       findById: jest.fn(),
       findByIds: jest.fn(),
       findAll: jest.fn(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as unknown as jest.Mocked<any>;
 
     // Create AuthService with mocked dependencies
