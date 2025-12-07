@@ -204,12 +204,13 @@ export function matchesCustomFieldFilter(
     case "TEXTAREA":
     case "EMAIL":
     case "PHONE":
-    case "URL":
+    case "URL": {
       const stringValue = String(value).toLowerCase()
       if (Array.isArray(filter)) {
         return filter.some((f) => stringValue.includes(f.toLowerCase()))
       }
       return stringValue.includes(filter.toLowerCase())
+    }
 
     default:
       return true

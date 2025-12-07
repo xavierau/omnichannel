@@ -41,6 +41,7 @@ export function useSSE({
   const eventSourceRef = useRef<EventSource | null>(null)
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const mountedRef = useRef(true)
+  const connectRef = useRef<() => void>(() => {})
 
   // Store callbacks in refs to avoid effect dependencies
   const onMessageRef = useRef(onMessage)
@@ -101,7 +102,7 @@ export function useSSE({
           const delay = reconnectInterval * Math.pow(2, newAttempts - 1)
           reconnectTimeoutRef.current = setTimeout(() => {
             if (mountedRef.current) {
-              connect()
+              connectRef.current()
             }
           }, delay)
         }
@@ -109,6 +110,11 @@ export function useSSE({
       })
     }
   }, [endpoint, enabled, reconnectInterval, maxReconnectAttempts, cleanup])
+
+  // Keep connectRef in sync
+  useEffect(() => {
+    connectRef.current = connect
+  }, [connect])
 
   useEffect(() => {
     mountedRef.current = true

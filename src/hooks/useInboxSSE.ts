@@ -146,6 +146,7 @@ export function useInboxSSE({
   const eventSourceRef = useRef<EventSource | null>(null)
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const mountedRef = useRef(true)
+  const connectRef = useRef<() => void>(() => {})
 
   // Store callbacks in refs to avoid effect dependencies
   const callbacksRef = useRef({
@@ -307,7 +308,7 @@ export function useInboxSSE({
           const delay = reconnectInterval * Math.pow(2, newAttempts - 1)
           reconnectTimeoutRef.current = setTimeout(() => {
             if (mountedRef.current) {
-              connect()
+              connectRef.current()
             }
           }, delay)
         }
@@ -315,6 +316,11 @@ export function useInboxSSE({
       })
     }
   }, [enabled, reconnectInterval, maxReconnectAttempts, cleanup, parseEventData])
+
+  // Keep connectRef in sync
+  useEffect(() => {
+    connectRef.current = connect
+  }, [connect])
 
   // Initial connection and cleanup
   useEffect(() => {
