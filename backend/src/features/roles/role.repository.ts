@@ -6,10 +6,16 @@ import { Permission } from '@features/permissions/permission.entity';
 
 @singleton()
 export class RoleRepository {
-  private repo: Repository<Role>;
+  private _repo: Repository<Role> | null = null;
 
-  constructor() {
-    this.repo = AppDataSource.getRepository(Role);
+  /**
+   * Lazy initialization of the repository to ensure AppDataSource is initialized.
+   */
+  private get repo(): Repository<Role> {
+    if (!this._repo) {
+      this._repo = AppDataSource.getRepository(Role);
+    }
+    return this._repo;
   }
 
   async findAll(options?: { includePermissions?: boolean }): Promise<Role[]> {

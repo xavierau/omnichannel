@@ -5,10 +5,16 @@ import { Channel } from './channel.entity';
 
 @singleton()
 export class ChannelRepository {
-  private repository: Repository<Channel>;
+  private _repository: Repository<Channel> | null = null;
 
-  constructor() {
-    this.repository = AppDataSource.getRepository(Channel);
+  /**
+   * Lazy initialization of the repository to ensure AppDataSource is initialized.
+   */
+  private get repository(): Repository<Channel> {
+    if (!this._repository) {
+      this._repository = AppDataSource.getRepository(Channel);
+    }
+    return this._repository;
   }
 
   async findAll(): Promise<Channel[]> {

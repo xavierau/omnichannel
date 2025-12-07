@@ -85,6 +85,8 @@ describe('Tag Integration Tests', () => {
     lastLoginAt: new Date(),
     failedLoginAttempts: 0,
     lockedUntil: null,
+    passwordResetToken: null,
+    passwordResetExpires: null,
     roles: [
       {
         id: 'role-1',

@@ -1,6 +1,9 @@
 import 'reflect-metadata';
 import { container } from 'tsyringe';
 
+// Redis Client
+import { redisClient } from './redis.config';
+
 // Repositories
 import { CustomerRepository } from '@features/customers/customer.repository';
 import { TagRepository } from '@features/tags/tag.repository';
@@ -22,6 +25,7 @@ import { BroadcastService } from '@features/broadcasts/broadcast.service';
 import { BroadcastSseService } from '@features/broadcasts/broadcast-sse.service';
 import { BroadcastExportService } from '@features/broadcasts/broadcast-export.service';
 import { TemplateService } from '@features/templates/template.service';
+import { TemplateSseService } from '@features/templates/template-sse.service';
 import { GroupService } from '@features/groups/group.service';
 import { MediaService } from '@features/media/media.service';
 
@@ -33,6 +37,8 @@ import {
 import { ProviderRegistry } from '@features/messaging/provider-registry';
 import { ProviderFactory } from '@features/messaging/provider-factory';
 import { MessagingService } from '@features/messaging/services/messaging.service';
+import { MetaMediaService } from '@features/messaging/services/meta-media.service';
+import { MessagingRateLimiterService } from '@features/messaging/services/rate-limiter.service';
 import { registerMessagingProviders } from '@features/messaging/register-providers';
 
 // Channel Account Services
@@ -58,6 +64,43 @@ import { WebhookController } from '@features/webhooks/webhook.controller';
 // Jobs
 import { BroadcastQueue } from '../jobs/broadcast.queue';
 import { BroadcastScheduler } from '../jobs/broadcast.scheduler';
+import { InboxMessageQueue } from '../jobs/inbox-message.queue';
+
+// Teams
+import { TeamRepository } from '@features/teams/repositories/team.repository';
+import { TeamMemberRepository } from '@features/teams/repositories/team-member.repository';
+import { TeamChannelAccountRepository } from '@features/teams/repositories/team-channel-account.repository';
+import { TeamService } from '@features/teams/services/team.service';
+import { TeamController } from '@features/teams/team.controller';
+
+// Inbox
+import { ConversationRepository } from '@features/inbox/repositories/conversation.repository';
+import { ConversationMessageRepository } from '@features/inbox/repositories/conversation-message.repository';
+import { ConversationNoteRepository } from '@features/inbox/repositories/conversation-note.repository';
+import { ConversationAssignmentRepository } from '@features/inbox/repositories/conversation-assignment.repository';
+import { ConversationService } from '@features/inbox/services/conversation.service';
+import { InboxNoteService } from '@features/inbox/services/inbox-note.service';
+import { InboxSseService } from '@features/inbox/services/inbox-sse.service';
+import { MessagingWindowService } from '@features/inbox/services/messaging-window.service';
+import { InboxController } from '@features/inbox/inbox.controller';
+
+// Health
+import { HealthService } from '@features/health/health.service';
+import { HealthController } from '@features/health/health.controller';
+
+// Custom Fields
+import { CustomFieldRepository } from '@features/custom-fields/custom-field.repository';
+import { CustomFieldService } from '@features/custom-fields/custom-field.service';
+import { CustomFieldController } from '@features/custom-fields/custom-field.controller';
+
+// Invitations
+import { InvitationRepository } from '@features/invitations/invitation.repository';
+import { EmailService } from '@features/invitations/email.service';
+import { InvitationService } from '@features/invitations/invitation.service';
+import { InvitationController } from '@features/invitations/invitation.controller';
+
+// Database
+import { AppDataSource } from './database.config';
 
 // Register Repositories
 container.registerSingleton(CustomerRepository);
@@ -80,8 +123,12 @@ container.registerSingleton(BroadcastService);
 container.registerSingleton(BroadcastSseService);
 container.registerSingleton(BroadcastExportService);
 container.registerSingleton(TemplateService);
+container.registerSingleton(TemplateSseService);
 container.registerSingleton(GroupService);
 container.registerSingleton(MediaService);
+
+// Register Redis Client (required by rate limiter)
+container.register('RedisClient', { useValue: redisClient });
 
 // Register Messaging Services (order matters for dependencies)
 container.registerSingleton('EncryptionKeyProvider', EnvEncryptionKeyProvider);
@@ -89,6 +136,8 @@ container.registerSingleton(CredentialService);
 container.registerSingleton(ProviderRegistry);
 container.registerSingleton(ProviderFactory);
 container.registerSingleton(MessagingService);
+container.registerSingleton(MetaMediaService);
+container.registerSingleton(MessagingRateLimiterService);
 
 // Register Channel Account Services
 container.registerSingleton(ChannelAccountService);
@@ -113,8 +162,55 @@ container.registerSingleton(WebhookController);
 // Register Jobs
 container.registerSingleton(BroadcastQueue);
 container.registerSingleton(BroadcastScheduler);
+container.registerSingleton(InboxMessageQueue);
+
+// Register Teams Repositories
+container.registerSingleton(TeamRepository);
+container.registerSingleton(TeamMemberRepository);
+container.registerSingleton(TeamChannelAccountRepository);
+
+// Register Teams Services
+container.registerSingleton(TeamService);
+
+// Register Teams Controllers
+container.registerSingleton(TeamController);
+
+// Register Inbox Repositories
+container.registerSingleton(ConversationRepository);
+container.registerSingleton(ConversationMessageRepository);
+container.registerSingleton(ConversationNoteRepository);
+container.registerSingleton(ConversationAssignmentRepository);
+
+// Register Inbox Services
+container.registerSingleton(ConversationService);
+container.registerSingleton(InboxNoteService);
+container.registerSingleton(InboxSseService);
+container.registerSingleton(MessagingWindowService);
+
+// Register Inbox Controllers
+container.registerSingleton(InboxController);
 
 // Register messaging providers (must be after ProviderRegistry is registered)
 registerMessagingProviders();
+
+// Register DataSource for Health Service
+container.register('DataSource', { useValue: AppDataSource });
+
+// Register Health Services
+container.registerSingleton(HealthService);
+
+// Register Health Controllers
+container.registerSingleton(HealthController);
+
+// Register Custom Fields
+container.registerSingleton(CustomFieldRepository);
+container.registerSingleton(CustomFieldService);
+container.registerSingleton(CustomFieldController);
+
+// Register Invitations
+container.registerSingleton(InvitationRepository);
+container.registerSingleton(EmailService);
+container.registerSingleton(InvitationService);
+container.registerSingleton(InvitationController);
 
 export { container };

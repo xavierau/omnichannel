@@ -20,6 +20,13 @@ const controller = container.resolve(TemplateController);
 router.use(authenticate);
 router.use(requireTenant);
 
+// SSE endpoint for real-time template status updates (must be before /:id route)
+router.get(
+  '/events',
+  requirePermission('templates', 'read', 'all'),
+  controller.subscribeToEvents
+);
+
 // List all templates with pagination, search, and filters
 router.get(
   '/',

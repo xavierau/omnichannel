@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { inject, singleton } from 'tsyringe';
 import { TemplateService } from './template.service';
+import { TemplateSseService } from './template-sse.service';
 import { asyncHandler } from '@middleware/async-handler';
 import { TemplateQueryOptions } from './template.repository';
 import {
@@ -12,7 +13,10 @@ import { TemplateCategory, TemplateStatus } from './enums';
 
 @singleton()
 export class TemplateController {
-  constructor(@inject(TemplateService) private templateService: TemplateService) {}
+  constructor(
+    @inject(TemplateService) private templateService: TemplateService,
+    @inject(TemplateSseService) private templateSseService: TemplateSseService
+  ) {}
 
   /**
    * List all templates with pagination and filtering.
@@ -176,6 +180,33 @@ export class TemplateController {
     await this.templateService.deleteTranslation(id, translationId, tenantId);
 
     res.status(204).send();
+  });
+
+  /**
+   * SSE endpoint for real-time template status updates.
+   * GET /events
+   *
+   * Clients connect to receive real-time notifications about:
+   * - Template status changes (approved, rejected, disabled, etc.)
+   * - Template sync completion events
+   *
+   * @remarks
+   * This endpoint keeps the connection open for Server-Sent Events.
+   * The connection will automatically send heartbeats to stay alive.
+   */
+  subscribeToEvents = asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.tenantId!;
+    const userId = req.user!.id;
+
+    const connected = this.templateSseService.addClient(tenantId, userId, res);
+
+    if (!connected) {
+      // Response already sent by addClient with error
+      return;
+    }
+
+    // Request is kept open for SSE - no explicit response needed
+    // The connection is managed by TemplateSseService
   });
 
   /**

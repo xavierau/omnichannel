@@ -6,6 +6,7 @@ import { BroadcastSseService } from '../../features/broadcasts/broadcast-sse.ser
 import { GroupRepository } from '../../features/groups/group.repository';
 import { CustomerRepository } from '../../features/customers/customer.repository';
 import { MessagingService } from '../../features/messaging/services/messaging.service';
+import { MessagingRateLimiterService } from '../../features/messaging/services/rate-limiter.service';
 import { ChannelAccountRepository } from '../../features/channel-accounts/channel-account.repository';
 import { Broadcast } from '../../features/broadcasts/broadcast.entity';
 import { BroadcastStatus, RecipientType } from '../../features/broadcasts/enums';
@@ -63,6 +64,7 @@ describe('BroadcastQueue', () => {
   let mockCustomerRepository: jest.Mocked<CustomerRepository>;
   let mockMessagingService: jest.Mocked<MessagingService>;
   let mockChannelAccountRepository: jest.Mocked<ChannelAccountRepository>;
+  let mockRateLimiterService: jest.Mocked<MessagingRateLimiterService>;
 
   const tenantId = 'tenant-123';
   const userId = 'user-123';
@@ -153,13 +155,23 @@ describe('BroadcastQueue', () => {
       }),
     } as unknown as jest.Mocked<ChannelAccountRepository>;
 
+    mockRateLimiterService = {
+      isInBackoff: jest.fn().mockResolvedValue(false),
+      acquireToken: jest.fn().mockResolvedValue(true),
+      handleRateLimitError: jest.fn().mockResolvedValue(undefined),
+      checkRateLimit: jest.fn().mockResolvedValue({ allowed: true, remaining: 79, resetAt: new Date() }),
+      isRateLimitError: jest.fn().mockReturnValue(false),
+      extractRetryAfter: jest.fn().mockReturnValue(undefined),
+    } as unknown as jest.Mocked<MessagingRateLimiterService>;
+
     broadcastQueue = new BroadcastQueue(
       mockBroadcastRepository,
       mockSseService,
       mockGroupRepository,
       mockCustomerRepository,
       mockMessagingService,
-      mockChannelAccountRepository
+      mockChannelAccountRepository,
+      mockRateLimiterService
     );
   });
 
@@ -319,6 +331,7 @@ describe('BroadcastQueue Job Processors', () => {
   let mockCustomerRepository: jest.Mocked<CustomerRepository>;
   let mockMessagingService: jest.Mocked<MessagingService>;
   let mockChannelAccountRepository: jest.Mocked<ChannelAccountRepository>;
+  let mockRateLimiterService: jest.Mocked<MessagingRateLimiterService>;
   let sendBroadcastProcessor: (job: Bull.Job<SendBroadcastJobData>) => Promise<void>;
   let processRecipientProcessor: (job: Bull.Job<ProcessRecipientJobData>) => Promise<void>;
 
@@ -424,13 +437,23 @@ describe('BroadcastQueue Job Processors', () => {
       }),
     } as unknown as jest.Mocked<ChannelAccountRepository>;
 
+    mockRateLimiterService = {
+      isInBackoff: jest.fn().mockResolvedValue(false),
+      acquireToken: jest.fn().mockResolvedValue(true),
+      handleRateLimitError: jest.fn().mockResolvedValue(undefined),
+      checkRateLimit: jest.fn().mockResolvedValue({ allowed: true, remaining: 79, resetAt: new Date() }),
+      isRateLimitError: jest.fn().mockReturnValue(false),
+      extractRetryAfter: jest.fn().mockReturnValue(undefined),
+    } as unknown as jest.Mocked<MessagingRateLimiterService>;
+
     broadcastQueue = new BroadcastQueue(
       mockBroadcastRepository,
       mockSseService,
       mockGroupRepository,
       mockCustomerRepository,
       mockMessagingService,
-      mockChannelAccountRepository
+      mockChannelAccountRepository,
+      mockRateLimiterService
     );
   });
 

@@ -74,16 +74,37 @@ const getSafeSortColumn = (sortBy: string | undefined): string => {
 
 @singleton()
 export class TemplateRepository {
-  private groupRepository: Repository<WhatsAppTemplateGroup>;
-  private translationRepository: Repository<TemplateTranslation>;
+  private _groupRepository: Repository<WhatsAppTemplateGroup> | null = null;
+  private _translationRepository: Repository<TemplateTranslation> | null = null;
 
-  constructor() {
-    this.groupRepository = AppDataSource.getRepository(WhatsAppTemplateGroup);
-    this.translationRepository = AppDataSource.getRepository(TemplateTranslation);
+  /**
+   * Lazy initialization of the group repository to ensure AppDataSource is initialized.
+   * This prevents errors when the DI container instantiates this class before
+   * the database connection is established.
+   */
+  private get groupRepository(): Repository<WhatsAppTemplateGroup> {
+    if (!this._groupRepository) {
+      this._groupRepository = AppDataSource.getRepository(WhatsAppTemplateGroup);
+    }
+    return this._groupRepository;
+  }
+
+  /**
+   * Lazy initialization of the translation repository to ensure AppDataSource is initialized.
+   */
+  private get translationRepository(): Repository<TemplateTranslation> {
+    if (!this._translationRepository) {
+      this._translationRepository = AppDataSource.getRepository(TemplateTranslation);
+    }
+    return this._translationRepository;
   }
 
   /**
    * Find all template groups for a tenant with pagination and filtering.
+   *
+   * Note: Uses separate queries for data and count to avoid TypeORM's
+   * getManyAndCount() bug with nullable leftJoinAndSelect relations
+   * that causes "Cannot read properties of undefined (reading 'databaseName')" error.
    */
   async findAll(
     tenantId: string,
@@ -100,52 +121,91 @@ export class TemplateRepository {
       sortOrder = 'desc',
     } = options;
 
-    const query = this.groupRepository
-      .createQueryBuilder('template')
-      .leftJoinAndSelect('template.translations', 'translations')
-      .leftJoinAndSelect('template.channelAccount', 'channelAccount')
-      .where('template.tenant_id = :tenantId', { tenantId });
+    // Build base query conditions (without joins for counting)
+    const baseQueryBuilder = () => {
+      const qb = this.groupRepository
+        .createQueryBuilder('template')
+        .where('template.tenant_id = :tenantId', { tenantId });
 
-    // Filter by channel account
-    if (channelAccountId) {
-      query.andWhere('template.channel_account_id = :channelAccountId', { channelAccountId });
-    }
+      // Filter by channel account
+      if (channelAccountId) {
+        qb.andWhere('template.channel_account_id = :channelAccountId', { channelAccountId });
+      }
 
-    // Search by template name
-    if (search) {
-      query.andWhere('LOWER(template.name) LIKE LOWER(:search)', {
-        search: `%${search}%`,
-      });
-    }
+      // Search by template name
+      if (search) {
+        qb.andWhere('LOWER(template.name) LIKE LOWER(:search)', {
+          search: `%${search}%`,
+        });
+      }
 
-    // Filter by categories
-    if (categories && categories.length > 0) {
-      query.andWhere('template.category IN (:...categories)', { categories });
-    }
+      // Filter by categories
+      if (categories && categories.length > 0) {
+        qb.andWhere('template.category IN (:...categories)', { categories });
+      }
 
-    // Filter by translation statuses (groups that have at least one translation with the status)
-    if (statuses && statuses.length > 0) {
-      query.andWhere((qb) => {
-        const subQuery = qb
-          .subQuery()
-          .select('tt.template_group_id')
-          .from('template_translations', 'tt')
-          .where('tt.status IN (:...statuses)', { statuses })
-          .getQuery();
-        return `template.id IN ${subQuery}`;
-      });
+      // Filter by translation statuses (groups that have at least one translation with the status)
+      if (statuses && statuses.length > 0) {
+        qb.andWhere((subQb) => {
+          const subQuery = subQb
+            .subQuery()
+            .select('tt.template_group_id')
+            .from('template_translations', 'tt')
+            .where('tt.status IN (:...statuses)', { statuses })
+            .getQuery();
+          return `template.id IN ${subQuery}`;
+        });
+      }
+
+      return qb;
+    };
+
+    // Get total count first (without joins or ordering)
+    const total = await baseQueryBuilder().getCount();
+
+    if (total === 0) {
+      return {
+        data: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+      };
     }
 
     // Sorting - use allowlist to prevent SQL injection
     const sortColumn = getSafeSortColumn(sortBy);
     const order = (sortOrder || 'desc').toUpperCase() as 'ASC' | 'DESC';
-    query.orderBy(`template.${sortColumn}`, order);
 
-    // Pagination
-    const skip = (page - 1) * limit;
-    query.skip(skip).take(limit);
+    // Pagination - fetch IDs first to avoid TypeORM bug with skip/take on nullable joins
+    const skipCount = (page - 1) * limit;
+    const idsQuery = baseQueryBuilder()
+      .select('template.id')
+      .orderBy(`template.${sortColumn}`, order)
+      .offset(skipCount)
+      .limit(limit);
 
-    const [data, total] = await query.getManyAndCount();
+    const idResults = await idsQuery.getRawMany<{ template_id: string }>();
+    const ids = idResults.map((r) => r.template_id);
+
+    if (ids.length === 0) {
+      return {
+        data: [],
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    }
+
+    // Fetch full entities by IDs (no pagination needed, just the specific IDs)
+    const data = await this.groupRepository
+      .createQueryBuilder('template')
+      .leftJoinAndSelect('template.translations', 'translations')
+      .leftJoinAndSelect('template.channelAccount', 'channelAccount')
+      .where('template.id IN (:...ids)', { ids })
+      .orderBy(`template.${sortColumn}`, order)
+      .getMany();
 
     return {
       data,
@@ -168,6 +228,9 @@ export class TemplateRepository {
 
   /**
    * Find template groups that have at least one approved translation.
+   *
+   * Note: Uses separate queries for data and count to avoid TypeORM's
+   * getManyAndCount() bug with nullable leftJoinAndSelect relations.
    */
   async findApproved(
     tenantId: string,
@@ -183,48 +246,87 @@ export class TemplateRepository {
       sortOrder = 'desc',
     } = options;
 
-    const query = this.groupRepository
-      .createQueryBuilder('template')
-      .leftJoinAndSelect('template.translations', 'translations')
-      .leftJoinAndSelect('template.channelAccount', 'channelAccount')
-      .where('template.tenant_id = :tenantId', { tenantId })
-      .andWhere((qb) => {
-        const subQuery = qb
-          .subQuery()
-          .select('tt.template_group_id')
-          .from('template_translations', 'tt')
-          .where('tt.status = :approvedStatus', { approvedStatus: TemplateStatus.APPROVED })
-          .getQuery();
-        return `template.id IN ${subQuery}`;
-      });
+    // Build base query conditions (without joins for counting)
+    const baseQueryBuilder = () => {
+      const qb = this.groupRepository
+        .createQueryBuilder('template')
+        .where('template.tenant_id = :tenantId', { tenantId })
+        .andWhere((subQb) => {
+          const subQuery = subQb
+            .subQuery()
+            .select('tt.template_group_id')
+            .from('template_translations', 'tt')
+            .where('tt.status = :approvedStatus', { approvedStatus: TemplateStatus.APPROVED })
+            .getQuery();
+          return `template.id IN ${subQuery}`;
+        });
 
-    // Filter by channel account
-    if (channelAccountId) {
-      query.andWhere('template.channel_account_id = :channelAccountId', { channelAccountId });
-    }
+      // Filter by channel account
+      if (channelAccountId) {
+        qb.andWhere('template.channel_account_id = :channelAccountId', { channelAccountId });
+      }
 
-    // Search by template name
-    if (search) {
-      query.andWhere('LOWER(template.name) LIKE LOWER(:search)', {
-        search: `%${search}%`,
-      });
-    }
+      // Search by template name
+      if (search) {
+        qb.andWhere('LOWER(template.name) LIKE LOWER(:search)', {
+          search: `%${search}%`,
+        });
+      }
 
-    // Filter by categories
-    if (categories && categories.length > 0) {
-      query.andWhere('template.category IN (:...categories)', { categories });
+      // Filter by categories
+      if (categories && categories.length > 0) {
+        qb.andWhere('template.category IN (:...categories)', { categories });
+      }
+
+      return qb;
+    };
+
+    // Get total count first (without joins or ordering)
+    const total = await baseQueryBuilder().getCount();
+
+    if (total === 0) {
+      return {
+        data: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+      };
     }
 
     // Sorting
     const sortColumn = getSafeSortColumn(sortBy);
     const order = (sortOrder || 'desc').toUpperCase() as 'ASC' | 'DESC';
-    query.orderBy(`template.${sortColumn}`, order);
 
-    // Pagination
-    const skip = (page - 1) * limit;
-    query.skip(skip).take(limit);
+    // Pagination - fetch IDs first to avoid TypeORM bug with skip/take on nullable joins
+    const skipCount = (page - 1) * limit;
+    const idsQuery = baseQueryBuilder()
+      .select('template.id')
+      .orderBy(`template.${sortColumn}`, order)
+      .offset(skipCount)
+      .limit(limit);
 
-    const [data, total] = await query.getManyAndCount();
+    const idResults = await idsQuery.getRawMany<{ template_id: string }>();
+    const ids = idResults.map((r) => r.template_id);
+
+    if (ids.length === 0) {
+      return {
+        data: [],
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    }
+
+    // Fetch full entities by IDs (no pagination needed, just the specific IDs)
+    const data = await this.groupRepository
+      .createQueryBuilder('template')
+      .leftJoinAndSelect('template.translations', 'translations')
+      .leftJoinAndSelect('template.channelAccount', 'channelAccount')
+      .where('template.id IN (:...ids)', { ids })
+      .orderBy(`template.${sortColumn}`, order)
+      .getMany();
 
     return {
       data,
@@ -370,5 +472,87 @@ export class TemplateRepository {
   async deleteTranslation(translationId: string): Promise<boolean> {
     const result = await this.translationRepository.delete({ id: translationId });
     return (result.affected ?? 0) > 0;
+  }
+
+  /**
+   * Update template translation status by template name and language.
+   *
+   * Used for processing template status webhooks from Meta.
+   * Finds the template by name within a specific channel account and updates the
+   * translation status for the given language.
+   *
+   * @param tenantId - Tenant ID for multi-tenancy isolation
+   * @param channelAccountId - Channel account ID to scope the template lookup
+   * @param templateName - Name of the template
+   * @param language - Language code of the translation
+   * @param newStatus - New status to set
+   * @returns Object containing success status, old status if found, and translation ID
+   */
+  async updateStatusByNameAndLanguage(
+    tenantId: string,
+    channelAccountId: string,
+    templateName: string,
+    language: string,
+    newStatus: TemplateStatus
+  ): Promise<{ updated: boolean; oldStatus?: TemplateStatus; translationId?: string }> {
+    // Find the template group by name within this channel account
+    const templateGroup = await this.groupRepository
+      .createQueryBuilder('template')
+      .leftJoinAndSelect('template.translations', 'translations')
+      .where('template.tenant_id = :tenantId', { tenantId })
+      .andWhere('template.channel_account_id = :channelAccountId', { channelAccountId })
+      .andWhere('template.name = :templateName', { templateName })
+      .getOne();
+
+    if (!templateGroup) {
+      return { updated: false };
+    }
+
+    // Find the translation for the specified language
+    const translation = templateGroup.translations?.find(
+      (t) => t.language.toLowerCase() === language.toLowerCase()
+    );
+
+    if (!translation) {
+      return { updated: false };
+    }
+
+    const oldStatus = translation.status;
+
+    // Only update if status actually changed
+    if (oldStatus === newStatus) {
+      return { updated: false, oldStatus, translationId: translation.id };
+    }
+
+    // Update the translation status
+    await this.translationRepository.update(
+      { id: translation.id },
+      { status: newStatus }
+    );
+
+    return { updated: true, oldStatus, translationId: translation.id };
+  }
+
+  /**
+   * Find template group by name and channel account.
+   *
+   * @param tenantId - Tenant ID for multi-tenancy isolation
+   * @param channelAccountId - Channel account ID
+   * @param templateName - Name of the template
+   * @returns Template group with translations or null
+   */
+  async findByNameAndChannelAccount(
+    tenantId: string,
+    channelAccountId: string,
+    templateName: string
+  ): Promise<WhatsAppTemplateGroup | null> {
+    return this.groupRepository.findOne({
+      where: {
+        tenantId,
+        channelAccountId,
+        name: templateName,
+      },
+      relations: ['translations', 'channelAccount'],
+    });
   }
 }

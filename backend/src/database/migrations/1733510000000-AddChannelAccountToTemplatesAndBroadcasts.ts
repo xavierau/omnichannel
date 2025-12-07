@@ -34,26 +34,33 @@ export class AddChannelAccountToTemplatesAndBroadcasts1733510000000
       ON DELETE SET NULL
     `);
 
-    // Add channel_account_id to broadcasts
+    // Add channel_account_id to broadcasts (if not exists)
     await queryRunner.query(`
       ALTER TABLE "broadcasts"
-      ADD COLUMN "channel_account_id" uuid
+      ADD COLUMN IF NOT EXISTS "channel_account_id" uuid
     `);
 
-    // Add index for channel_account_id on broadcasts
+    // Add index for channel_account_id on broadcasts (if not exists)
     await queryRunner.query(`
-      CREATE INDEX "IDX_broadcasts_channel_account"
+      CREATE INDEX IF NOT EXISTS "IDX_broadcasts_channel_account"
       ON "broadcasts" ("channel_account_id")
     `);
 
-    // Add foreign key constraint to channel_accounts
-    await queryRunner.query(`
-      ALTER TABLE "broadcasts"
-      ADD CONSTRAINT "FK_broadcasts_channel_account"
-      FOREIGN KEY ("channel_account_id")
-      REFERENCES "channel_accounts" ("id")
-      ON DELETE SET NULL
+    // Add foreign key constraint to channel_accounts (check if exists first)
+    const fkExists = await queryRunner.query(`
+      SELECT 1 FROM information_schema.table_constraints
+      WHERE constraint_name = 'FK_broadcasts_channel_account'
+      AND table_name = 'broadcasts'
     `);
+    if (!fkExists || fkExists.length === 0) {
+      await queryRunner.query(`
+        ALTER TABLE "broadcasts"
+        ADD CONSTRAINT "FK_broadcasts_channel_account"
+        FOREIGN KEY ("channel_account_id")
+        REFERENCES "channel_accounts" ("id")
+        ON DELETE SET NULL
+      `);
+    }
 
     // Update unique constraint on template_groups to include channel_account_id
     // First drop the existing unique constraint
@@ -64,14 +71,14 @@ export class AddChannelAccountToTemplatesAndBroadcasts1733510000000
     // Create new unique constraint including channel_account_id
     // Template names must be unique per tenant AND channel account
     await queryRunner.query(`
-      CREATE UNIQUE INDEX "IDX_template_groups_tenant_channel_name"
+      CREATE UNIQUE INDEX IF NOT EXISTS "IDX_template_groups_tenant_channel_name"
       ON "whatsapp_template_groups" ("tenant_id", "channel_account_id", "name")
       WHERE "channel_account_id" IS NOT NULL
     `);
 
     // Keep a constraint for templates without channel_account_id (legacy)
     await queryRunner.query(`
-      CREATE UNIQUE INDEX "IDX_template_groups_tenant_name_legacy"
+      CREATE UNIQUE INDEX IF NOT EXISTS "IDX_template_groups_tenant_name_legacy"
       ON "whatsapp_template_groups" ("tenant_id", "name")
       WHERE "channel_account_id" IS NULL
     `);

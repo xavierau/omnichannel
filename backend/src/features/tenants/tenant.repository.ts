@@ -5,10 +5,16 @@ import { Tenant } from './tenant.entity';
 
 @singleton()
 export class TenantRepository {
-  private repository: Repository<Tenant>;
+  private _repository: Repository<Tenant> | null = null;
 
-  constructor() {
-    this.repository = AppDataSource.getRepository(Tenant);
+  /**
+   * Lazy initialization of the repository to ensure AppDataSource is initialized.
+   */
+  private get repository(): Repository<Tenant> {
+    if (!this._repository) {
+      this._repository = AppDataSource.getRepository(Tenant);
+    }
+    return this._repository;
   }
 
   async findById(id: string): Promise<Tenant | null> {

@@ -3,6 +3,20 @@ import { Request, Response } from 'express';
 import { RATE_LIMIT_CONSTANTS } from '@config/constants';
 
 /**
+ * Safely extract client identifier for rate limiting.
+ * Handles IPv6 by using a consistent key format.
+ */
+function getClientKey(req: Request, prefix: string): string {
+  const user = req.user as { id?: string } | undefined;
+  if (user?.id) {
+    return `${prefix}:user:${user.id}`;
+  }
+  // Use a hash of IP to avoid IPv6 issues while maintaining uniqueness
+  const ip = req.ip || req.socket.remoteAddress || 'unknown';
+  return `${prefix}:ip:${ip.replace(/[:.]/g, '_')}`;
+}
+
+/**
  * Standard JSON error response for rate limit exceeded.
  * Includes proper HTTP status code and Retry-After header.
  */
@@ -137,11 +151,8 @@ export const broadcastActionLimiter = rateLimit({
   max: RATE_LIMIT_CONSTANTS.BROADCAST_SEND.MAX_REQUESTS,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => {
-    // Use user ID if available, otherwise fall back to IP
-    const user = req.user as { id?: string } | undefined;
-    return `broadcast:${user?.id || req.ip}`;
-  },
+  keyGenerator: (req: Request) => getClientKey(req, 'broadcast'),
+  validate: { xForwardedForHeader: false },
   handler: createRateLimitHandler(
     'Too many broadcast actions. Please wait before sending more broadcasts.'
   ),
@@ -157,10 +168,8 @@ export const broadcastBulkLimiter = rateLimit({
   max: RATE_LIMIT_CONSTANTS.BROADCAST_BULK.MAX_REQUESTS,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => {
-    const user = req.user as { id?: string } | undefined;
-    return `broadcast_bulk:${user?.id || req.ip}`;
-  },
+  keyGenerator: (req: Request) => getClientKey(req, 'broadcast_bulk'),
+  validate: { xForwardedForHeader: false },
   handler: createRateLimitHandler(
     'Too many bulk operations. Please wait before performing more bulk actions.'
   ),

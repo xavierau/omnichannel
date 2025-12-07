@@ -58,8 +58,17 @@ export class ChannelAccount {
   @Column({ length: 255 })
   name: string; // Display name: "Marketing Line", "Customer Support"
 
-  @Column({ name: 'phone_number', length: 50, nullable: true })
+  @Column({ name: 'phone_number', type: 'varchar', length: 50, nullable: true })
   phoneNumber: string | null; // Display phone number: "+1 555-123-4567"
+
+  /**
+   * Provider-specific phone number ID.
+   * For Meta/WhatsApp: This is the phone_number_id used in API calls and webhooks.
+   * Used for efficient webhook routing without credential decryption.
+   */
+  @Index('IDX_channel_accounts_phone_number_id')
+  @Column({ name: 'phone_number_id', type: 'varchar', length: 100, nullable: true })
+  phoneNumberId: string | null;
 
   /**
    * Encrypted provider credentials (AES-256-GCM).
@@ -92,7 +101,7 @@ export class ChannelAccount {
   @Column({ name: 'error_message', type: 'text', nullable: true })
   errorMessage: string | null;
 
-  @Column({ name: 'webhook_url', length: 500, nullable: true })
+  @Column({ name: 'webhook_url', type: 'varchar', length: 500, nullable: true })
   webhookUrl: string | null;
 
   @Column({ type: 'text', name: 'webhook_secret_encrypted', nullable: true })

@@ -61,10 +61,16 @@ const getSafeSortColumn = (sortBy: string | undefined): string => {
 
 @singleton()
 export class CustomerRepository {
-  private repository: Repository<Customer>;
+  private _repository: Repository<Customer> | null = null;
 
-  constructor() {
-    this.repository = AppDataSource.getRepository(Customer);
+  /**
+   * Lazy initialization of the repository to ensure AppDataSource is initialized.
+   */
+  private get repository(): Repository<Customer> {
+    if (!this._repository) {
+      this._repository = AppDataSource.getRepository(Customer);
+    }
+    return this._repository;
   }
 
   async findById(id: string, tenantId: string): Promise<Customer | null> {
@@ -107,6 +113,13 @@ export class CustomerRepository {
     });
   }
 
+  /**
+   * Find all customers for a tenant with pagination and filtering.
+   *
+   * Note: Uses separate queries for data and count to avoid TypeORM's
+   * getManyAndCount() bug with nullable leftJoinAndSelect relations
+   * that causes "Cannot read properties of undefined (reading 'databaseName')" error.
+   */
   async findAll(
     tenantId: string,
     options: CustomerQueryOptions = {}
@@ -122,51 +135,90 @@ export class CustomerRepository {
       sortOrder = 'desc',
     } = options;
 
-    const query = this.repository
-      .createQueryBuilder('customer')
-      .leftJoinAndSelect('customer.tags', 'tags')
-      .where('customer.tenant_id = :tenantId', { tenantId });
+    // Build base query conditions (without joins for counting)
+    const baseQueryBuilder = () => {
+      const qb = this.repository
+        .createQueryBuilder('customer')
+        .where('customer.tenant_id = :tenantId', { tenantId });
 
-    // Search by name or whatsapp number
-    if (search) {
-      query.andWhere(
-        '(LOWER(customer.name) LIKE LOWER(:search) OR customer.whatsapp_number LIKE :search)',
-        { search: `%${search}%` }
-      );
-    }
+      // Search by name or whatsapp number
+      if (search) {
+        qb.andWhere(
+          '(LOWER(customer.name) LIKE LOWER(:search) OR customer.whatsapp_number LIKE :search)',
+          { search: `%${search}%` }
+        );
+      }
 
-    // Filter by tags (OR logic - matches customers with any of the tags)
-    if (tagIds && tagIds.length > 0) {
-      query.andWhere((qb) => {
-        const subQuery = qb
-          .subQuery()
-          .select('ct.customer_id')
-          .from('customer_tags', 'ct')
-          .where('ct.tag_id IN (:...tagIds)', { tagIds })
-          .getQuery();
-        return `customer.id IN ${subQuery}`;
-      });
-    }
+      // Filter by tags (OR logic - matches customers with any of the tags)
+      if (tagIds && tagIds.length > 0) {
+        qb.andWhere((subQb) => {
+          const subQuery = subQb
+            .subQuery()
+            .select('ct.customer_id')
+            .from('customer_tags', 'ct')
+            .where('ct.tag_id IN (:...tagIds)', { tagIds })
+            .getQuery();
+          return `customer.id IN ${subQuery}`;
+        });
+      }
 
-    // Filter by date range
-    if (dateFrom) {
-      query.andWhere('customer.created_at >= :dateFrom', { dateFrom });
-    }
+      // Filter by date range
+      if (dateFrom) {
+        qb.andWhere('customer.created_at >= :dateFrom', { dateFrom });
+      }
 
-    if (dateTo) {
-      query.andWhere('customer.created_at <= :dateTo', { dateTo });
+      if (dateTo) {
+        qb.andWhere('customer.created_at <= :dateTo', { dateTo });
+      }
+
+      return qb;
+    };
+
+    // Get total count first (without joins or ordering)
+    const total = await baseQueryBuilder().getCount();
+
+    if (total === 0) {
+      return {
+        data: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+      };
     }
 
     // Sorting - use allowlist to prevent SQL injection
     const sortColumn = getSafeSortColumn(sortBy);
     const order = (sortOrder || 'desc').toUpperCase() as 'ASC' | 'DESC';
-    query.orderBy(`customer.${sortColumn}`, order);
 
-    // Pagination
-    const skip = (page - 1) * limit;
-    query.skip(skip).take(limit);
+    // Pagination - fetch IDs first to avoid TypeORM bug with skip/take on nullable joins
+    const skipCount = (page - 1) * limit;
+    const idsQuery = baseQueryBuilder()
+      .select('customer.id')
+      .orderBy(`customer.${sortColumn}`, order)
+      .offset(skipCount)
+      .limit(limit);
 
-    const [data, total] = await query.getManyAndCount();
+    const idResults = await idsQuery.getRawMany<{ customer_id: string }>();
+    const ids = idResults.map((r) => r.customer_id);
+
+    if (ids.length === 0) {
+      return {
+        data: [],
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    }
+
+    // Fetch full entities by IDs (no pagination needed, just the specific IDs)
+    const data = await this.repository
+      .createQueryBuilder('customer')
+      .leftJoinAndSelect('customer.tags', 'tags')
+      .where('customer.id IN (:...ids)', { ids })
+      .orderBy(`customer.${sortColumn}`, order)
+      .getMany();
 
     return {
       data,
@@ -327,52 +379,77 @@ export class CustomerRepository {
     return this.repository.count({ where: { tenantId } });
   }
 
+  /**
+   * Find all customers for export with filtering.
+   *
+   * Note: Uses two-phase query to avoid TypeORM's bug with nullable
+   * leftJoinAndSelect relations combined with limit/take.
+   */
   async findAllForExport(
     tenantId: string,
     options: CustomerQueryOptions = {}
   ): Promise<Customer[]> {
     const { search, tagIds, dateFrom, dateTo, sortBy = 'createdAt', sortOrder = 'desc' } = options;
 
-    const query = this.repository
-      .createQueryBuilder('customer')
-      .leftJoinAndSelect('customer.tags', 'tags')
-      .where('customer.tenant_id = :tenantId', { tenantId });
+    // Build base query conditions (without joins)
+    const baseQueryBuilder = () => {
+      const qb = this.repository
+        .createQueryBuilder('customer')
+        .where('customer.tenant_id = :tenantId', { tenantId });
 
-    if (search) {
-      query.andWhere(
-        '(LOWER(customer.name) LIKE LOWER(:search) OR customer.whatsapp_number LIKE :search)',
-        { search: `%${search}%` }
-      );
-    }
+      if (search) {
+        qb.andWhere(
+          '(LOWER(customer.name) LIKE LOWER(:search) OR customer.whatsapp_number LIKE :search)',
+          { search: `%${search}%` }
+        );
+      }
 
-    if (tagIds && tagIds.length > 0) {
-      query.andWhere((qb) => {
-        const subQuery = qb
-          .subQuery()
-          .select('ct.customer_id')
-          .from('customer_tags', 'ct')
-          .where('ct.tag_id IN (:...tagIds)', { tagIds })
-          .getQuery();
-        return `customer.id IN ${subQuery}`;
-      });
-    }
+      if (tagIds && tagIds.length > 0) {
+        qb.andWhere((subQb) => {
+          const subQuery = subQb
+            .subQuery()
+            .select('ct.customer_id')
+            .from('customer_tags', 'ct')
+            .where('ct.tag_id IN (:...tagIds)', { tagIds })
+            .getQuery();
+          return `customer.id IN ${subQuery}`;
+        });
+      }
 
-    if (dateFrom) {
-      query.andWhere('customer.created_at >= :dateFrom', { dateFrom });
-    }
+      if (dateFrom) {
+        qb.andWhere('customer.created_at >= :dateFrom', { dateFrom });
+      }
 
-    if (dateTo) {
-      query.andWhere('customer.created_at <= :dateTo', { dateTo });
-    }
+      if (dateTo) {
+        qb.andWhere('customer.created_at <= :dateTo', { dateTo });
+      }
+
+      return qb;
+    };
 
     // Sorting - use allowlist to prevent SQL injection
     const sortColumn = getSafeSortColumn(sortBy);
     const order = (sortOrder || 'desc').toUpperCase() as 'ASC' | 'DESC';
-    query.orderBy(`customer.${sortColumn}`, order);
 
-    // Apply export limit to prevent memory exhaustion
-    query.take(MAX_EXPORT_RECORDS);
+    // Phase 1: Fetch IDs with limit to avoid TypeORM bug
+    const idsQuery = baseQueryBuilder()
+      .select('customer.id')
+      .orderBy(`customer.${sortColumn}`, order)
+      .limit(MAX_EXPORT_RECORDS);
 
-    return query.getMany();
+    const idResults = await idsQuery.getRawMany<{ customer_id: string }>();
+    const ids = idResults.map((r) => r.customer_id);
+
+    if (ids.length === 0) {
+      return [];
+    }
+
+    // Phase 2: Fetch full entities by IDs (with joins, no limit needed)
+    return this.repository
+      .createQueryBuilder('customer')
+      .leftJoinAndSelect('customer.tags', 'tags')
+      .where('customer.id IN (:...ids)', { ids })
+      .orderBy(`customer.${sortColumn}`, order)
+      .getMany();
   }
 }

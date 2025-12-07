@@ -5,10 +5,16 @@ import { Permission, PermissionResource, PermissionAction, PermissionScope } fro
 
 @singleton()
 export class PermissionRepository {
-  private repo: Repository<Permission>;
+  private _repo: Repository<Permission> | null = null;
 
-  constructor() {
-    this.repo = AppDataSource.getRepository(Permission);
+  /**
+   * Lazy initialization of the repository to ensure AppDataSource is initialized.
+   */
+  private get repo(): Repository<Permission> {
+    if (!this._repo) {
+      this._repo = AppDataSource.getRepository(Permission);
+    }
+    return this._repo;
   }
 
   async findAll(options?: {

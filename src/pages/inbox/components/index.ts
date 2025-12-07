@@ -28,6 +28,17 @@ export { EmojiPicker } from "./EmojiPicker"
 export { VoiceNoteButton } from "./VoiceNoteButton"
 export { TemplateSelector } from "./TemplateSelector"
 export { MessageInput } from "./MessageInput"
+export { MediaUploadProgress } from "./MediaUploadProgress"
+export type { SendMessagePayload } from "./MessageInput"
+export type { AttachmentUploadState } from "./AttachmentPreview"
+
+// Interactive Message Components
+export { InteractiveMessageMenu } from "./InteractiveMessageMenu"
+export { ListMessageComposer } from "./ListMessageComposer"
+export { ButtonMessageComposer } from "./ButtonMessageComposer"
+export { LocationPicker } from "./LocationPicker"
+export { ContactPicker } from "./ContactPicker"
+export { ReactionPicker, ReactionDisplay } from "./ReactionPicker"
 
 // Notes Components
 export { CollapsibleSection } from "./CollapsibleSection"

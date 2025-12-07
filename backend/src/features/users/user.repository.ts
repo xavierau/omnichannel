@@ -5,10 +5,18 @@ import { User } from './user.entity';
 
 @singleton()
 export class UserRepository {
-  private repository: Repository<User>;
+  private _repository: Repository<User> | null = null;
 
-  constructor() {
-    this.repository = AppDataSource.getRepository(User);
+  /**
+   * Lazy initialization of the repository to ensure AppDataSource is initialized.
+   * This prevents errors when the DI container instantiates this class before
+   * the database connection is established.
+   */
+  private get repository(): Repository<User> {
+    if (!this._repository) {
+      this._repository = AppDataSource.getRepository(User);
+    }
+    return this._repository;
   }
 
   async findById(id: string): Promise<User | null> {
@@ -75,5 +83,32 @@ export class UserRepository {
 
   async save(user: User): Promise<User> {
     return this.repository.save(user);
+  }
+
+  /**
+   * Find users by tenant ID who can be assigned inbox conversations.
+   * Includes users who belong to active teams within the tenant.
+   *
+   * @param tenantId - The tenant ID for isolation
+   * @returns Array of users with inbox access
+   */
+  async findOperatorsByTenant(tenantId: string): Promise<User[]> {
+    return this.repository
+      .createQueryBuilder('user')
+      .innerJoin('team_members', 'tm', 'tm.user_id = user.id')
+      .innerJoin('teams', 't', 't.id = tm.team_id')
+      .where('user.tenant_id = :tenantId', { tenantId })
+      .andWhere('user.status = :status', { status: 'active' })
+      .andWhere('t.is_active = :isActive', { isActive: true })
+      .select([
+        'user.id',
+        'user.firstName',
+        'user.lastName',
+        'user.email',
+      ])
+      .distinct(true)
+      .orderBy('user.firstName', 'ASC')
+      .addOrderBy('user.lastName', 'ASC')
+      .getMany();
   }
 }

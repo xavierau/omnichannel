@@ -284,4 +284,45 @@ export class ChannelAccountController {
       next(error);
     }
   }
+
+  /**
+   * GET /api/channel-accounts/:id/webhook-config
+   * Get webhook configuration for Meta setup.
+   *
+   * Returns the webhook URL and verify token needed to configure
+   * webhooks in Meta's developer portal.
+   */
+  async getWebhookConfig(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const tenantId = req.user?.tenantId;
+      const { id } = req.params;
+
+      if (!tenantId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const config = await this.channelAccountService.generateWebhookConfig(id, tenantId);
+
+      res.json({
+        data: {
+          webhookUrl: config.webhookUrl,
+          verifyToken: config.verifyToken,
+          instructions: {
+            step1: 'Go to Meta Developer Portal > Your App > WhatsApp > Configuration',
+            step2: 'In the Webhook section, click "Edit"',
+            step3: 'Enter the Callback URL (webhookUrl) and Verify token (verifyToken)',
+            step4: 'Click "Verify and save"',
+            step5: 'Subscribe to the "messages" webhook field',
+          },
+        },
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Channel account not found') {
+        res.status(404).json({ error: error.message });
+        return;
+      }
+      next(error);
+    }
+  }
 }

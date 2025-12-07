@@ -5,10 +5,16 @@ import { Tag } from './tag.entity';
 
 @singleton()
 export class TagRepository {
-  private repository: Repository<Tag>;
+  private _repository: Repository<Tag> | null = null;
 
-  constructor() {
-    this.repository = AppDataSource.getRepository(Tag);
+  /**
+   * Lazy initialization of the repository to ensure AppDataSource is initialized.
+   */
+  private get repository(): Repository<Tag> {
+    if (!this._repository) {
+      this._repository = AppDataSource.getRepository(Tag);
+    }
+    return this._repository;
   }
 
   async findById(id: string, tenantId: string): Promise<Tag | null> {

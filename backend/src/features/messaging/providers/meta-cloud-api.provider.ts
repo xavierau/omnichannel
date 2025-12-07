@@ -11,6 +11,15 @@ import {
   RateLimitInfo,
   TemplateStatusResponse,
   VariableValue,
+  SendFreeformRequest,
+  FreeformContentType,
+  LocationContent,
+  ContactContent,
+  ReactionContent,
+  StickerContent,
+  InteractiveListContent,
+  InteractiveButtonContent,
+  MetaTemplateStatus,
 } from '../interfaces/messaging-provider.interface';
 import { MessageStatus } from '../../message-logs/message-log.entity';
 import { logger } from '../../../config/logger.config';
@@ -111,6 +120,53 @@ interface MetaWebhookPayload {
 }
 
 /**
+ * Template status update webhook value from Meta.
+ * @see https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components#message_template_status_update
+ */
+interface MetaTemplateStatusWebhookValue {
+  event: string;
+  message_template_id: number;
+  message_template_name: string;
+  message_template_language: string;
+  reason?: string;
+  other_info?: {
+    title?: string;
+    description?: string;
+  };
+}
+
+/**
+ * Extended webhook entry that includes template status updates.
+ */
+interface MetaTemplateStatusWebhookEntry {
+  id: string;
+  changes: Array<{
+    field: 'message_template_status_update';
+    value: MetaTemplateStatusWebhookValue;
+  }>;
+}
+
+/**
+ * Custom error for unsupported content types.
+ */
+class UnsupportedContentTypeError extends Error {
+  constructor(contentType: string) {
+    super(`Unsupported content type: ${contentType}`);
+    this.name = 'UnsupportedContentTypeError';
+  }
+}
+
+/**
+ * Custom error for validation failures.
+ */
+class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+/**
  * Meta Cloud API Provider Implementation.
  * Integrates with Meta's WhatsApp Business Cloud API.
  *
@@ -205,6 +261,59 @@ export class MetaCloudApiProvider implements IMessagingProvider {
   }
 
   /**
+   * Send a freeform message (text or media) via Meta Cloud API.
+   * Used for inbox/chat functionality within 24-hour messaging window.
+   *
+   * @see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages
+   */
+  async sendFreeformMessage(request: SendFreeformRequest): Promise<SendMessageResponse> {
+    if (!this.client || !this.credentials) {
+      return {
+        success: false,
+        error: {
+          code: 'NOT_INITIALIZED',
+          message: 'Provider not initialized. Call initialize() first.',
+          retryable: false,
+        },
+      };
+    }
+
+    try {
+      const payload = this.buildFreeformPayload(request);
+
+      logger.debug('Sending freeform message', {
+        phoneNumberId: this.credentials.phoneNumberId,
+        recipient: request.recipient,
+        contentType: request.contentType,
+        messageId: request.messageId,
+      });
+
+      const response = await this.client.post<MetaMessageResponse>(
+        `/${this.credentials.phoneNumberId}/messages`,
+        payload
+      );
+
+      const providerMessageId = response.data.messages[0]?.id;
+
+      logger.info('Freeform message sent successfully', {
+        providerMessageId,
+        recipient: request.recipient,
+        contentType: request.contentType,
+        messageId: request.messageId,
+      });
+
+      return {
+        success: true,
+        providerMessageId,
+        timestamp: new Date(),
+        rawResponse: response.data,
+      };
+    } catch (error) {
+      return this.handleFreeformSendError(error, request);
+    }
+  }
+
+  /**
    * Validate Meta webhook signature using SHA-256 HMAC.
    *
    * @see https://developers.facebook.com/docs/whatsapp/cloud-api/guides/set-up-webhooks
@@ -244,7 +353,10 @@ export class MetaCloudApiProvider implements IMessagingProvider {
   /**
    * Parse Meta webhook payload into standardized events.
    *
+   * Handles both message-related webhooks and template status update webhooks.
+   *
    * @see https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components
+   * @see https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components#message_template_status_update
    */
   parseWebhookPayload(payload: unknown): WebhookEvent[] {
     const events: WebhookEvent[] = [];
@@ -256,6 +368,19 @@ export class MetaCloudApiProvider implements IMessagingProvider {
 
     for (const entry of payload.entry) {
       for (const change of entry.changes) {
+        // Handle template status updates
+        if (change.field === 'message_template_status_update') {
+          const templateStatusEvent = this.parseTemplateStatusChange(
+            entry.id,
+            change.value as unknown as MetaTemplateStatusWebhookValue
+          );
+          if (templateStatusEvent) {
+            events.push(templateStatusEvent);
+          }
+          continue;
+        }
+
+        // Handle message-related webhooks
         if (change.field !== 'messages') continue;
 
         const value = change.value;
@@ -279,14 +404,17 @@ export class MetaCloudApiProvider implements IMessagingProvider {
           }
         }
 
-        // Process incoming messages (for future use)
+        // Process incoming messages
         if (value.messages) {
           for (const message of value.messages) {
             events.push({
               type: 'message_received',
               providerMessageId: message.id,
               timestamp: new Date(parseInt(message.timestamp, 10) * 1000),
-              rawEvent: message,
+              rawEvent: {
+                ...message,
+                metadata: value.metadata,
+              },
             });
           }
         }
@@ -297,7 +425,89 @@ export class MetaCloudApiProvider implements IMessagingProvider {
   }
 
   /**
+   * Parse a template status change webhook into a WebhookEvent.
+   *
+   * Meta sends template status updates when templates are approved, rejected,
+   * disabled, etc.
+   *
+   * @param whatsappBusinessAccountId - The WABA ID from the webhook entry
+   * @param value - The template status webhook value
+   * @returns A WebhookEvent with template status information, or null if parsing fails
+   */
+  private parseTemplateStatusChange(
+    whatsappBusinessAccountId: string,
+    value: MetaTemplateStatusWebhookValue
+  ): WebhookEvent | null {
+    if (!value.event || !value.message_template_name || !value.message_template_language) {
+      logger.warn('Template status webhook missing required fields', {
+        hasEvent: !!value.event,
+        hasName: !!value.message_template_name,
+        hasLanguage: !!value.message_template_language,
+      });
+      return null;
+    }
+
+    // Map the event to our MetaTemplateStatus type
+    const newStatus = this.mapMetaTemplateStatusEvent(value.event);
+
+    logger.info('Parsed template status webhook', {
+      templateName: value.message_template_name,
+      language: value.message_template_language,
+      newStatus,
+      reason: value.reason,
+      whatsappBusinessAccountId,
+    });
+
+    return {
+      type: 'template_status_update',
+      providerMessageId: String(value.message_template_id),
+      timestamp: new Date(),
+      rawEvent: value,
+      templateInfo: {
+        templateName: value.message_template_name,
+        language: value.message_template_language,
+        newStatus,
+        reason: value.reason || value.other_info?.description,
+        messageTemplateId: String(value.message_template_id),
+        whatsappBusinessAccountId,
+      },
+    };
+  }
+
+  /**
+   * Map Meta template status event string to MetaTemplateStatus type.
+   *
+   * Meta sends various event types for template status changes.
+   */
+  private mapMetaTemplateStatusEvent(event: string): MetaTemplateStatus {
+    const eventMap: Record<string, MetaTemplateStatus> = {
+      APPROVED: 'APPROVED',
+      REJECTED: 'REJECTED',
+      PENDING_DELETION: 'PENDING_DELETION',
+      DISABLED: 'DISABLED',
+      PENDING: 'PENDING',
+      PAUSED: 'PAUSED',
+      IN_APPEAL: 'IN_APPEAL',
+      FLAGGED: 'FLAGGED',
+      LIMIT_EXCEEDED: 'LIMIT_EXCEEDED',
+      // Handle lowercase variants
+      approved: 'APPROVED',
+      rejected: 'REJECTED',
+      pending_deletion: 'PENDING_DELETION',
+      disabled: 'DISABLED',
+      pending: 'PENDING',
+      paused: 'PAUSED',
+      in_appeal: 'IN_APPEAL',
+      flagged: 'FLAGGED',
+      limit_exceeded: 'LIMIT_EXCEEDED',
+    };
+
+    return eventMap[event] || 'PENDING';
+  }
+
+  /**
    * Verify credentials are valid by making a test API call.
+   * Returns extended account information for display purposes.
    */
   async verifyCredentials(): Promise<CredentialVerificationResult> {
     if (!this.client || !this.credentials) {
@@ -319,8 +529,9 @@ export class MetaCloudApiProvider implements IMessagingProvider {
         valid: true,
         accountInfo: {
           businessName: response.data.verified_name,
-          phoneNumber: response.data.display_phone_number,
-          tier: response.data.messaging_limit_tier,
+          displayPhoneNumber: response.data.display_phone_number,
+          qualityRating: response.data.quality_rating,
+          messagingLimitTier: response.data.messaging_limit_tier,
         },
       };
     } catch (error) {
@@ -430,7 +641,380 @@ export class MetaCloudApiProvider implements IMessagingProvider {
     };
   }
 
+  /**
+   * Check if an error indicates a rate limit condition from Meta.
+   *
+   * Meta rate limit error codes:
+   * - 4: API Too Many Calls
+   * - 17: User request limit reached
+   * - 341: Application request limit reached
+   * - 368: Temporarily blocked for violating WhatsApp policies
+   *
+   * @param error - The error object to check
+   * @returns True if the error indicates a rate limit condition
+   *
+   * @see https://developers.facebook.com/docs/whatsapp/cloud-api/support/error-codes
+   */
+  isRateLimitError(error: unknown): boolean {
+    if (!error || typeof error !== 'object') {
+      return false;
+    }
+
+    const axiosError = error as AxiosError<MetaErrorResponse>;
+    const errorCode = axiosError.response?.data?.error?.code;
+
+    if (typeof errorCode !== 'number') {
+      return false;
+    }
+
+    const rateLimitCodes = [4, 17, 341, 368];
+    return rateLimitCodes.includes(errorCode);
+  }
+
+  /**
+   * Extract the Retry-After value from an error response.
+   *
+   * Meta may include a Retry-After header indicating how long to wait
+   * before retrying.
+   *
+   * @param error - The error object to extract from
+   * @returns Number of seconds to wait, or undefined if not present
+   */
+  extractRetryAfter(error: unknown): number | undefined {
+    if (!error || typeof error !== 'object') {
+      return undefined;
+    }
+
+    const axiosError = error as AxiosError;
+    const retryAfterHeader = axiosError.response?.headers?.['retry-after'];
+
+    if (!retryAfterHeader || typeof retryAfterHeader !== 'string') {
+      return undefined;
+    }
+
+    const parsed = parseInt(retryAfterHeader, 10);
+    return isNaN(parsed) ? undefined : parsed;
+  }
+
+  /**
+   * Get the download URL for a media file from Meta's CDN.
+   *
+   * Meta's media URLs are temporary and expire after ~24 hours.
+   * This method retrieves the CDN URL for a media file by its ID.
+   *
+   * @see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media#get-media-url
+   *
+   * @param mediaId - The media ID from the webhook payload
+   * @returns The temporary CDN URL for the media file
+   * @throws Error if the request fails or provider is not initialized
+   */
+  async getMediaUrl(mediaId: string): Promise<string> {
+    if (!this.client || !this.credentials) {
+      throw new Error('Provider not initialized. Call initialize() first.');
+    }
+
+    try {
+      const response = await this.client.get<{ url: string; mime_type: string; sha256: string; file_size: number }>(
+        `/${mediaId}`
+      );
+
+      logger.debug('Retrieved media URL from Meta', {
+        mediaId,
+        mimeType: response.data.mime_type,
+        fileSize: response.data.file_size,
+      });
+
+      return response.data.url;
+    } catch (error) {
+      const axiosError = error as AxiosError<MetaErrorResponse>;
+      const errorMessage = axiosError.response?.data?.error?.message || axiosError.message || 'Unknown error';
+
+      logger.error('Failed to get media URL from Meta', {
+        mediaId,
+        error: errorMessage,
+        code: axiosError.response?.data?.error?.code,
+      });
+
+      throw new Error(`Failed to get media URL: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Download media content from Meta's CDN.
+   *
+   * The URL returned by getMediaUrl requires the access token as a Bearer header.
+   * This method downloads the actual binary content of the media file.
+   *
+   * @see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media#download-media
+   *
+   * @param url - The CDN URL from getMediaUrl
+   * @returns The media content as a Buffer with its content type
+   * @throws Error if the download fails or provider is not initialized
+   */
+  async downloadMedia(url: string): Promise<{ data: Buffer; contentType: string }> {
+    if (!this.credentials) {
+      throw new Error('Provider not initialized. Call initialize() first.');
+    }
+
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${this.credentials.accessToken}`,
+        },
+        responseType: 'arraybuffer',
+        timeout: parseInt(process.env.MEDIA_DOWNLOAD_TIMEOUT_MS || '60000', 10),
+      });
+
+      const contentType = response.headers['content-type'] || 'application/octet-stream';
+
+      logger.debug('Downloaded media from Meta CDN', {
+        contentType,
+        size: response.data.length,
+      });
+
+      return {
+        data: Buffer.from(response.data),
+        contentType,
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError;
+
+      logger.error('Failed to download media from Meta CDN', {
+        url: url.substring(0, 50) + '...', // Truncate URL for security
+        error: axiosError.message,
+        status: axiosError.response?.status,
+      });
+
+      throw new Error(`Failed to download media: ${axiosError.message}`);
+    }
+  }
+
   // Private helper methods
+
+  /**
+   * Build the freeform message payload for Meta API.
+   */
+  private buildFreeformPayload(request: SendFreeformRequest): object {
+    const base = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: this.normalizePhoneNumber(request.recipient),
+    };
+
+    switch (request.contentType) {
+      case 'text':
+        return {
+          ...base,
+          type: 'text',
+          text: {
+            preview_url: true,
+            body: request.content.text,
+          },
+        };
+
+      case 'image':
+        return {
+          ...base,
+          type: 'image',
+          image: {
+            link: request.content.mediaUrl,
+            caption: request.content.caption,
+          },
+        };
+
+      case 'video':
+        return {
+          ...base,
+          type: 'video',
+          video: {
+            link: request.content.mediaUrl,
+            caption: request.content.caption,
+          },
+        };
+
+      case 'audio':
+        return {
+          ...base,
+          type: 'audio',
+          audio: {
+            link: request.content.mediaUrl,
+          },
+        };
+
+      case 'document':
+        return {
+          ...base,
+          type: 'document',
+          document: {
+            link: request.content.mediaUrl,
+            filename: request.content.filename || 'document',
+            caption: request.content.caption,
+          },
+        };
+
+      case 'location':
+        return this.buildLocationPayload(base.to, request.content.location!);
+
+      case 'contact':
+        return this.buildContactPayload(base.to, request.content.contact!);
+
+      case 'reaction':
+        return this.buildReactionPayload(base.to, request.content.reaction!);
+
+      case 'sticker':
+        return this.buildStickerPayload(base.to, request.content.sticker!);
+
+      case 'interactive_list':
+        return this.buildInteractiveListPayload(base.to, request.content.interactiveList!);
+
+      case 'interactive_buttons':
+        return this.buildInteractiveButtonPayload(base.to, request.content.interactiveButtons!);
+
+      default:
+        throw new UnsupportedContentTypeError(request.contentType);
+    }
+  }
+
+  /**
+   * Build location message payload for Meta API.
+   * @see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#location-object
+   */
+  private buildLocationPayload(to: string, content: LocationContent): object {
+    return {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'location',
+      location: {
+        latitude: content.latitude.toString(),
+        longitude: content.longitude.toString(),
+        name: content.name,
+        address: content.address,
+      },
+    };
+  }
+
+  /**
+   * Build contact message payload for Meta API.
+   * @see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#contacts-object
+   */
+  private buildContactPayload(to: string, content: ContactContent): object {
+    return {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'contacts',
+      contacts: [
+        {
+          name: content.name,
+          phones: content.phones,
+          emails: content.emails,
+        },
+      ],
+    };
+  }
+
+  /**
+   * Build reaction message payload for Meta API.
+   * @see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#reaction-object
+   */
+  private buildReactionPayload(to: string, content: ReactionContent): object {
+    return {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'reaction',
+      reaction: {
+        message_id: content.messageId,
+        emoji: content.emoji,
+      },
+    };
+  }
+
+  /**
+   * Build sticker message payload for Meta API.
+   * @see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#sticker-object
+   */
+  private buildStickerPayload(to: string, content: StickerContent): object {
+    return {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'sticker',
+      sticker: content.mediaId ? { id: content.mediaId } : { link: content.mediaUrl },
+    };
+  }
+
+  /**
+   * Build interactive list message payload for Meta API.
+   * @see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#interactive-object
+   */
+  private buildInteractiveListPayload(to: string, content: InteractiveListContent): object {
+    // Validate max 10 sections
+    if (content.sections.length > 10) {
+      throw new ValidationError('Interactive list messages support a maximum of 10 sections');
+    }
+
+    return {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'interactive',
+      interactive: {
+        type: 'list',
+        header: content.header ? { type: 'text', text: content.header } : undefined,
+        body: { text: content.body },
+        footer: content.footer ? { text: content.footer } : undefined,
+        action: {
+          button: content.buttonText,
+          sections: content.sections.map((section) => ({
+            title: section.title,
+            rows: section.rows,
+          })),
+        },
+      },
+    };
+  }
+
+  /**
+   * Build interactive button message payload for Meta API.
+   * @see https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#interactive-object
+   */
+  private buildInteractiveButtonPayload(to: string, content: InteractiveButtonContent): object {
+    // Validate max 3 buttons
+    if (content.buttons.length > 3) {
+      throw new ValidationError('Interactive button messages support a maximum of 3 buttons');
+    }
+
+    // Validate button title max 20 characters
+    for (const button of content.buttons) {
+      if (button.title.length > 20) {
+        throw new ValidationError(`Button title must not exceed 20 characters: "${button.title}"`);
+      }
+    }
+
+    return {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'interactive',
+      interactive: {
+        type: 'button',
+        header: content.header ? { type: 'text', text: content.header } : undefined,
+        body: { text: content.body },
+        footer: content.footer ? { text: content.footer } : undefined,
+        action: {
+          buttons: content.buttons.map((btn) => ({
+            type: 'reply',
+            reply: {
+              id: btn.id,
+              title: btn.title,
+            },
+          })),
+        },
+      },
+    };
+  }
 
   /**
    * Build the template message payload for Meta API.
@@ -607,6 +1191,88 @@ export class MetaCloudApiProvider implements IMessagingProvider {
       recipient: request.recipient,
       templateName: request.templateName,
       messageLogId: request.messageLogId,
+      httpStatus: axiosError.response?.status,
+    });
+
+    return {
+      success: false,
+      error: {
+        code: errorCode,
+        message: errorMessage,
+        retryable,
+      },
+      rawResponse: axiosError.response?.data,
+    };
+  }
+
+  /**
+   * Handle errors from freeform send operations.
+   */
+  private handleFreeformSendError(error: unknown, request: SendFreeformRequest): SendMessageResponse {
+    // Handle unsupported content type error
+    if (error instanceof UnsupportedContentTypeError) {
+      logger.error('Unsupported content type for freeform message', {
+        contentType: request.contentType,
+        recipient: request.recipient,
+        messageId: request.messageId,
+      });
+
+      return {
+        success: false,
+        error: {
+          code: 'UNSUPPORTED_CONTENT_TYPE',
+          message: error.message,
+          retryable: false,
+        },
+      };
+    }
+
+    // Handle validation errors
+    if (error instanceof ValidationError) {
+      logger.error('Validation error for freeform message', {
+        contentType: request.contentType,
+        recipient: request.recipient,
+        messageId: request.messageId,
+        validationError: error.message,
+      });
+
+      return {
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: error.message,
+          retryable: false,
+        },
+      };
+    }
+
+    const axiosError = error as AxiosError<MetaErrorResponse>;
+
+    const metaError = axiosError.response?.data?.error;
+    const errorCode = metaError?.code?.toString() || 'UNKNOWN';
+    const errorMessage = metaError?.message || axiosError.message || 'Unknown error';
+
+    // Determine if error is retryable
+    // Same logic as handleSendError for consistency
+    const retryableCodes = [
+      1, // Unknown error (temporary)
+      2, // Service temporarily unavailable
+      4, // Rate limit
+      17, // Rate limit
+      341, // Rate limit
+      368, // Temporarily blocked
+      190, // Access token expired (might be refreshable)
+    ];
+
+    const retryable = metaError ? retryableCodes.includes(metaError.code) : false;
+
+    logger.error('Failed to send freeform message', {
+      errorCode,
+      errorMessage,
+      retryable,
+      recipient: request.recipient,
+      contentType: request.contentType,
+      messageId: request.messageId,
       httpStatus: axiosError.response?.status,
     });
 

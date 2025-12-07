@@ -36,8 +36,75 @@ export interface Conversation {
 
 // Message Types
 export type MessageDirection = "inbound" | "outbound"
-export type MessageType = "text" | "image" | "document" | "audio" | "template" | "system"
+export type MessageType =
+  | "text"
+  | "image"
+  | "document"
+  | "audio"
+  | "video"
+  | "template"
+  | "system"
+  | "interactive_list"
+  | "interactive_buttons"
+  | "location"
+  | "contacts"
+  | "reaction"
+  | "sticker"
 export type MessageStatus = "sending" | "sent" | "delivered" | "read" | "failed"
+
+// Interactive Message Types
+export interface LocationMessage {
+  latitude: number
+  longitude: number
+  name?: string
+  address?: string
+}
+
+export interface ContactMessage {
+  name: {
+    formatted_name: string
+    first_name?: string
+    last_name?: string
+  }
+  phones?: Array<{
+    phone: string
+    type?: string
+  }>
+}
+
+export interface InteractiveListRow {
+  id: string
+  title: string
+  description?: string
+}
+
+export interface InteractiveListSection {
+  title: string
+  rows: InteractiveListRow[]
+}
+
+export interface InteractiveListMessage {
+  header?: string
+  body: string
+  footer?: string
+  buttonText: string
+  sections: InteractiveListSection[]
+}
+
+export interface InteractiveButtonsMessage {
+  header?: string
+  body: string
+  footer?: string
+  buttons: Array<{
+    id: string
+    title: string
+  }>
+}
+
+export interface ReactionMessage {
+  messageId: string
+  emoji: string
+}
 
 export interface MessageAttachment {
   type: "image" | "document" | "audio"
@@ -57,6 +124,12 @@ export interface Message {
   attachment?: MessageAttachment
   templateId?: string
   templateName?: string
+  // Interactive message data
+  interactiveList?: InteractiveListMessage
+  interactiveButtons?: InteractiveButtonsMessage
+  location?: LocationMessage
+  contacts?: ContactMessage[]
+  reaction?: ReactionMessage
   status: MessageStatus
   timestamp: Date
   operatorId?: string
@@ -109,8 +182,15 @@ export const MESSAGE_TYPES: { value: MessageType; label: string }[] = [
   { value: "image", label: "Image" },
   { value: "document", label: "Document" },
   { value: "audio", label: "Voice Note" },
+  { value: "video", label: "Video" },
   { value: "template", label: "Template" },
   { value: "system", label: "System" },
+  { value: "interactive_list", label: "List Message" },
+  { value: "interactive_buttons", label: "Button Message" },
+  { value: "location", label: "Location" },
+  { value: "contacts", label: "Contacts" },
+  { value: "reaction", label: "Reaction" },
+  { value: "sticker", label: "Sticker" },
 ]
 
 // Note Types

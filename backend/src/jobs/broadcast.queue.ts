@@ -6,6 +6,7 @@ import { BroadcastSseService, BroadcastProgressEvent } from '../features/broadca
 import { GroupRepository } from '../features/groups/group.repository';
 import { CustomerRepository } from '../features/customers/customer.repository';
 import { MessagingService } from '../features/messaging/services/messaging.service';
+import { MessagingRateLimiterService } from '../features/messaging/services/rate-limiter.service';
 import { ChannelAccountRepository } from '../features/channel-accounts/channel-account.repository';
 import { logger, auditLogger } from '../config/logger.config';
 import { BroadcastStatus, RecipientType } from '../features/broadcasts/enums';
@@ -19,6 +20,21 @@ import { ForbiddenException } from '../shared/exceptions/http-exceptions';
  * This prevents memory exhaustion for very large groups.
  */
 const MAX_GROUP_BATCH_SIZE = 1000;
+
+/**
+ * Timeout for acquiring a rate limit token in milliseconds.
+ * If a token cannot be acquired within this time, the job will be retried.
+ */
+const RATE_LIMIT_TOKEN_TIMEOUT_MS = 10000;
+
+/**
+ * Custom error codes for rate limit handling.
+ */
+const RATE_LIMIT_ERROR_CODES = {
+  BACKOFF: 'RATE_LIMIT_BACKOFF',
+  TIMEOUT: 'RATE_LIMIT_TIMEOUT',
+  ERROR: 'RATE_LIMIT_ERROR',
+} as const;
 
 /**
  * Masks a phone number for logging purposes to protect PII.
@@ -137,7 +153,8 @@ export class BroadcastQueue {
     @inject(GroupRepository) private groupRepository: GroupRepository,
     @inject(CustomerRepository) private customerRepository: CustomerRepository,
     @inject(MessagingService) private messagingService: MessagingService,
-    @inject(ChannelAccountRepository) private channelAccountRepository: ChannelAccountRepository
+    @inject(ChannelAccountRepository) private channelAccountRepository: ChannelAccountRepository,
+    @inject(MessagingRateLimiterService) private rateLimiterService: MessagingRateLimiterService
   ) {
     this.queue = createQueue('broadcasts');
     this.setupProcessors();
@@ -433,6 +450,11 @@ export class BroadcastQueue {
   /**
    * Process a single recipient.
    * Sends template message via the configured provider.
+   *
+   * Implements rate limiting to prevent hitting Meta's API limits:
+   * 1. Check if channel account is in backoff period
+   * 2. Acquire rate limit token before sending
+   * 3. Handle rate limit errors from provider with backoff
    */
   private async processRecipient(
     job: Bull.Job<ProcessRecipientJobData>
@@ -458,6 +480,36 @@ export class BroadcastQueue {
       channelAccountId,
     });
 
+    // Step 1: Check if channel account is in backoff period from previous rate limit errors
+    const isInBackoff = await this.rateLimiterService.isInBackoff(channelAccountId);
+    if (isInBackoff) {
+      logger.debug('Channel account in rate limit backoff, retrying later', {
+        broadcastId,
+        channelAccountId,
+        customerId,
+      });
+      // Throw to trigger Bull retry with exponential backoff
+      throw new Error(RATE_LIMIT_ERROR_CODES.BACKOFF);
+    }
+
+    // Step 2: Acquire rate limit token before sending
+    // This implements sliding window rate limiting to stay under Meta's 80 msg/sec limit
+    const tokenAcquired = await this.rateLimiterService.acquireToken(
+      channelAccountId,
+      RATE_LIMIT_TOKEN_TIMEOUT_MS
+    );
+
+    if (!tokenAcquired) {
+      logger.warn('Failed to acquire rate limit token', {
+        broadcastId,
+        channelAccountId,
+        customerId,
+        timeoutMs: RATE_LIMIT_TOKEN_TIMEOUT_MS,
+      });
+      // Throw to trigger Bull retry
+      throw new Error(RATE_LIMIT_ERROR_CODES.TIMEOUT);
+    }
+
     // Build template variables with customer field substitution
     const resolvedVariables = this.resolveTemplateVariables(
       templateVariables,
@@ -465,16 +517,38 @@ export class BroadcastQueue {
     );
 
     // Send message via MessagingService
-    const result = await this.messagingService.sendTemplateMessage({
-      tenantId,
-      channelAccountId,
-      recipient: customerPhone,
-      templateName,
-      language: templateLanguage,
-      variables: resolvedVariables,
-      broadcastId,
-      customerId,
-    });
+    let result;
+    try {
+      result = await this.messagingService.sendTemplateMessage({
+        tenantId,
+        channelAccountId,
+        recipient: customerPhone,
+        templateName,
+        language: templateLanguage,
+        variables: resolvedVariables,
+        broadcastId,
+        customerId,
+      });
+    } catch (error) {
+      // Step 3: Check if this is a rate limit error from the provider
+      if (this.rateLimiterService.isRateLimitError(error)) {
+        const retryAfter = this.rateLimiterService.extractRetryAfter(error);
+        await this.rateLimiterService.handleRateLimitError(channelAccountId, retryAfter);
+
+        logger.warn('Provider rate limit error, applying backoff', {
+          broadcastId,
+          channelAccountId,
+          customerId,
+          retryAfterSeconds: retryAfter,
+        });
+
+        // Throw to trigger Bull retry
+        throw new Error(RATE_LIMIT_ERROR_CODES.ERROR);
+      }
+
+      // Re-throw non-rate-limit errors
+      throw error;
+    }
 
     if (result.success) {
       // Increment sent count
@@ -487,7 +561,13 @@ export class BroadcastQueue {
         providerMessageId: result.providerMessageId,
       });
     } else {
-      // Increment failed count
+      // Check if the error response indicates a rate limit
+      if (result.error && this.isRateLimitErrorCode(result.error.code)) {
+        await this.rateLimiterService.handleRateLimitError(channelAccountId);
+        throw new Error(RATE_LIMIT_ERROR_CODES.ERROR);
+      }
+
+      // Increment failed count for non-rate-limit errors
       await this.broadcastRepository.incrementMetric(broadcastId, 'failedCount', 1);
 
       logger.warn('Message send failed', {
@@ -523,6 +603,14 @@ export class BroadcastQueue {
         });
       }
     }
+  }
+
+  /**
+   * Check if an error code indicates a rate limit error from Meta.
+   */
+  private isRateLimitErrorCode(code: string): boolean {
+    const rateLimitCodes = ['4', '17', '341', '368'];
+    return rateLimitCodes.includes(code);
   }
 
   /**

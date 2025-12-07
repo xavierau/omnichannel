@@ -31,6 +31,7 @@ export class UserService {
     firstName: string;
     lastName: string;
     status?: UserStatus;
+    tenantId?: string;
   }): Promise<User> {
     // SECURITY: Hash password FIRST, before checking email existence.
     // This ensures the expensive hashing operation occurs regardless of
@@ -53,6 +54,7 @@ export class UserService {
       lastName: data.lastName,
       status: data.status || UserStatus.ACTIVE,
       emailVerified: false,
+      tenantId: data.tenantId || null,
     });
 
     return user;
