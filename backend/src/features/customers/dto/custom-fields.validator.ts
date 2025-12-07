@@ -80,6 +80,7 @@ export function IsValidCustomFields(validationOptions?: ValidationOptions) {
       propertyName: propertyName,
       options: validationOptions,
       validator: {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         validate(value: unknown, args: ValidationArguments) {
           if (value === undefined || value === null) {
             return true;
@@ -114,7 +115,7 @@ export function IsValidCustomFields(validationOptions?: ValidationOptions) {
 
           return true;
         },
-        defaultMessage(args: ValidationArguments) {
+        defaultMessage(_args: ValidationArguments) {
           return `customFields must be an object with max ${MAX_CUSTOM_FIELDS_SIZE} bytes, max ${MAX_CUSTOM_FIELDS_DEPTH} levels of nesting, max ${MAX_CUSTOM_FIELDS_KEYS} keys, and only primitive values`;
         },
       },

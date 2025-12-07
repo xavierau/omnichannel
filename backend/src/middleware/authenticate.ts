@@ -6,7 +6,7 @@ export const authenticate = passport.authenticate('jwt', { session: false });
 
 // Handle passport errors
 export const handleAuthError = (
-  err: any,
+  err: Error & { name?: string },
   req: Request,
   res: Response,
   next: NextFunction

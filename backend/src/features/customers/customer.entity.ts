@@ -35,7 +35,7 @@ export class Customer {
   whatsappNumber: string;
 
   @Column({ type: 'jsonb', name: 'custom_fields', nullable: true, default: {} })
-  customFields: Record<string, any>;
+  customFields: Record<string, unknown>;
 
   @ManyToMany(() => Tag)
   @JoinTable({

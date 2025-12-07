@@ -11,7 +11,7 @@ import { ChannelAccountRepository } from '../features/channel-accounts/channel-a
 import { logger, auditLogger } from '../config/logger.config';
 import { BroadcastStatus, RecipientType } from '../features/broadcasts/enums';
 import { Customer } from '../features/customers/customer.entity';
-import { Broadcast, TemplateVariablesConfig, VariableConfig } from '../features/broadcasts/broadcast.entity';
+import { TemplateVariablesConfig, VariableConfig } from '../features/broadcasts/broadcast.entity';
 import { TemplateVariables, VariableValue } from '../features/messaging/interfaces/messaging-provider.interface';
 import { ForbiddenException } from '../shared/exceptions/http-exceptions';
 
@@ -70,6 +70,7 @@ function sanitizeFieldValue(value: unknown): string {
   // Remove potentially dangerous characters for template injection
   // Strip control characters and null bytes
   const sanitized = strValue
+    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x1F\x7F]/g, '') // Remove control characters
     .replace(/\{\{/g, '') // Remove template syntax that could cause injection
     .replace(/\}\}/g, '')

@@ -1094,7 +1094,7 @@ export class InboxMessageQueue {
           variables: content.variables,
         };
 
-      case MessageContentType.CONTACT:
+      case MessageContentType.CONTACT: {
         // Meta contacts come as an array, extract first contact
         const contacts = content.contacts as Array<Record<string, unknown>> | undefined;
         const firstContact = contacts?.[0];
@@ -1106,6 +1106,7 @@ export class InboxMessageQueue {
           phones: firstContact?.phones,
           emails: firstContact?.emails,
         };
+      }
 
       case MessageContentType.REACTION:
         return {
@@ -1113,7 +1114,7 @@ export class InboxMessageQueue {
           emoji: content.emoji,
         };
 
-      case MessageContentType.INTERACTIVE:
+      case MessageContentType.INTERACTIVE: {
         // Interactive responses contain button_reply or list_reply
         const buttonReply = content.button_reply as Record<string, unknown> | undefined;
         const listReply = content.list_reply as Record<string, unknown> | undefined;
@@ -1123,6 +1124,7 @@ export class InboxMessageQueue {
           title: buttonReply?.title ?? listReply?.title,
           description: listReply?.description,
         };
+      }
 
       default:
         return content;

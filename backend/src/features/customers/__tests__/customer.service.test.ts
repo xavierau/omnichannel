@@ -4,6 +4,7 @@ import { CustomerRepository, PaginatedResult } from '../customer.repository';
 import { TagRepository } from '../../tags/tag.repository';
 import { Customer } from '../customer.entity';
 import { Tag, TagColor } from '../../tags/tag.entity';
+import { Tenant } from '../../tenants/tenant.entity';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
 import { UpdateCustomerDto } from '../dto/update-customer.dto';
 import {
@@ -36,7 +37,7 @@ describe('CustomerService', () => {
     color: TagColor.PURPLE,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
-    tenant: {} as any,
+    tenant: {} as unknown as Tenant,
   };
 
   const mockCustomer: Customer = {
@@ -48,7 +49,7 @@ describe('CustomerService', () => {
     tags: [mockTag],
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
-    tenant: {} as any,
+    tenant: {} as unknown as Tenant,
   };
 
   beforeEach(() => {

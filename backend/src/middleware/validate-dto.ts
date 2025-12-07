@@ -1,7 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
-import { plainToClass } from 'class-transformer';
+import { plainToClass, ClassConstructor } from 'class-transformer';
 import { validate, ValidationError } from 'class-validator';
 import { BadRequestException } from '@shared/exceptions/http-exceptions';
+
+// Extended Request type with validatedQuery
+interface ValidatedRequest extends Request {
+  validatedQuery?: unknown;
+}
 
 /**
  * Formats validation errors into a consistent structure.
@@ -19,7 +24,7 @@ const formatValidationErrors = (errors: ValidationError[]) => {
  * @param dtoClass - The DTO class to validate against
  * @returns Express middleware function
  */
-export const validateDto = (dtoClass: any) => {
+export const validateDto = <T extends object>(dtoClass: ClassConstructor<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Transform plain object to class instance
@@ -50,7 +55,7 @@ export const validateDto = (dtoClass: any) => {
  * @param dtoClass - The DTO class to validate against
  * @returns Express middleware function
  */
-export const validateQueryDto = (dtoClass: any) => {
+export const validateQueryDto = <T extends object>(dtoClass: ClassConstructor<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Transform plain object to class instance
@@ -71,7 +76,7 @@ export const validateQueryDto = (dtoClass: any) => {
       }
 
       // Attach validated query to request for use in handlers
-      (req as any).validatedQuery = dtoInstance;
+      (req as ValidatedRequest).validatedQuery = dtoInstance;
       next();
     } catch (error) {
       next(error);

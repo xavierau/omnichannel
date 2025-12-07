@@ -2,6 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import { BadRequestException } from '@shared/exceptions/http-exceptions';
 import { User } from '@features/users/user.entity';
 
+// Extended Request type with tenantId
+interface TenantRequest extends Request {
+  tenantId?: string;
+}
+
 /**
  * Middleware that ensures the authenticated user has an associated tenant.
  *
@@ -29,13 +34,14 @@ export const requireTenant = (
   }
 
   // Attach tenantId to request for convenient access
-  (req as any).tenantId = tenantId;
+  (req as TenantRequest).tenantId = tenantId;
 
   next();
 };
 
 // Extend Express Request type to include tenantId
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       tenantId?: string;

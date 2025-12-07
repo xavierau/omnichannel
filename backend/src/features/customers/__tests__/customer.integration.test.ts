@@ -8,6 +8,7 @@ import { CustomerService } from '../customer.service';
 import { User, UserStatus } from '../../users/user.entity';
 import { Customer } from '../customer.entity';
 import { Tag, TagColor } from '../../tags/tag.entity';
+import { Tenant } from '../../tenants/tenant.entity';
 import { PaginatedResult } from '../customer.repository';
 // Use the same HttpException class as the error handler
 import {
@@ -39,10 +40,10 @@ const TEST_UUIDS = {
 // Custom error handler that works with both exception class files
 // (The codebase has two identical HttpException definitions)
 const testErrorHandler = (
-  err: any,
+  err: Error & { statusCode?: number; errors?: Record<string, unknown>[] },
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   // Check for statusCode property (present on both HttpException versions)
   const statusCode = err.statusCode || 500;
@@ -127,7 +128,7 @@ describe('Customer Integration Tests', () => {
     color: TagColor.PURPLE,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
-    tenant: {} as any,
+    tenant: {} as unknown as Tenant,
   };
 
   const mockCustomer: Customer = {
@@ -139,14 +140,14 @@ describe('Customer Integration Tests', () => {
     tags: [mockTag],
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
-    tenant: {} as any,
+    tenant: {} as unknown as Tenant,
   };
 
   // Mock authentication middleware
   const mockAuthenticate = (req: Request, res: Response, next: NextFunction) => {
     req.user = mockUser;
     // Also set tenantId as the requireTenant middleware would
-    (req as any).tenantId = tenantId;
+    (req as Request & { tenantId: string }).tenantId = tenantId;
     next();
   };
 

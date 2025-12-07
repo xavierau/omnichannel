@@ -2,6 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { ForbiddenException } from '@shared/exceptions/http-exceptions';
 
+// Extended Request type with csrfToken
+interface CsrfRequest extends Request {
+  csrfToken?: string;
+}
+
 /**
  * CSRF Protection Middleware using Double-Submit Cookie Pattern
  *
@@ -116,15 +121,16 @@ export function createCsrfProtection(userOptions: CsrfOptions = {}) {
    * Call this on routes where you want to initialize or refresh the CSRF token
    */
   const ensureToken = (req: Request, res: Response, next: NextFunction): void => {
+    const csrfReq = req as CsrfRequest;
     const existingToken = req.cookies[options.cookieName];
 
     if (!existingToken || options.rotateOnRequest) {
       const newToken = generateCsrfToken(options.tokenLength);
       setCsrfCookie(res, newToken, options);
       // Make the new token available on the request for the current request
-      (req as any).csrfToken = newToken;
+      csrfReq.csrfToken = newToken;
     } else {
-      (req as any).csrfToken = existingToken;
+      csrfReq.csrfToken = existingToken;
     }
 
     next();
@@ -160,9 +166,10 @@ export function createCsrfProtection(userOptions: CsrfOptions = {}) {
 
     // Optionally rotate token after successful validation
     if (options.rotateOnRequest) {
+      const csrfReq = req as CsrfRequest;
       const newToken = generateCsrfToken(options.tokenLength);
       setCsrfCookie(res, newToken, options);
-      (req as any).csrfToken = newToken;
+      csrfReq.csrfToken = newToken;
     }
 
     next();
@@ -172,14 +179,15 @@ export function createCsrfProtection(userOptions: CsrfOptions = {}) {
    * Combined middleware that both ensures a token exists and validates it
    */
   const protect = (req: Request, res: Response, next: NextFunction): void => {
+    const csrfReq = req as CsrfRequest;
     // First ensure a token exists
     const existingToken = req.cookies[options.cookieName];
     if (!existingToken) {
       const newToken = generateCsrfToken(options.tokenLength);
       setCsrfCookie(res, newToken, options);
-      (req as any).csrfToken = newToken;
+      csrfReq.csrfToken = newToken;
     } else {
-      (req as any).csrfToken = existingToken;
+      csrfReq.csrfToken = existingToken;
     }
 
     // Then validate for state-changing methods
@@ -206,7 +214,7 @@ export function createCsrfProtection(userOptions: CsrfOptions = {}) {
     if (options.rotateOnRequest) {
       const newToken = generateCsrfToken(options.tokenLength);
       setCsrfCookie(res, newToken, options);
-      (req as any).csrfToken = newToken;
+      csrfReq.csrfToken = newToken;
     }
 
     next();
@@ -216,7 +224,8 @@ export function createCsrfProtection(userOptions: CsrfOptions = {}) {
    * Gets the current CSRF token from the request
    */
   const getToken = (req: Request): string => {
-    return (req as any).csrfToken || req.cookies[options.cookieName] || '';
+    const csrfReq = req as CsrfRequest;
+    return csrfReq.csrfToken || req.cookies[options.cookieName] || '';
   };
 
   return {
