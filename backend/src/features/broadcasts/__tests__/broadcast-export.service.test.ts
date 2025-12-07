@@ -67,6 +67,7 @@ describe('BroadcastExportService', () => {
     customFields: {},
     channelAccountId: null,
     channelAccount: null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenant: null as any,
     template: null,
     group: null,
@@ -84,6 +85,7 @@ describe('BroadcastExportService', () => {
     criteria: null,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenant: null as any,
     ...overrides,
   });
@@ -218,7 +220,7 @@ describe('BroadcastExportService', () => {
 
       mockBroadcastRepository.findAll.mockResolvedValue(paginatedResult);
 
-      const result = await exportService.exportToCsv(tenantId, {});
+      await exportService.exportToCsv(tenantId, {});
 
       // Should not call groupRepository for non-group recipients
       expect(mockGroupRepository.findById).not.toHaveBeenCalled();

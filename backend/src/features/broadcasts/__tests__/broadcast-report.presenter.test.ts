@@ -43,6 +43,7 @@ describe('toBroadcastReportResponse', () => {
     customFields: {},
     channelAccountId: null,
     channelAccount: null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenant: null as any,
     template: null,
     group: null,

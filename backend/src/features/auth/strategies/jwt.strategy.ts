@@ -18,6 +18,7 @@ export class JwtStrategy extends PassportJwtStrategy {
         secretOrKey: process.env.JWT_ACCESS_SECRET!,
         ignoreExpiration: false,
       },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       async (payload: JwtPayload, done: any) => {
         try {
           const cacheKey = `user:${payload.sub}`;

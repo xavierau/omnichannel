@@ -330,7 +330,7 @@ export class AuthService {
   verifyAccessToken(token: string): JwtPayload {
     try {
       return jwt.verify(token, process.env.JWT_ACCESS_SECRET!) as JwtPayload;
-    } catch (error) {
+    } catch {
       throw new Error('Invalid access token');
     }
   }

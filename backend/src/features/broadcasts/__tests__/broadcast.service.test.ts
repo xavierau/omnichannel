@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { BroadcastService } from '../broadcast.service';
-import { BroadcastRepository, PaginatedResult } from '../broadcast.repository';
+import { BroadcastRepository } from '../broadcast.repository';
 import { TemplateRepository } from '../../templates/template.repository';
 import { GroupRepository } from '../../groups/group.repository';
 import { CustomerRepository } from '../../customers/customer.repository';
@@ -116,6 +116,7 @@ describe('BroadcastService - Action Methods', () => {
     customFields: {},
     channelAccountId: null,
     channelAccount: null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenant: null as any,
     template: null,
     group: null,
@@ -211,8 +212,10 @@ describe('BroadcastService - Action Methods', () => {
       });
 
       mockBroadcastRepository.findById.mockResolvedValue(broadcast);
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { ConflictException } = require('../../../shared/exceptions/http-exceptions');
       mockBroadcastRepository.updateStatusWithLock.mockRejectedValue(
-        new (require('../../../shared/exceptions/http-exceptions').ConflictException)(
+        new ConflictException(
           'Cannot transition broadcast from "sending" to "scheduled". Expected status: draft.'
         )
       );
@@ -304,8 +307,10 @@ describe('BroadcastService - Action Methods', () => {
       });
 
       mockBroadcastRepository.findById.mockResolvedValue(broadcast);
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { ConflictException } = require('../../../shared/exceptions/http-exceptions');
       mockBroadcastRepository.updateStatusWithLock.mockRejectedValue(
-        new (require('../../../shared/exceptions/http-exceptions').ConflictException)(
+        new ConflictException(
           'Cannot transition broadcast from "scheduled" to "sending". Expected status: draft.'
         )
       );
@@ -377,8 +382,10 @@ describe('BroadcastService - Action Methods', () => {
       });
 
       mockBroadcastRepository.findById.mockResolvedValue(broadcast);
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { ConflictException } = require('../../../shared/exceptions/http-exceptions');
       mockBroadcastRepository.updateStatusWithLock.mockRejectedValue(
-        new (require('../../../shared/exceptions/http-exceptions').ConflictException)(
+        new ConflictException(
           'Cannot transition broadcast from "draft" to "paused".'
         )
       );
@@ -394,8 +401,10 @@ describe('BroadcastService - Action Methods', () => {
       });
 
       mockBroadcastRepository.findById.mockResolvedValue(broadcast);
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { ConflictException: ConflictExc } = require('../../../shared/exceptions/http-exceptions');
       mockBroadcastRepository.updateStatusWithLock.mockRejectedValue(
-        new (require('../../../shared/exceptions/http-exceptions').ConflictException)(
+        new ConflictExc(
           'Cannot transition broadcast from "completed" to "paused".'
         )
       );
@@ -494,8 +503,10 @@ describe('BroadcastService - Action Methods', () => {
       });
 
       mockBroadcastRepository.findById.mockResolvedValue(broadcast);
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { ConflictException } = require('../../../shared/exceptions/http-exceptions');
       mockBroadcastRepository.updateStatusWithLock.mockRejectedValue(
-        new (require('../../../shared/exceptions/http-exceptions').ConflictException)(
+        new ConflictException(
           'Cannot transition broadcast from "sending" to "sending". Expected status: paused.'
         )
       );
@@ -558,8 +569,10 @@ describe('BroadcastService - Action Methods', () => {
       });
 
       mockBroadcastRepository.findById.mockResolvedValue(broadcast);
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { ConflictException } = require('../../../shared/exceptions/http-exceptions');
       mockBroadcastRepository.updateStatusWithLock.mockRejectedValue(
-        new (require('../../../shared/exceptions/http-exceptions').ConflictException)(
+        new ConflictException(
           'Cannot transition broadcast from "sending" to "cancelled".'
         )
       );
@@ -575,8 +588,10 @@ describe('BroadcastService - Action Methods', () => {
       });
 
       mockBroadcastRepository.findById.mockResolvedValue(broadcast);
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { ConflictException: ConflictExc } = require('../../../shared/exceptions/http-exceptions');
       mockBroadcastRepository.updateStatusWithLock.mockRejectedValue(
-        new (require('../../../shared/exceptions/http-exceptions').ConflictException)(
+        new ConflictExc(
           'Cannot transition broadcast from "completed" to "cancelled".'
         )
       );
@@ -639,8 +654,10 @@ describe('BroadcastService - Action Methods', () => {
       });
 
       mockBroadcastRepository.findById.mockResolvedValue(broadcast);
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { ConflictException } = require('../../../shared/exceptions/http-exceptions');
       mockBroadcastRepository.updateStatusWithLock.mockRejectedValue(
-        new (require('../../../shared/exceptions/http-exceptions').ConflictException)(
+        new ConflictException(
           'Cannot transition broadcast from "completed" to "sending". Expected status: failed.'
         )
       );
@@ -656,8 +673,10 @@ describe('BroadcastService - Action Methods', () => {
       });
 
       mockBroadcastRepository.findById.mockResolvedValue(broadcast);
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { ConflictException: ConflictExc } = require('../../../shared/exceptions/http-exceptions');
       mockBroadcastRepository.updateStatusWithLock.mockRejectedValue(
-        new (require('../../../shared/exceptions/http-exceptions').ConflictException)(
+        new ConflictExc(
           'Cannot transition broadcast from "draft" to "sending". Expected status: failed.'
         )
       );
