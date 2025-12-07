@@ -223,6 +223,7 @@ export function ChannelsPage() {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleTestConnection = async (_data: WhatsAppFormData): Promise<TestConnectionResult> => {
     // For form-based testing (during create/edit), we can't use the service
     // since there's no account ID yet. The form validates credentials format.
