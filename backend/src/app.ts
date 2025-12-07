@@ -1,4 +1,5 @@
-import express, { Application } from 'express';
+import express, { Application, Request, Response, NextFunction } from 'express';
+import path from 'path';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -45,8 +46,25 @@ export function createApp(): Application {
   // Request context middleware (must be first to attach correlation ID)
   app.use(requestContextMiddleware);
 
-  // Security headers
-  app.use(helmet());
+  // Security headers with SPA-friendly CSP in production
+  const isProduction = process.env.NODE_ENV === 'production';
+  app.use(helmet({
+    contentSecurityPolicy: isProduction ? {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"], // Required for some CSS-in-JS libraries
+        imgSrc: ["'self'", "data:", "blob:", "https:"],
+        fontSrc: ["'self'", "data:"],
+        connectSrc: ["'self'", process.env.FRONTEND_URL || "https://my-app.com"],
+        mediaSrc: ["'self'", "blob:"],
+        objectSrc: ["'none'"],
+        frameSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+      },
+    } : false, // Disable CSP in development for easier debugging
+  }));
 
   // CORS configuration
   // credentials: true is required for CSRF cookies to work cross-origin
@@ -100,6 +118,26 @@ export function createApp(): Application {
   app.use('/api/inbox', inboxRoutes);
   app.use('/api/custom-fields', createCustomFieldRoutes());
   app.use('/api/invitations', createInvitationRoutes());
+
+  // Serve static files in production (frontend build)
+  if (process.env.NODE_ENV === 'production') {
+    const publicPath = path.join(__dirname, '..', 'public');
+
+    // Serve static assets with caching
+    app.use(express.static(publicPath, {
+      maxAge: '1d',
+      etag: true,
+    }));
+
+    // SPA fallback: serve index.html for all non-API routes
+    app.get('*', (req: Request, res: Response, next: NextFunction) => {
+      // Skip API routes and health checks
+      if (req.path.startsWith('/api') || req.path.startsWith('/health') || req.path.startsWith('/webhooks')) {
+        return next();
+      }
+      res.sendFile(path.join(publicPath, 'index.html'));
+    });
+  }
 
   // Global error handler (must be last)
   app.use(errorHandler);
