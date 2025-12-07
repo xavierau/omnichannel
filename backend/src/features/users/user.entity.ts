@@ -65,6 +65,13 @@ export class User {
   @Column({ name: 'locked_until', nullable: true, type: 'timestamp' })
   lockedUntil: Date | null;
 
+  // Password reset fields
+  @Column({ name: 'password_reset_token', type: 'varchar', nullable: true, length: 64 })
+  passwordResetToken: string | null;
+
+  @Column({ name: 'password_reset_expires', type: 'timestamp', nullable: true })
+  passwordResetExpires: Date | null;
+
   @ManyToMany(() => Role, (role) => role.users, { eager: true })
   @JoinTable({
     name: 'user_roles',

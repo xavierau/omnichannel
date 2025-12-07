@@ -49,12 +49,27 @@ const getSafeSortColumn = (sortBy: string | undefined): string => {
 
 @singleton()
 export class GroupRepository {
-  private repository: Repository<CustomerGroup>;
-  private customerRepository: Repository<Customer>;
+  private _repository: Repository<CustomerGroup> | null = null;
+  private _customerRepository: Repository<Customer> | null = null;
 
-  constructor() {
-    this.repository = AppDataSource.getRepository(CustomerGroup);
-    this.customerRepository = AppDataSource.getRepository(Customer);
+  /**
+   * Lazy initialization of the repository to ensure AppDataSource is initialized.
+   */
+  private get repository(): Repository<CustomerGroup> {
+    if (!this._repository) {
+      this._repository = AppDataSource.getRepository(CustomerGroup);
+    }
+    return this._repository;
+  }
+
+  /**
+   * Lazy initialization of customer repository.
+   */
+  private get customerRepository(): Repository<Customer> {
+    if (!this._customerRepository) {
+      this._customerRepository = AppDataSource.getRepository(Customer);
+    }
+    return this._customerRepository;
   }
 
   async findById(tenantId: string, id: string): Promise<CustomerGroup | null> {

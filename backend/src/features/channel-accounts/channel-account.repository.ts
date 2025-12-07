@@ -13,10 +13,18 @@ export interface ChannelAccountQueryOptions {
 
 @singleton()
 export class ChannelAccountRepository {
-  private repository: Repository<ChannelAccount>;
+  private _repository: Repository<ChannelAccount> | null = null;
 
-  constructor() {
-    this.repository = AppDataSource.getRepository(ChannelAccount);
+  /**
+   * Lazy initialization of the repository to ensure AppDataSource is initialized.
+   * This prevents errors when the DI container instantiates this class before
+   * the database connection is established.
+   */
+  private get repository(): Repository<ChannelAccount> {
+    if (!this._repository) {
+      this._repository = AppDataSource.getRepository(ChannelAccount);
+    }
+    return this._repository;
   }
 
   /**
@@ -163,5 +171,64 @@ export class ChannelAccountRepository {
    */
   async countByTenant(tenantId: string): Promise<number> {
     return this.repository.count({ where: { tenantId } });
+  }
+
+  /**
+   * Find an active channel account by its provider phone number ID.
+   *
+   * This is the primary lookup method for routing inbound webhook events.
+   * Only returns active accounts to prevent message delivery to disabled accounts.
+   *
+   * @param phoneNumberId - The provider's phone number ID (e.g., Meta's phone_number_id)
+   * @returns The active channel account or null if not found
+   */
+  async findByPhoneNumberId(phoneNumberId: string): Promise<ChannelAccount | null> {
+    return this.repository.findOne({
+      where: {
+        phoneNumberId,
+        isActive: true,
+      },
+      relations: ['channel', 'provider'],
+    });
+  }
+
+  /**
+   * Update webhook configuration for a channel account.
+   *
+   * Stores the encrypted verify token for webhook verification.
+   *
+   * @param id - Channel account ID
+   * @param tenantId - Tenant ID for authorization
+   * @param encryptedSecret - Encrypted webhook secret/verify token
+   * @param secretIv - Initialization vector for encryption
+   */
+  async updateWebhookConfig(
+    id: string,
+    tenantId: string,
+    encryptedSecret: string,
+    secretIv: string
+  ): Promise<void> {
+    await this.repository.update(
+      { id, tenantId },
+      {
+        webhookSecretEncrypted: encryptedSecret,
+        webhookSecretIv: secretIv,
+      }
+    );
+  }
+
+  /**
+   * Find all active channel accounts.
+   *
+   * Used for batch operations like template status webhook processing
+   * where we need to check credentials across all accounts.
+   *
+   * @returns All active channel accounts with relations
+   */
+  async findAllActive(): Promise<ChannelAccount[]> {
+    return this.repository.find({
+      where: { isActive: true },
+      relations: ['channel', 'provider'],
+    });
   }
 }

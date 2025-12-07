@@ -80,10 +80,16 @@ const getSafeSortColumn = (sortBy: string | undefined): string => {
  */
 @singleton()
 export class BroadcastRepository {
-  private repository: Repository<Broadcast>;
+  private _repository: Repository<Broadcast> | null = null;
 
-  constructor() {
-    this.repository = AppDataSource.getRepository(Broadcast);
+  /**
+   * Lazy initialization of the repository to ensure AppDataSource is initialized.
+   */
+  private get repository(): Repository<Broadcast> {
+    if (!this._repository) {
+      this._repository = AppDataSource.getRepository(Broadcast);
+    }
+    return this._repository;
   }
 
   /**

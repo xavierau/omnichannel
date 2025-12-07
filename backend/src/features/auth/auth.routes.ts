@@ -8,10 +8,13 @@ import {
   registerLimiter,
   refreshLimiter,
   csrfTokenLimiter,
+  passwordResetLimiter,
 } from '@middleware/rate-limiter';
 import { validateDto } from '@middleware/validate-dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import {
   csrfEnsureToken,
   csrfValidateToken,
@@ -118,5 +121,42 @@ router.post('/logout', csrfValidateToken, controller.logout);
  * (safe method that doesn't change state)
  */
 router.get('/me', authenticate, controller.getMe);
+
+/**
+ * Request password reset
+ * POST /api/auth/forgot-password
+ *
+ * CSRF protection is NOT applied here because:
+ * - This is a public endpoint for users who forgot their password
+ * - The user doesn't have a session/token yet
+ * - Rate limiting provides protection against abuse
+ * - Always returns the same response to prevent email enumeration
+ *
+ * Rate limit: 3 requests per hour per IP (strict to prevent abuse)
+ */
+router.post(
+  '/forgot-password',
+  passwordResetLimiter,
+  validateDto(ForgotPasswordDto),
+  controller.forgotPassword
+);
+
+/**
+ * Reset password with token
+ * POST /api/auth/reset-password
+ *
+ * CSRF protection is NOT applied here because:
+ * - This is a public endpoint using token-based authentication
+ * - The reset token itself serves as proof of authorization
+ * - Rate limiting provides protection against brute force
+ *
+ * Rate limit: 3 requests per hour per IP (strict to prevent token brute force)
+ */
+router.post(
+  '/reset-password',
+  passwordResetLimiter,
+  validateDto(ResetPasswordDto),
+  controller.resetPassword
+);
 
 export default router;

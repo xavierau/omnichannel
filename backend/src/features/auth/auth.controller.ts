@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 import { UserService } from '@features/users/user.service';
 import { asyncHandler } from '@middleware/async-handler';
 import { User } from '@features/users/user.entity';
-import { WeakPasswordException } from '@shared/exceptions/http-exceptions';
+import { WeakPasswordException, BadRequestException } from '@shared/exceptions/http-exceptions';
 import { auditLogger } from '@config/logger.config';
 
 /**
@@ -14,6 +14,7 @@ import { auditLogger } from '@config/logger.config';
 const AUTH_ERROR_MESSAGES = {
   REGISTRATION_FAILED: 'Registration failed. Please check your input and try again.',
   INVALID_CREDENTIALS: 'Invalid email or password',
+  PASSWORD_RESET_FAILED: 'Password reset failed. Please try again.',
 } as const;
 
 @singleton()
@@ -31,7 +32,7 @@ export class AuthController {
    * error messages or response timing.
    */
   register = asyncHandler(async (req: Request, res: Response) => {
-    const { email, password, firstName, lastName } = req.body;
+    const { email, password, firstName, lastName, companyName } = req.body;
 
     try {
       const user = await this.authService.register({
@@ -39,6 +40,7 @@ export class AuthController {
         password,
         firstName,
         lastName,
+        companyName,
       });
 
       res.status(201).json({
@@ -193,5 +195,87 @@ export class AuthController {
         permissions,
       },
     });
+  });
+
+  /**
+   * Request a password reset email.
+   *
+   * Security: Always returns success to prevent email enumeration.
+   * If email exists and user is active, a reset token will be generated.
+   * In production, an email would be sent with the reset link.
+   */
+  forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    const result = await this.authService.requestPasswordReset(email);
+
+    // Log the request (but never log the token in production)
+    auditLogger.info('Password reset requested', { email });
+
+    // In development, include the token for testing purposes
+    // In production, this would NEVER include the token
+    const responseData: { message: string; token?: string } = {
+      message: result.message,
+    };
+
+    if (process.env.NODE_ENV !== 'production' && result.token) {
+      responseData.token = result.token;
+    }
+
+    res.status(200).json({
+      data: responseData,
+    });
+  });
+
+  /**
+   * Reset password using the provided token.
+   *
+   * Security:
+   * - Token is validated using constant-time comparison
+   * - Token is invalidated after successful use
+   * - All sessions are terminated after password change
+   */
+  resetPassword = asyncHandler(async (req: Request, res: Response) => {
+    const { email, token, newPassword } = req.body;
+
+    try {
+      const result = await this.authService.resetPassword(email, token, newPassword);
+
+      auditLogger.info('Password reset completed', { email });
+
+      res.status(200).json({
+        data: {
+          message: result.message,
+        },
+      });
+    } catch (error) {
+      // Log the actual error for debugging
+      auditLogger.warn('Password reset failed', {
+        email,
+        errorType: (error as Error).constructor.name,
+      });
+
+      // WeakPasswordException gets its own message
+      if (error instanceof WeakPasswordException) {
+        return res.status(400).json({
+          statusCode: 400,
+          message: error.message,
+        });
+      }
+
+      // BadRequestException from AuthService (invalid token)
+      if (error instanceof BadRequestException) {
+        return res.status(400).json({
+          statusCode: 400,
+          message: error.message,
+        });
+      }
+
+      // Generic error for other cases
+      return res.status(400).json({
+        statusCode: 400,
+        message: AUTH_ERROR_MESSAGES.PASSWORD_RESET_FAILED,
+      });
+    }
   });
 }

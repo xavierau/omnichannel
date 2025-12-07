@@ -34,4 +34,12 @@ export class RegisterDto {
     message: 'Last name can only contain letters, spaces, hyphens, and apostrophes',
   })
   lastName: string;
+
+  @IsString()
+  @MinLength(2, { message: 'Company name must be at least 2 characters' })
+  @MaxLength(100, { message: 'Company name must not exceed 100 characters' })
+  @Matches(/^[a-zA-Z0-9\s'-]+$/, {
+    message: 'Company name can only contain letters, numbers, spaces, hyphens, and apostrophes',
+  })
+  companyName: string;
 }

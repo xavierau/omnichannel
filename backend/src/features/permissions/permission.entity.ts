@@ -20,6 +20,8 @@ export enum PermissionResource {
   CHANNELS = 'channels',
   CUSTOM_FIELDS = 'custom_fields',
   NOTES = 'notes',
+  TEAMS = 'teams',
+  INBOX = 'inbox',
 }
 
 export enum PermissionAction {
@@ -28,6 +30,9 @@ export enum PermissionAction {
   UPDATE = 'update',
   DELETE = 'delete',
   MANAGE = 'manage', // Full control (implies all above)
+  MESSAGE = 'message', // Send messages (inbox-specific)
+  ASSIGN = 'assign', // Assign/pickup conversations (inbox-specific)
+  NOTE = 'note', // Create/edit notes (inbox-specific)
 }
 
 export enum PermissionScope {

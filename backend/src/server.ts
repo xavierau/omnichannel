@@ -1,13 +1,16 @@
 import 'reflect-metadata'; // Required for TypeORM and tsyringe
 import dotenv from 'dotenv';
-import { container } from 'tsyringe';
+
+// Load environment variables FIRST (before DI container needs them)
+dotenv.config();
+
+// Initialize DI container BEFORE importing anything that uses it
+import { container } from '@config/di.container';
+
 import { createApp } from './app';
 import { AppDataSource } from '@config/database.config';
 import { BroadcastQueue, BroadcastScheduler } from './jobs';
 import { logger } from '@config/logger.config';
-
-// Load environment variables
-dotenv.config();
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 

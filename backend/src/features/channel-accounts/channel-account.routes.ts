@@ -41,5 +41,10 @@ export function createChannelAccountRoutes(): Router {
     controller.syncTemplates(req, res, next)
   );
 
+  // Get webhook configuration for Meta setup
+  router.get('/:id/webhook-config', (req, res, next) =>
+    controller.getWebhookConfig(req, res, next)
+  );
+
   return router;
 }

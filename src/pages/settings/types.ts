@@ -57,10 +57,40 @@ export interface WhatsAppFormErrors {
   appSecret?: string
 }
 
+// Quality rating from WhatsApp Business API
+export type QualityRating = "GREEN" | "YELLOW" | "RED" | "PENDING" | "UNKNOWN"
+
+// Messaging limit tiers from WhatsApp Business API
+export type MessagingLimitTier =
+  | "TIER_1K"
+  | "TIER_10K"
+  | "TIER_100K"
+  | "TIER_UNLIMITED"
+  | "UNKNOWN"
+
+// Account information returned from successful connection test
+export interface AccountInfo {
+  businessName?: string
+  displayPhoneNumber?: string
+  qualityRating?: QualityRating
+  messagingLimitTier?: MessagingLimitTier
+  verifiedName?: string
+  codeVerificationStatus?: string
+}
+
+// Webhook configuration details
+export interface WebhookConfig {
+  webhookUrl: string
+  verifyToken: string
+  isConfigured: boolean
+}
+
 // Test connection result
 export interface TestConnectionResult {
   success: boolean
   message: string
+  accountInfo?: AccountInfo
+  webhookConfig?: WebhookConfig
 }
 
 // Channel metadata for UI

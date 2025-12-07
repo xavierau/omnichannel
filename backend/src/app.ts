@@ -18,6 +18,11 @@ import groupRoutes from '@features/groups/group.routes';
 import mediaRoutes from '@features/media/media.routes';
 import { createChannelAccountRoutes } from '@features/channel-accounts/channel-account.routes';
 import { createWebhookRoutes } from '@features/webhooks/webhook.routes';
+import teamRoutes from '@features/teams/team.routes';
+import inboxRoutes from '@features/inbox/inbox.routes';
+import { createHealthRoutes } from '@features/health/health.routes';
+import { createCustomFieldRoutes } from '@features/custom-fields/custom-field.routes';
+import { createInvitationRoutes } from '@features/invitations/invitation.routes';
 
 /**
  * Creates and configures the Express application
@@ -69,14 +74,9 @@ export function createApp(): Application {
   // Global rate limiting
   app.use(generalLimiter);
 
-  // Health check endpoint
-  app.get('/health', (req, res) => {
-    res.json({
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-    });
-  });
+  // Health check routes (no auth required, before other routes)
+  // Provides /health, /health/live, /health/ready endpoints
+  app.use('/health', createHealthRoutes());
 
   // Webhook routes (must be before json body parser for raw body access)
   // These routes handle provider callbacks and have their own body parsing
@@ -96,6 +96,10 @@ export function createApp(): Application {
   app.use('/api/groups', groupRoutes);
   app.use('/api/media', mediaRoutes);
   app.use('/api/channel-accounts', createChannelAccountRoutes());
+  app.use('/api/teams', teamRoutes);
+  app.use('/api/inbox', inboxRoutes);
+  app.use('/api/custom-fields', createCustomFieldRoutes());
+  app.use('/api/invitations', createInvitationRoutes());
 
   // Global error handler (must be last)
   app.use(errorHandler);

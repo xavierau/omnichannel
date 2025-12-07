@@ -1,8 +1,8 @@
 import { useCallback } from "react"
-import type { Conversation, MessageType, ConversationStatus, Operator } from "../types"
+import type { Conversation, ConversationStatus, Operator } from "../types"
 import { ChatHeader } from "./ChatHeader"
 import { MessageList } from "./MessageList"
-import { MessageInput } from "./MessageInput"
+import { MessageInput, type SendMessagePayload } from "./MessageInput"
 import { cn } from "@/lib/utils"
 
 interface ChatWindowProps {
@@ -14,7 +14,7 @@ interface ChatWindowProps {
   onRelease: (conversationId: string) => void
   onAssign: (conversationId: string, operatorId: string) => void
   onStatusChange: (conversationId: string, status: ConversationStatus) => void
-  onSendMessage: (conversationId: string, content: string, type: MessageType, attachment?: File) => void
+  onSendMessage: (conversationId: string, payload: SendMessagePayload) => void
   className?: string
 }
 
@@ -61,9 +61,9 @@ export function ChatWindow({
   )
 
   const handleSendMessage = useCallback(
-    (content: string, type: MessageType, attachment?: File) => {
+    (payload: SendMessagePayload) => {
       if (conversation) {
-        onSendMessage(conversation.id, content, type, attachment)
+        onSendMessage(conversation.id, payload)
       }
     },
     [conversation, onSendMessage]

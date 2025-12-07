@@ -5,10 +5,16 @@ import { Provider } from './provider.entity';
 
 @singleton()
 export class ProviderRepository {
-  private repository: Repository<Provider>;
+  private _repository: Repository<Provider> | null = null;
 
-  constructor() {
-    this.repository = AppDataSource.getRepository(Provider);
+  /**
+   * Lazy initialization of the repository to ensure AppDataSource is initialized.
+   */
+  private get repository(): Repository<Provider> {
+    if (!this._repository) {
+      this._repository = AppDataSource.getRepository(Provider);
+    }
+    return this._repository;
   }
 
   async findAll(): Promise<Provider[]> {

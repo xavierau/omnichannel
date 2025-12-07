@@ -11,6 +11,10 @@ export const AUTH_CONSTANTS = {
   TOKEN_ID_BYTES: 16,
   TOKEN_SECRET_BYTES: 48,
 
+  // Password reset
+  PASSWORD_RESET_TOKEN_BYTES: 32, // 256 bits of entropy
+  PASSWORD_RESET_EXPIRY_HOURS: 1, // Token valid for 1 hour
+
   // Cache TTL
   USER_CACHE_TTL_SECONDS: 300, // 5 minutes
 
@@ -104,6 +108,11 @@ export const DB_CONSTANTS = {
   // Retry settings
   MAX_RETRY_ATTEMPTS: 3,
   RETRY_DELAY_MS: 1000, // 1 second between retries
+} as const;
+
+export const INVITATION_CONSTANTS = {
+  TOKEN_BYTES: 32, // 256 bits of entropy
+  EXPIRY_HOURS: 24, // 24 hours as requested
 } as const;
 
 export const VALIDATION_CONSTANTS = {

@@ -5,10 +5,16 @@ import { RefreshToken } from './entities/refresh-token.entity';
 
 @singleton()
 export class RefreshTokenRepository {
-  private repository: Repository<RefreshToken>;
+  private _repository: Repository<RefreshToken> | null = null;
 
-  constructor() {
-    this.repository = AppDataSource.getRepository(RefreshToken);
+  /**
+   * Lazy initialization of the repository to ensure AppDataSource is initialized.
+   */
+  private get repository(): Repository<RefreshToken> {
+    if (!this._repository) {
+      this._repository = AppDataSource.getRepository(RefreshToken);
+    }
+    return this._repository;
   }
 
   async create(data: {

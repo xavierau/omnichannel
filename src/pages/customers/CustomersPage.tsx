@@ -3,36 +3,94 @@ import {
   Download,
   FileSpreadsheet,
   ListPlus,
+  Loader2,
   Plus,
   Send,
-  Tag,
+  Tag as TagIcon,
   Trash2,
   Users,
+  AlertCircle,
 } from "lucide-react"
+import { toast } from "sonner"
 
 import { DataTable, type BulkAction } from "@/components/data-table"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { exportToCSV, exportToExcel } from "@/lib/export-utils"
+import { customerService, type Customer as ApiCustomer } from "@/services/customer.service"
+import { tagService, type Tag as ApiTag } from "@/services/tag.service"
 import type {
   Customer,
+  Tag,
   CustomerFilters as CustomerFiltersType,
   CustomerFormData,
 } from "./types"
 import { defaultFilters } from "./types"
-import { mockCustomers, availableTags } from "./data/mock-customers"
 import { getCustomerColumns } from "./components/CustomerTable"
 import { CustomerFilters } from "./components/CustomerFilters"
 import { CustomerFormDialog } from "./components/CustomerFormDialog"
 
+/**
+ * Transforms API customer response to local Customer type
+ * Handles date string to Date conversion
+ */
+function transformCustomer(apiCustomer: ApiCustomer): Customer {
+  return {
+    ...apiCustomer,
+    tags: apiCustomer.tags.map((t) => ({
+      id: t.id,
+      name: t.name,
+      color: t.color,
+    })),
+    createdAt: new Date(apiCustomer.createdAt),
+    updatedAt: new Date(apiCustomer.updatedAt),
+  }
+}
+
+/**
+ * Transforms API tag response to local Tag type
+ */
+function transformTag(apiTag: ApiTag): Tag {
+  return {
+    id: apiTag.id,
+    name: apiTag.name,
+    color: apiTag.color,
+  }
+}
+
 export function CustomersPage() {
-  const [customers, setCustomers] = React.useState<Customer[]>(mockCustomers)
+  const [customers, setCustomers] = React.useState<Customer[]>([])
+  const [tags, setTags] = React.useState<Tag[]>([])
   const [filters, setFilters] = React.useState<CustomerFiltersType>(defaultFilters)
   const [selectedCustomers, setSelectedCustomers] = React.useState<Customer[]>([])
-  const [isLoading] = React.useState(false)
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = React.useState(false)
   const [formDialogOpen, setFormDialogOpen] = React.useState(false)
   const [editingCustomer, setEditingCustomer] = React.useState<Customer | undefined>(undefined)
+
+  // Fetch customers and tags on mount
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const [customersRes, tagsRes] = await Promise.all([
+          customerService.getCustomers({}),
+          tagService.getTags(),
+        ])
+        setCustomers(customersRes.data.map(transformCustomer))
+        setTags(tagsRes.map(transformTag))
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to load data"
+        setError(message)
+        toast.error("Failed to load customers", { description: message })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
 
   // Filter customers based on current filters
   const filteredCustomers = React.useMemo(() => {
@@ -66,6 +124,18 @@ export function CustomersPage() {
     })
   }, [customers, filters])
 
+  // Delete a single customer via API
+  const handleDeleteCustomer = React.useCallback(async (customer: Customer) => {
+    try {
+      await customerService.deleteCustomer(customer.id)
+      setCustomers((prev) => prev.filter((c) => c.id !== customer.id))
+      toast.success("Customer deleted", { description: `${customer.name} has been removed.` })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to delete customer"
+      toast.error("Delete failed", { description: message })
+    }
+  }, [])
+
   // Column definitions with action handlers
   const columns = React.useMemo(
     () =>
@@ -78,16 +148,12 @@ export function CustomersPage() {
           setEditingCustomer(customer)
           setFormDialogOpen(true)
         },
-        onDelete: async (customer) => {
-          // Simulate API call
-          await new Promise((resolve) => setTimeout(resolve, 500))
-          setCustomers((prev) => prev.filter((c) => c.id !== customer.id))
-        },
+        onDelete: handleDeleteCustomer,
         onMessage: (customer) => {
           console.log("Message customer:", customer)
         },
       }),
-    []
+    [handleDeleteCustomer]
   )
 
   // Bulk actions
@@ -134,7 +200,7 @@ export function CustomersPage() {
     {
       id: "add-tags",
       label: "Add Tags",
-      icon: <Tag className="size-4" />,
+      icon: <TagIcon className="size-4" />,
       onClick: (customers) => {
         console.log("Add tags to:", customers)
         // TODO: Open tag management dialog
@@ -169,13 +235,21 @@ export function CustomersPage() {
     },
   ]
 
-  // Handle bulk delete
-  const handleBulkDelete = async () => {
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    const selectedIds = selectedCustomers.map((c) => c.id)
-    setCustomers((prev) => prev.filter((c) => !selectedIds.includes(c.id)))
-    setSelectedCustomers([])
-  }
+  // Handle bulk delete via API
+  const handleBulkDelete = React.useCallback(async () => {
+    try {
+      const selectedIds = selectedCustomers.map((c) => c.id)
+      await customerService.bulkDelete(selectedIds)
+      setCustomers((prev) => prev.filter((c) => !selectedIds.includes(c.id)))
+      setSelectedCustomers([])
+      toast.success("Customers deleted", {
+        description: `${selectedIds.length} customer(s) have been removed.`,
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to delete customers"
+      toast.error("Bulk delete failed", { description: message })
+    }
+  }, [selectedCustomers])
 
   // Handle add customer button click
   const handleAddCustomer = () => {
@@ -183,52 +257,105 @@ export function CustomersPage() {
     setFormDialogOpen(true)
   }
 
-  // Handle form submission for both create and edit
-  const handleFormSubmit = async (data: CustomerFormData) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
-    const selectedTags = availableTags.filter((tag) => data.tagIds.includes(tag.id))
-
-    if (editingCustomer) {
-      // Update existing customer
-      setCustomers((prev) =>
-        prev.map((c) =>
-          c.id === editingCustomer.id
-            ? {
-                ...c,
-                name: data.name,
-                whatsappNumber: data.whatsappNumber,
-                tags: selectedTags,
-                updatedAt: new Date(),
-              }
-            : c
-        )
-      )
-    } else {
-      // Create new customer
-      const newCustomer: Customer = {
-        id: `cust-${Date.now()}`,
-        name: data.name,
-        whatsappNumber: data.whatsappNumber,
-        tags: selectedTags,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+  // Handle form submission for both create and edit via API
+  const handleFormSubmit = React.useCallback(
+    async (data: CustomerFormData) => {
+      try {
+        if (editingCustomer) {
+          // Update existing customer
+          const updated = await customerService.updateCustomer(editingCustomer.id, {
+            name: data.name,
+            whatsappNumber: data.whatsappNumber,
+            tagIds: data.tagIds,
+            customFields: data.customFields,
+          })
+          const transformedCustomer = transformCustomer(updated)
+          setCustomers((prev) =>
+            prev.map((c) => (c.id === editingCustomer.id ? transformedCustomer : c))
+          )
+          toast.success("Customer updated", { description: `${data.name} has been updated.` })
+        } else {
+          // Create new customer
+          const created = await customerService.createCustomer({
+            name: data.name,
+            whatsappNumber: data.whatsappNumber,
+            tagIds: data.tagIds,
+            customFields: data.customFields,
+          })
+          const transformedCustomer = transformCustomer(created)
+          setCustomers((prev) => [transformedCustomer, ...prev])
+          toast.success("Customer created", { description: `${data.name} has been added.` })
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to save customer"
+        toast.error("Save failed", { description: message })
+        throw err // Re-throw to keep dialog open on error
       }
-      setCustomers((prev) => [newCustomer, ...prev])
-    }
-  }
+    },
+    [editingCustomer]
+  )
 
   // Custom toolbar with advanced filters
-  const renderToolbar = () => (
-    <div className="space-y-4">
-      <CustomerFilters
-        filters={filters}
-        onFiltersChange={setFilters}
-        availableTags={availableTags}
-      />
-    </div>
+  const renderToolbar = React.useCallback(
+    () => (
+      <div className="space-y-4">
+        <CustomerFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          availableTags={tags}
+        />
+      </div>
+    ),
+    [filters, tags]
   )
+
+  // Show error state
+  if (error && !isLoading && customers.length === 0) {
+    return (
+      <div className="flex flex-col gap-6 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Customers</h1>
+            <p className="text-sm text-muted-foreground">
+              Manage your customer contacts and interactions.
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
+          <AlertCircle className="size-12 text-destructive" />
+          <h3 className="mt-4 text-lg font-semibold">Failed to load customers</h3>
+          <p className="mt-2 text-sm text-muted-foreground">{error}</p>
+          <Button
+            onClick={() => window.location.reload()}
+            variant="outline"
+            className="mt-4"
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-6 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Customers</h1>
+            <p className="text-sm text-muted-foreground">
+              Manage your customer contacts and interactions.
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
+          <Loader2 className="size-12 animate-spin text-muted-foreground" />
+          <p className="mt-4 text-sm text-muted-foreground">Loading customers...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -250,7 +377,7 @@ export function CustomersPage() {
       <DataTable
         columns={columns}
         data={filteredCustomers}
-        isLoading={isLoading}
+        isLoading={false}
         enableRowSelection
         onSelectionChange={setSelectedCustomers}
         bulkActions={bulkActions}
@@ -279,7 +406,7 @@ export function CustomersPage() {
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
         customer={editingCustomer}
-        availableTags={availableTags}
+        availableTags={tags}
         onSubmit={handleFormSubmit}
       />
     </div>

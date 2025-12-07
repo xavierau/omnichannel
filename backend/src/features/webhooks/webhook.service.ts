@@ -1,8 +1,17 @@
 import { singleton, inject } from 'tsyringe';
 import { ProviderFactory } from '../messaging/provider-factory';
 import { MessageLogRepository } from '../message-logs/message-log.repository';
-import { WebhookEvent } from '../messaging/interfaces/messaging-provider.interface';
+import { ChannelAccountRepository } from '../channel-accounts/channel-account.repository';
+import { TemplateRepository } from '../templates/template.repository';
+import { TemplateSseService } from '../templates/template-sse.service';
+import { InboxMessageQueue } from '../../jobs/inbox-message.queue';
+import {
+  WebhookEvent,
+  MetaTemplateStatus,
+} from '../messaging/interfaces/messaging-provider.interface';
 import { MessageStatus } from '../message-logs/message-log.entity';
+import { TemplateStatus } from '../templates/enums';
+import { CredentialService } from '../messaging/services/credential.service';
 import { logger } from '../../config/logger.config';
 
 /**
@@ -45,7 +54,12 @@ export interface MetaWebhookVerifyQuery {
 export class WebhookService {
   constructor(
     @inject(ProviderFactory) private providerFactory: ProviderFactory,
-    @inject(MessageLogRepository) private messageLogRepo: MessageLogRepository
+    @inject(MessageLogRepository) private messageLogRepo: MessageLogRepository,
+    @inject(ChannelAccountRepository) private channelAccountRepo: ChannelAccountRepository,
+    @inject(TemplateRepository) private templateRepo: TemplateRepository,
+    @inject(TemplateSseService) private templateSseService: TemplateSseService,
+    @inject(CredentialService) private credentialService: CredentialService,
+    @inject(InboxMessageQueue) private inboxMessageQueue: InboxMessageQueue
   ) {}
 
   /**
@@ -282,10 +296,10 @@ export class WebhookService {
         await this.processErrorEvent(event);
         break;
       case 'message_received':
-        // Incoming messages - log for now, future feature
-        logger.info('Incoming message received', {
-          providerMessageId: event.providerMessageId,
-        });
+        await this.processInboundMessage(event);
+        break;
+      case 'template_status_update':
+        await this.processTemplateStatusUpdate(event);
         break;
       default:
         logger.warn('Unknown webhook event type', { event });
@@ -401,5 +415,253 @@ export class WebhookService {
     }
 
     return statusOrder[newStatus] > statusOrder[currentStatus];
+  }
+
+  /**
+   * Process an inbound message received event.
+   *
+   * Routes the message to the inbox queue for conversation creation/update.
+   *
+   * @param event - The message_received webhook event
+   */
+  private async processInboundMessage(event: WebhookEvent): Promise<void> {
+    // Extract phone_number_id from rawEvent metadata
+    const rawMessage = event.rawEvent as {
+      from: string;
+      type: string;
+      text?: { body: string };
+      image?: { id: string; mime_type: string; caption?: string };
+      document?: { id: string; mime_type: string; filename?: string; caption?: string };
+      audio?: { id: string; mime_type: string };
+      video?: { id: string; mime_type: string; caption?: string };
+      metadata?: { phone_number_id: string };
+    };
+
+    const phoneNumberId = rawMessage.metadata?.phone_number_id;
+    if (!phoneNumberId) {
+      logger.warn('Inbound message missing phone_number_id', {
+        providerMessageId: event.providerMessageId,
+      });
+      return;
+    }
+
+    // Find channel account by phone_number_id
+    const channelAccount = await this.channelAccountRepo.findByPhoneNumberId(phoneNumberId);
+    if (!channelAccount) {
+      logger.warn('Channel account not found for phone_number_id', {
+        phoneNumberId,
+        providerMessageId: event.providerMessageId,
+      });
+      return;
+    }
+
+    // Queue for inbox processing
+    await this.inboxMessageQueue.queueInboundProcessing({
+      tenantId: channelAccount.tenantId,
+      channelAccountId: channelAccount.id,
+      providerMessageId: event.providerMessageId,
+      fromNumber: rawMessage.from,
+      messageType: rawMessage.type,
+      content: this.extractMessageContent(rawMessage),
+      timestamp: event.timestamp,
+      rawEvent: event.rawEvent,
+    });
+
+    logger.info('Inbound message queued for processing', {
+      providerMessageId: event.providerMessageId,
+      channelAccountId: channelAccount.id,
+      phoneNumberId,
+    });
+  }
+
+  /**
+   * Extract the message content based on message type.
+   *
+   * Returns the content object appropriate for the message type
+   * (text body, image/video/audio/document object, etc.)
+   *
+   * @param rawMessage - The raw message from the webhook
+   * @returns The extracted content object
+   */
+  private extractMessageContent(rawMessage: unknown): unknown {
+    const msg = rawMessage as Record<string, unknown>;
+    const type = msg.type as string;
+
+    switch (type) {
+      case 'text':
+        return { text: (msg.text as { body: string })?.body };
+      case 'image':
+        return msg.image;
+      case 'document':
+        return msg.document;
+      case 'audio':
+        return msg.audio;
+      case 'video':
+        return msg.video;
+      default:
+        return msg;
+    }
+  }
+
+  /**
+   * Process a template status update webhook.
+   *
+   * Meta sends template status webhooks when templates are approved, rejected,
+   * disabled, etc. This method finds the matching template in the database
+   * and updates its status, then emits an SSE event to notify the frontend.
+   *
+   * @param event - Template status update event
+   */
+  private async processTemplateStatusUpdate(event: WebhookEvent): Promise<void> {
+    const templateInfo = event.templateInfo;
+    if (!templateInfo) {
+      logger.warn('Template status update missing templateInfo', { event });
+      return;
+    }
+
+    const {
+      templateName,
+      language,
+      newStatus,
+      reason,
+      whatsappBusinessAccountId,
+    } = templateInfo;
+
+    logger.info('Processing template status update', {
+      templateName,
+      language,
+      newStatus,
+      whatsappBusinessAccountId,
+    });
+
+    // Map Meta status to internal TemplateStatus
+    const internalStatus = this.mapMetaTemplateStatusToInternal(newStatus);
+
+    // Find channel accounts that match this WABA ID
+    // We need to check credentials to find the matching account
+    const channelAccounts = await this.findChannelAccountsByWabaId(whatsappBusinessAccountId);
+
+    if (channelAccounts.length === 0) {
+      logger.warn('No channel accounts found for WABA ID', {
+        whatsappBusinessAccountId,
+        templateName,
+        language,
+      });
+      return;
+    }
+
+    // Process template status update for each matching channel account
+    let updated = false;
+    for (const { tenantId, channelAccountId } of channelAccounts) {
+      const result = await this.templateRepo.updateStatusByNameAndLanguage(
+        tenantId,
+        channelAccountId,
+        templateName,
+        language,
+        internalStatus
+      );
+
+      if (result.updated) {
+        updated = true;
+
+        // Emit SSE event to notify frontend
+        this.templateSseService.emitTemplateStatusChange(
+          tenantId,
+          templateName,
+          language,
+          result.oldStatus || null,
+          internalStatus,
+          reason
+        );
+
+        logger.info('Template status updated', {
+          tenantId,
+          channelAccountId,
+          templateName,
+          language,
+          oldStatus: result.oldStatus,
+          newStatus: internalStatus,
+          translationId: result.translationId,
+        });
+      }
+    }
+
+    if (!updated) {
+      logger.warn('Template not found for status update', {
+        templateName,
+        language,
+        whatsappBusinessAccountId,
+        checkedAccounts: channelAccounts.length,
+      });
+    }
+  }
+
+  /**
+   * Find channel accounts by WhatsApp Business Account ID.
+   *
+   * Since WABA ID is stored in encrypted credentials, we need to decrypt
+   * and check each active channel account's credentials.
+   *
+   * @param wabaId - WhatsApp Business Account ID from webhook
+   * @returns Array of matching tenant ID and channel account ID pairs
+   */
+  private async findChannelAccountsByWabaId(
+    wabaId: string | undefined
+  ): Promise<Array<{ tenantId: string; channelAccountId: string }>> {
+    if (!wabaId) {
+      return [];
+    }
+
+    const results: Array<{ tenantId: string; channelAccountId: string }> = [];
+
+    // Get all active channel accounts
+    const channelAccounts = await this.channelAccountRepo.findAllActive();
+
+    for (const account of channelAccounts) {
+      try {
+        // Decrypt credentials to check WABA ID
+        const credentials = await this.credentialService.decryptCredentials(
+          account.encryptedCredentials,
+          account.credentialsIv
+        );
+
+        if (credentials.whatsappBusinessAccountId === wabaId) {
+          results.push({
+            tenantId: account.tenantId,
+            channelAccountId: account.id,
+          });
+        }
+      } catch (error) {
+        // Skip accounts where decryption fails
+        logger.debug('Failed to decrypt credentials for channel account', {
+          channelAccountId: account.id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Map Meta template status to internal TemplateStatus enum.
+   *
+   * @param metaStatus - Status from Meta webhook
+   * @returns Internal TemplateStatus value
+   */
+  private mapMetaTemplateStatusToInternal(metaStatus: MetaTemplateStatus): TemplateStatus {
+    const statusMap: Record<MetaTemplateStatus, TemplateStatus> = {
+      APPROVED: TemplateStatus.APPROVED,
+      REJECTED: TemplateStatus.REJECTED,
+      PENDING: TemplateStatus.PENDING,
+      PENDING_DELETION: TemplateStatus.PENDING_DELETION,
+      DISABLED: TemplateStatus.DISABLED,
+      PAUSED: TemplateStatus.PAUSED,
+      IN_APPEAL: TemplateStatus.IN_APPEAL,
+      FLAGGED: TemplateStatus.FLAGGED,
+      LIMIT_EXCEEDED: TemplateStatus.LIMIT_EXCEEDED,
+    };
+
+    return statusMap[metaStatus] || TemplateStatus.PENDING;
   }
 }

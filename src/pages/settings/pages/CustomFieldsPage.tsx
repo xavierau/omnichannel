@@ -1,5 +1,6 @@
 import * as React from "react"
-import { Plus } from "lucide-react"
+import { Plus, Loader2, AlertCircle, RefreshCw } from "lucide-react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -13,45 +14,49 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 import type {
   CustomFieldDefinition,
   CustomFieldEntityType,
 } from "@/types/custom-fields"
 import { ENTITY_TYPES } from "@/types/custom-fields"
-import {
-  getCustomFieldsForEntity,
-  createCustomField,
-  updateCustomField,
-  deleteCustomField,
-  reorderCustomFields,
-} from "../data/mock-custom-fields"
+import { customFieldService } from "@/services/custom-field.service"
 import { FieldDefinitionList } from "../components/FieldDefinitionList"
 import { CustomFieldFormDialog } from "../components/CustomFieldFormDialog"
-
-const MOCK_TENANT_ID = "tenant-001"
 
 export function CustomFieldsPage() {
   const [activeTab, setActiveTab] = React.useState<CustomFieldEntityType>("CUSTOMER")
   const [definitions, setDefinitions] = React.useState<CustomFieldDefinition[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
 
   // Dialog state
   const [isFormOpen, setIsFormOpen] = React.useState(false)
   const [editingField, setEditingField] = React.useState<CustomFieldDefinition | undefined>()
   const [deleteId, setDeleteId] = React.useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+
+  // Fetch definitions from API
+  const fetchDefinitions = React.useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const data = await customFieldService.getCustomFields(activeTab)
+      setDefinitions(data)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load custom fields"
+      setError(message)
+      toast.error("Failed to load custom fields", { description: message })
+    } finally {
+      setIsLoading(false)
+    }
+  }, [activeTab])
 
   // Load definitions when tab changes
   React.useEffect(() => {
-    setIsLoading(true)
-    // Simulate async load
-    const timer = setTimeout(() => {
-      const data = getCustomFieldsForEntity(activeTab, MOCK_TENANT_ID)
-      setDefinitions(data)
-      setIsLoading(false)
-    }, 100)
-    return () => clearTimeout(timer)
-  }, [activeTab])
+    fetchDefinitions()
+  }, [fetchDefinitions])
 
   const handleAdd = () => {
     setEditingField(undefined)
@@ -72,29 +77,32 @@ export function CustomFieldsPage() {
     if (!field) return
 
     try {
-      await updateCustomField(id, { isVisible: !field.isVisible })
+      const updated = await customFieldService.updateCustomField(id, {
+        isVisible: !field.isVisible,
+      })
       setDefinitions((prev) =>
-        prev.map((d) =>
-          d.id === id ? { ...d, isVisible: !d.isVisible } : d
-        )
+        prev.map((d) => (d.id === id ? updated : d))
       )
-    } catch (error) {
-      console.error("Failed to toggle visibility:", error)
+      toast.success(`Field ${updated.isVisible ? "shown" : "hidden"}`)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to update visibility"
+      toast.error("Failed to update visibility", { description: message })
     }
   }
 
   const handleReorder = async (reordered: CustomFieldDefinition[]) => {
+    const previousDefinitions = [...definitions]
     setDefinitions(reordered)
+
     try {
-      await reorderCustomFields(
-        activeTab,
-        reordered.map((d) => d.id)
-      )
-    } catch (error) {
-      console.error("Failed to reorder:", error)
-      // Revert on error
-      const data = getCustomFieldsForEntity(activeTab, MOCK_TENANT_ID)
-      setDefinitions(data)
+      await customFieldService.reorderCustomFields({
+        entityType: activeTab,
+        orderedIds: reordered.map((d) => d.id),
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to reorder fields"
+      toast.error("Failed to reorder fields", { description: message })
+      setDefinitions(previousDefinitions)
     }
   }
 
@@ -104,38 +112,58 @@ export function CustomFieldsPage() {
     try {
       if (editingField) {
         // Update existing
-        await updateCustomField(editingField.id, data)
+        const updated = await customFieldService.updateCustomField(editingField.id, {
+          displayLabel: data.displayLabel,
+          description: data.description,
+          validation: data.validation,
+          defaultValue: data.defaultValue,
+          options: data.options,
+          isVisible: data.isVisible,
+          isSearchable: data.isSearchable,
+          isFilterable: data.isFilterable,
+        })
         setDefinitions((prev) =>
-          prev.map((d) =>
-            d.id === editingField.id
-              ? { ...d, ...data, updatedAt: new Date() }
-              : d
-          )
+          prev.map((d) => (d.id === editingField.id ? updated : d))
         )
+        toast.success("Custom field updated")
       } else {
         // Create new
-        const newField = await createCustomField({
-          ...data,
-          tenantId: MOCK_TENANT_ID,
-          displayOrder: definitions.length + 1,
+        const newField = await customFieldService.createCustomField({
+          entityType: activeTab,
+          fieldKey: data.fieldKey,
+          displayLabel: data.displayLabel,
+          description: data.description,
+          fieldType: data.fieldType,
+          validation: data.validation,
+          defaultValue: data.defaultValue,
+          options: data.options,
+          isVisible: data.isVisible,
+          isSearchable: data.isSearchable,
+          isFilterable: data.isFilterable,
         })
         setDefinitions((prev) => [...prev, newField])
+        toast.success("Custom field created")
       }
       setIsFormOpen(false)
-    } catch (error) {
-      console.error("Failed to save field:", error)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to save field"
+      toast.error("Failed to save field", { description: message })
     }
   }
 
   const handleConfirmDelete = async () => {
     if (!deleteId) return
 
+    setIsDeleting(true)
     try {
-      await deleteCustomField(deleteId)
+      await customFieldService.deleteCustomField(deleteId)
       setDefinitions((prev) => prev.filter((d) => d.id !== deleteId))
-    } catch (error) {
-      console.error("Failed to delete field:", error)
+      toast.success("Custom field deleted")
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to delete field"
+      toast.error("Failed to delete field", { description: message })
     } finally {
+      setIsDeleting(false)
       setDeleteId(null)
     }
   }
@@ -157,6 +185,20 @@ export function CustomFieldsPage() {
         </Button>
       </div>
 
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription className="flex items-center justify-between">
+            <span>{error}</span>
+            <Button variant="outline" size="sm" onClick={fetchDefinitions}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Tabs
         value={activeTab}
         onValueChange={(v: string) => setActiveTab(v as CustomFieldEntityType)}
@@ -172,13 +214,22 @@ export function CustomFieldsPage() {
         {ENTITY_TYPES.map((entity) => (
           <TabsContent key={entity.value} value={entity.value} className="mt-4">
             {isLoading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="h-16 bg-muted animate-pulse rounded-md"
-                  />
-                ))}
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : definitions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="rounded-full bg-muted p-4 mb-4">
+                  <Plus className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-medium">No custom fields</h3>
+                <p className="text-muted-foreground mt-1 mb-4">
+                  Create custom fields to capture additional data for {entity.label.toLowerCase()}
+                </p>
+                <Button onClick={handleAdd}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Field
+                </Button>
               </div>
             ) : (
               <FieldDefinitionList
@@ -214,12 +265,20 @@ export function CustomFieldsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
+              disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

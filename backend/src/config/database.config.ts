@@ -13,6 +13,26 @@ import { WhatsAppTemplateGroup } from '@features/templates/template-group.entity
 import { TemplateTranslation } from '@features/templates/template-translation.entity';
 import { CustomerGroup } from '@features/groups/group.entity';
 import { Media } from '@features/media/media.entity';
+
+// Channel and Provider entities
+import { Channel } from '@features/channels/channel.entity';
+import { Provider } from '@features/providers/provider.entity';
+import { ChannelAccount } from '@features/channel-accounts/channel-account.entity';
+
+// Teams entities
+import { Team } from '@features/teams/entities/team.entity';
+import { TeamMember } from '@features/teams/entities/team-member.entity';
+import { TeamChannelAccount } from '@features/teams/entities/team-channel-account.entity';
+
+// Inbox entities
+import { Conversation } from '@features/inbox/entities/conversation.entity';
+import { ConversationMessage } from '@features/inbox/entities/conversation-message.entity';
+import { ConversationNote } from '@features/inbox/entities/conversation-note.entity';
+import { ConversationAssignment } from '@features/inbox/entities/conversation-assignment.entity';
+
+// Custom fields entity
+import { CustomFieldDefinition } from '@features/custom-fields/custom-field.entity';
+
 import { logger } from './logger.config';
 import { DB_CONSTANTS } from './constants';
 
@@ -98,6 +118,21 @@ const dataSourceOptions: PostgresConnectionOptions = {
     TemplateTranslation,
     CustomerGroup,
     Media,
+    // Channel and Provider entities
+    Channel,
+    Provider,
+    ChannelAccount,
+    // Teams entities
+    Team,
+    TeamMember,
+    TeamChannelAccount,
+    // Inbox entities
+    Conversation,
+    ConversationMessage,
+    ConversationNote,
+    ConversationAssignment,
+    // Custom fields entity
+    CustomFieldDefinition,
   ],
   migrations: [__dirname + '/../database/migrations/*.{js,ts}'],
   subscribers: [],

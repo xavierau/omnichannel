@@ -2,6 +2,7 @@ import * as React from "react"
 import {
   Download,
   FileSpreadsheet,
+  Loader2,
   Pause,
   Plus,
   Radio,
@@ -9,45 +10,279 @@ import {
   X,
 } from "lucide-react"
 import { format } from "date-fns"
+import { toast } from "sonner"
 
 import { DataTable, type BulkAction } from "@/components/data-table"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { exportToCSV, exportToExcel } from "@/lib/export-utils"
+import {
+  broadcastService,
+  type Broadcast as ApiBroadcast,
+  type CreateBroadcastData,
+  type UpdateBroadcastData,
+  RecipientType as ApiRecipientType,
+  type TemplateVariablesConfig as ApiTemplateVariablesConfig,
+} from "@/services/broadcast.service"
+import {
+  templateService,
+  type WhatsAppTemplate as ApiWhatsAppTemplate,
+} from "@/services/template.service"
+import { groupService, type CustomerGroup } from "@/services/group.service"
+import { customerService, type Customer as ApiCustomer } from "@/services/customer.service"
+import type { WhatsAppTemplate } from "@/pages/whatsapp-templates/types"
 import type { Customer } from "@/pages/customers/types"
-import { mockTemplates } from "@/pages/whatsapp-templates/data/mock-templates"
 import type { Broadcast, BroadcastFilters as BroadcastFiltersType, BroadcastFormData } from "./types"
 import { defaultFilters } from "./types"
-import {
-  mockBroadcasts,
-  availableGroups,
-  availableCustomers as mockAvailableCustomers,
-  availableTimezones,
-} from "./data/mock-broadcasts"
 import { getBroadcastColumns } from "./components/BroadcastTable"
 import { BroadcastFilters } from "./components/BroadcastFilters"
 import { BroadcastFormDialog } from "./components/BroadcastFormDialog"
 
-// Get only APPROVED templates for broadcast selection
-const availableTemplates = mockTemplates.filter((t) => t.status === "APPROVED")
+// Static timezone data (no API needed)
+const TIMEZONES = [
+  { value: "Asia/Hong_Kong", label: "Hong Kong (HKT)" },
+  { value: "Asia/Shanghai", label: "China (CST)" },
+  { value: "Asia/Tokyo", label: "Japan (JST)" },
+  { value: "Asia/Singapore", label: "Singapore (SGT)" },
+  { value: "Asia/Jakarta", label: "Indonesia (WIB)" },
+  { value: "America/New_York", label: "New York (EST)" },
+  { value: "America/Los_Angeles", label: "Los Angeles (PST)" },
+  { value: "Europe/London", label: "London (GMT)" },
+  { value: "UTC", label: "UTC" },
+]
 
-// Convert simplified customers to full Customer type for the form
-const availableCustomers: Customer[] = mockAvailableCustomers.map((c) => ({
-  ...c,
-  tags: [],
-  createdAt: new Date(),
-  updatedAt: new Date(),
-}))
+// Transform API broadcast to local Broadcast type
+function transformApiBroadcast(apiBroadcast: ApiBroadcast): Broadcast {
+  return {
+    id: apiBroadcast.id,
+    name: apiBroadcast.name,
+    description: apiBroadcast.description ?? undefined,
+    templateId: apiBroadcast.templateId,
+    templateName: apiBroadcast.templateName,
+    templateCategory: apiBroadcast.templateCategory.toUpperCase() as Broadcast["templateCategory"],
+    recipientType: apiBroadcast.recipientType.toUpperCase() as Broadcast["recipientType"],
+    groupId: apiBroadcast.groupId ?? undefined,
+    groupName: undefined, // Not returned by API, could be fetched separately if needed
+    customerIds: apiBroadcast.customerIds ?? undefined,
+    totalRecipients: apiBroadcast.totalRecipients,
+    scheduledAt: apiBroadcast.scheduledAt ? new Date(apiBroadcast.scheduledAt) : null,
+    isImmediate: apiBroadcast.isImmediate,
+    timezone: apiBroadcast.timezone,
+    status: apiBroadcast.status.toUpperCase() as Broadcast["status"],
+    sentCount: apiBroadcast.sentCount,
+    deliveredCount: apiBroadcast.deliveredCount,
+    readCount: apiBroadcast.readCount,
+    failedCount: apiBroadcast.failedCount,
+    createdBy: apiBroadcast.createdBy,
+    createdAt: new Date(apiBroadcast.createdAt),
+    updatedAt: new Date(apiBroadcast.updatedAt),
+    completedAt: apiBroadcast.completedAt ? new Date(apiBroadcast.completedAt) : undefined,
+  }
+}
+
+// Transform local form template variables to API format
+function transformTemplateVariablesToApi(
+  vars: BroadcastFormData["templateVariables"]
+): ApiTemplateVariablesConfig {
+  if (!vars) {
+    return { bodyVariables: [], buttonVariables: [] }
+  }
+
+  return {
+    header: vars.header
+      ? {
+          type: vars.header.type.toLowerCase() as "text" | "image" | "video" | "document",
+          textVariable: vars.header.textVariable
+            ? {
+                index: vars.header.textVariable.index,
+                sourceType: vars.header.textVariable.sourceType.toLowerCase() as "static" | "customer_field",
+                staticValue: vars.header.textVariable.staticValue,
+                customerField: vars.header.textVariable.customerField,
+              }
+            : undefined,
+          mediaUrl: vars.header.mediaUrl,
+        }
+      : undefined,
+    bodyVariables: vars.bodyVariables.map((v) => ({
+      index: v.index,
+      sourceType: v.sourceType.toLowerCase() as "static" | "customer_field",
+      staticValue: v.staticValue,
+      customerField: v.customerField,
+    })),
+    buttonVariables: vars.buttonVariables.map((bv) => ({
+      buttonIndex: bv.buttonIndex,
+      variable: {
+        index: bv.variable.index,
+        sourceType: bv.variable.sourceType.toLowerCase() as "static" | "customer_field",
+        staticValue: bv.variable.staticValue,
+        customerField: bv.variable.customerField,
+      },
+    })),
+  }
+}
+
+// Transform local form data to API create data
+function transformFormDataToCreateData(data: BroadcastFormData): CreateBroadcastData {
+  return {
+    name: data.name,
+    description: data.description || undefined,
+    templateId: data.templateId,
+    recipientType: data.recipientType.toLowerCase() as ApiRecipientType,
+    groupId: data.recipientType === "GROUP" ? data.groupId : undefined,
+    customerIds: data.recipientType === "CUSTOMERS" ? data.customerIds : undefined,
+    templateVariables: transformTemplateVariablesToApi(data.templateVariables),
+    scheduledAt: data.scheduledAt ? data.scheduledAt.toISOString() : undefined,
+    isImmediate: data.isImmediate,
+    timezone: data.timezone,
+  }
+}
+
+// Transform local form data to API update data
+function transformFormDataToUpdateData(data: BroadcastFormData): UpdateBroadcastData {
+  return {
+    name: data.name,
+    description: data.description || undefined,
+    templateId: data.templateId,
+    recipientType: data.recipientType.toLowerCase() as ApiRecipientType,
+    groupId: data.recipientType === "GROUP" ? data.groupId : undefined,
+    customerIds: data.recipientType === "CUSTOMERS" ? data.customerIds : undefined,
+    templateVariables: transformTemplateVariablesToApi(data.templateVariables),
+    scheduledAt: data.scheduledAt ? data.scheduledAt.toISOString() : undefined,
+    isImmediate: data.isImmediate,
+    timezone: data.timezone,
+  }
+}
+
+// Transform API template to format needed by form dialog (local WhatsAppTemplate type)
+function transformTemplateForForm(template: ApiWhatsAppTemplate): WhatsAppTemplate {
+  // Get the first translation for single-language backwards compatibility
+  const firstTranslation = template.translations?.[0]
+
+  return {
+    id: template.id,
+    name: template.name,
+    category: template.category.toUpperCase() as WhatsAppTemplate["category"],
+    status: (firstTranslation?.status?.toUpperCase() ?? "APPROVED") as WhatsAppTemplate["status"],
+    quality: firstTranslation?.quality
+      ? (firstTranslation.quality.toUpperCase() as WhatsAppTemplate["quality"])
+      : undefined,
+    language: firstTranslation?.language ?? "en",
+    header: firstTranslation?.headerType
+      ? {
+          type: firstTranslation.headerType.toUpperCase() as WhatsAppTemplate["header"] extends { type: infer T } ? T : never,
+          text: firstTranslation.headerContent ?? undefined,
+        }
+      : undefined,
+    body: firstTranslation?.body ?? "",
+    footer: firstTranslation?.footer ?? undefined,
+    buttons: (firstTranslation?.buttons ?? []).map((btn) => ({
+      id: btn.id,
+      type: btn.type.toUpperCase() as "QUICK_REPLY" | "CALL" | "URL" | "COPY_CODE",
+      text: btn.text,
+      url: btn.url,
+      phoneNumber: btn.phoneNumber,
+    })),
+    createdAt: new Date(template.createdAt),
+    updatedAt: new Date(template.updatedAt),
+    rejectionReason: firstTranslation?.rejectionReason ?? undefined,
+  }
+}
+
+// Transform API group to format needed by form dialog
+function transformGroupForForm(group: CustomerGroup) {
+  return {
+    id: group.id,
+    name: group.name,
+    count: group.memberCount ?? 0,
+  }
+}
+
+// Transform API customer to local Customer type
+function transformCustomerForForm(customer: ApiCustomer): Customer {
+  return {
+    id: customer.id,
+    name: customer.name,
+    whatsappNumber: customer.whatsappNumber,
+    tags: customer.tags.map((tag) => ({
+      id: tag.id,
+      name: tag.name,
+      color: tag.color as Customer["tags"][number]["color"],
+    })),
+    customFields: customer.customFields as Customer["customFields"],
+    createdAt: new Date(customer.createdAt),
+    updatedAt: new Date(customer.updatedAt),
+  }
+}
 
 export function BroadcastsPage() {
-  const [broadcasts, setBroadcasts] = React.useState<Broadcast[]>(mockBroadcasts)
+  // Data state
+  const [broadcasts, setBroadcasts] = React.useState<Broadcast[]>([])
+  const [templates, setTemplates] = React.useState<ApiWhatsAppTemplate[]>([])
+  const [groups, setGroups] = React.useState<CustomerGroup[]>([])
+  const [customers, setCustomers] = React.useState<ApiCustomer[]>([])
+
+  // UI state
   const [filters, setFilters] = React.useState<BroadcastFiltersType>(defaultFilters)
   const [selectedBroadcasts, setSelectedBroadcasts] = React.useState<Broadcast[]>([])
-  const [isLoading] = React.useState(false)
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = React.useState(false)
   const [showBulkCancelDialog, setShowBulkCancelDialog] = React.useState(false)
   const [formDialogOpen, setFormDialogOpen] = React.useState(false)
   const [editingBroadcast, setEditingBroadcast] = React.useState<Broadcast | undefined>(undefined)
+
+  // Fetch all required data on mount
+  React.useEffect(() => {
+    const controller = new AbortController()
+
+    const fetchData = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        const [broadcastsRes, templatesRes, groupsRes, customersRes] = await Promise.all([
+          broadcastService.getBroadcasts({}),
+          templateService.getApprovedTemplates(),
+          groupService.getGroups({}),
+          customerService.getCustomers({ limit: 100 }),
+        ])
+
+        if (!controller.signal.aborted) {
+          setBroadcasts(broadcastsRes.data.map(transformApiBroadcast))
+          setTemplates(templatesRes)
+          setGroups(groupsRes.data)
+          setCustomers(customersRes.data)
+        }
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          const message = err instanceof Error ? err.message : "Failed to load data"
+          setError(message)
+          toast.error("Failed to load broadcasts", { description: message })
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    fetchData()
+
+    return () => {
+      controller.abort()
+    }
+  }, [])
+
+  // Refetch broadcasts after mutations
+  const refetchBroadcasts = React.useCallback(async () => {
+    try {
+      const broadcastsRes = await broadcastService.getBroadcasts({})
+      setBroadcasts(broadcastsRes.data.map(transformApiBroadcast))
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to refresh broadcasts"
+      toast.error("Failed to refresh", { description: message })
+    }
+  }, [])
 
   // Filter broadcasts based on current filters
   const filteredBroadcasts = React.useMemo(() => {
@@ -83,89 +318,198 @@ export function BroadcastsPage() {
     })
   }, [broadcasts, filters])
 
+  // Action handlers using useCallback for stability
+  const handleViewDetails = React.useCallback((broadcast: Broadcast) => {
+    console.log("View details:", broadcast)
+    // TODO: Open broadcast detail modal/page
+  }, [])
+
+  const handleEdit = React.useCallback((broadcast: Broadcast) => {
+    setEditingBroadcast(broadcast)
+    setFormDialogOpen(true)
+  }, [])
+
+  const handleSchedule = React.useCallback(
+    async (broadcast: Broadcast) => {
+      try {
+        await broadcastService.schedule(broadcast.id)
+        toast.success("Broadcast scheduled successfully")
+        await refetchBroadcasts()
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to schedule broadcast"
+        toast.error("Failed to schedule", { description: message })
+      }
+    },
+    [refetchBroadcasts]
+  )
+
+  const handlePause = React.useCallback(
+    async (broadcast: Broadcast) => {
+      try {
+        await broadcastService.pause(broadcast.id)
+        toast.success("Broadcast paused")
+        // Optimistic update
+        setBroadcasts((prev) =>
+          prev.map((b) =>
+            b.id === broadcast.id
+              ? { ...b, status: "PAUSED" as const, updatedAt: new Date() }
+              : b
+          )
+        )
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to pause broadcast"
+        toast.error("Failed to pause", { description: message })
+        await refetchBroadcasts()
+      }
+    },
+    [refetchBroadcasts]
+  )
+
+  const handleResume = React.useCallback(
+    async (broadcast: Broadcast) => {
+      try {
+        await broadcastService.resume(broadcast.id)
+        toast.success("Broadcast resumed")
+        // Optimistic update - API will return the actual new status
+        const newStatus = broadcast.sentCount > 0 ? "SENDING" : "SCHEDULED"
+        setBroadcasts((prev) =>
+          prev.map((b) =>
+            b.id === broadcast.id
+              ? { ...b, status: newStatus as Broadcast["status"], updatedAt: new Date() }
+              : b
+          )
+        )
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to resume broadcast"
+        toast.error("Failed to resume", { description: message })
+        await refetchBroadcasts()
+      }
+    },
+    [refetchBroadcasts]
+  )
+
+  const handleCancel = React.useCallback(
+    async (broadcast: Broadcast) => {
+      try {
+        await broadcastService.cancel(broadcast.id)
+        toast.success("Broadcast cancelled")
+        // Optimistic update
+        setBroadcasts((prev) =>
+          prev.map((b) =>
+            b.id === broadcast.id
+              ? { ...b, status: "CANCELLED" as const, updatedAt: new Date() }
+              : b
+          )
+        )
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to cancel broadcast"
+        toast.error("Failed to cancel", { description: message })
+        await refetchBroadcasts()
+      }
+    },
+    [refetchBroadcasts]
+  )
+
+  const handleRetry = React.useCallback(
+    async (broadcast: Broadcast) => {
+      try {
+        await broadcastService.retry(broadcast.id)
+        toast.success("Retrying failed recipients")
+        // Optimistic update
+        setBroadcasts((prev) =>
+          prev.map((b) =>
+            b.id === broadcast.id
+              ? { ...b, status: "SENDING" as const, updatedAt: new Date() }
+              : b
+          )
+        )
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to retry broadcast"
+        toast.error("Failed to retry", { description: message })
+        await refetchBroadcasts()
+      }
+    },
+    [refetchBroadcasts]
+  )
+
+  const handleDuplicate = React.useCallback(
+    async (broadcast: Broadcast) => {
+      // Create a new broadcast based on the existing one
+      const duplicateData: CreateBroadcastData = {
+        name: `${broadcast.name} (Copy)`,
+        description: broadcast.description,
+        templateId: broadcast.templateId,
+        recipientType: broadcast.recipientType.toLowerCase() as ApiRecipientType,
+        groupId: broadcast.groupId,
+        customerIds: broadcast.customerIds,
+        templateVariables: {
+          bodyVariables: [],
+          buttonVariables: [],
+        },
+        isImmediate: false,
+        timezone: broadcast.timezone,
+      }
+
+      try {
+        const newBroadcast = await broadcastService.createBroadcast(duplicateData)
+        toast.success("Broadcast duplicated")
+        setBroadcasts((prev) => [transformApiBroadcast(newBroadcast), ...prev])
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to duplicate broadcast"
+        toast.error("Failed to duplicate", { description: message })
+      }
+    },
+    []
+  )
+
+  const handleViewReport = React.useCallback((broadcast: Broadcast) => {
+    console.log("View report:", broadcast)
+    // TODO: Open report page/modal
+  }, [])
+
+  const handleDelete = React.useCallback(
+    async (broadcast: Broadcast) => {
+      try {
+        await broadcastService.deleteBroadcast(broadcast.id)
+        toast.success("Broadcast deleted")
+        // Optimistic update
+        setBroadcasts((prev) => prev.filter((b) => b.id !== broadcast.id))
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to delete broadcast"
+        toast.error("Failed to delete", { description: message })
+        await refetchBroadcasts()
+      }
+    },
+    [refetchBroadcasts]
+  )
+
   // Column definitions with action handlers
   const columns = React.useMemo(
     () =>
       getBroadcastColumns({
-        onViewDetails: (broadcast) => {
-          console.log("View details:", broadcast)
-          // TODO: Open broadcast detail modal/page
-        },
-        onEdit: (broadcast) => {
-          setEditingBroadcast(broadcast)
-          setFormDialogOpen(true)
-        },
-        onSchedule: (broadcast) => {
-          console.log("Schedule broadcast:", broadcast)
-          // TODO: Open scheduling dialog
-        },
-        onPause: (broadcast) => {
-          setBroadcasts((prev) =>
-            prev.map((b) =>
-              b.id === broadcast.id
-                ? { ...b, status: "PAUSED", updatedAt: new Date() }
-                : b
-            )
-          )
-        },
-        onResume: (broadcast) => {
-          // Resume to SCHEDULED or SENDING based on previous state
-          const newStatus = broadcast.sentCount > 0 ? "SENDING" : "SCHEDULED"
-          setBroadcasts((prev) =>
-            prev.map((b) =>
-              b.id === broadcast.id
-                ? { ...b, status: newStatus, updatedAt: new Date() }
-                : b
-            )
-          )
-        },
-        onCancel: async (broadcast) => {
-          await new Promise((resolve) => setTimeout(resolve, 500))
-          setBroadcasts((prev) =>
-            prev.map((b) =>
-              b.id === broadcast.id
-                ? { ...b, status: "CANCELLED", updatedAt: new Date() }
-                : b
-            )
-          )
-        },
-        onRetry: (broadcast) => {
-          console.log("Retry broadcast:", broadcast)
-          setBroadcasts((prev) =>
-            prev.map((b) =>
-              b.id === broadcast.id
-                ? { ...b, status: "SENDING", updatedAt: new Date() }
-                : b
-            )
-          )
-        },
-        onDuplicate: (broadcast) => {
-          const duplicated: Broadcast = {
-            ...broadcast,
-            id: `brd_${Date.now()}`,
-            name: `${broadcast.name} (Copy)`,
-            status: "DRAFT",
-            sentCount: 0,
-            deliveredCount: 0,
-            readCount: 0,
-            failedCount: 0,
-            scheduledAt: null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            completedAt: undefined,
-          }
-          setBroadcasts((prev) => [duplicated, ...prev])
-        },
-        onViewReport: (broadcast) => {
-          console.log("View report:", broadcast)
-          // TODO: Open report page/modal
-        },
-        onDelete: async (broadcast) => {
-          await new Promise((resolve) => setTimeout(resolve, 500))
-          setBroadcasts((prev) => prev.filter((b) => b.id !== broadcast.id))
-        },
+        onViewDetails: handleViewDetails,
+        onEdit: handleEdit,
+        onSchedule: handleSchedule,
+        onPause: handlePause,
+        onResume: handleResume,
+        onCancel: handleCancel,
+        onRetry: handleRetry,
+        onDuplicate: handleDuplicate,
+        onViewReport: handleViewReport,
+        onDelete: handleDelete,
       }),
-    []
+    [
+      handleViewDetails,
+      handleEdit,
+      handleSchedule,
+      handlePause,
+      handleResume,
+      handleCancel,
+      handleRetry,
+      handleDuplicate,
+      handleViewReport,
+      handleDelete,
+    ]
   )
 
   // Check if any selected broadcasts can be paused or cancelled
@@ -247,18 +591,30 @@ export function BroadcastsPage() {
       id: "pause",
       label: "Pause",
       icon: <Pause className="size-4" />,
-      onClick: (broadcasts) => {
-        const pausableIds = broadcasts
+      onClick: async (broadcastsToPause) => {
+        const pausableIds = broadcastsToPause
           .filter((b) => b.status === "SCHEDULED" || b.status === "SENDING")
           .map((b) => b.id)
-        setBroadcasts((prev) =>
-          prev.map((b) =>
-            pausableIds.includes(b.id)
-              ? { ...b, status: "PAUSED", updatedAt: new Date() }
-              : b
+
+        if (pausableIds.length === 0) return
+
+        try {
+          await broadcastService.bulkPause(pausableIds)
+          toast.success(`Paused ${pausableIds.length} broadcast(s)`)
+          // Optimistic update
+          setBroadcasts((prev) =>
+            prev.map((b) =>
+              pausableIds.includes(b.id)
+                ? { ...b, status: "PAUSED" as const, updatedAt: new Date() }
+                : b
+            )
           )
-        )
-        setSelectedBroadcasts([])
+          setSelectedBroadcasts([])
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Failed to pause broadcasts"
+          toast.error("Failed to pause broadcasts", { description: message })
+          await refetchBroadcasts()
+        }
       },
       disabled: !canPauseSelected,
     },
@@ -273,110 +629,154 @@ export function BroadcastsPage() {
   ]
 
   // Handle add broadcast button click
-  const handleAddBroadcast = () => {
+  const handleAddBroadcast = React.useCallback(() => {
     setEditingBroadcast(undefined)
     setFormDialogOpen(true)
-  }
+  }, [])
 
   // Handle form submission for both create and edit
-  const handleFormSubmit = async (data: BroadcastFormData) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
-    const selectedTemplate = availableTemplates.find((t) => t.id === data.templateId)
-    const selectedGroup = availableGroups.find((g) => g.id === data.groupId)
-
-    // Calculate total recipients
-    const totalRecipients =
-      data.recipientType === "GROUP"
-        ? selectedGroup?.count ?? 0
-        : data.customerIds.length
-
-    if (editingBroadcast) {
-      // Update existing broadcast
-      setBroadcasts((prev) =>
-        prev.map((b) =>
-          b.id === editingBroadcast.id
-            ? {
-                ...b,
-                name: data.name,
-                description: data.description || undefined,
-                templateId: data.templateId,
-                templateName: selectedTemplate?.name ?? b.templateName,
-                templateCategory: selectedTemplate?.category ?? b.templateCategory,
-                recipientType: data.recipientType,
-                groupId: data.recipientType === "GROUP" ? data.groupId : undefined,
-                groupName: data.recipientType === "GROUP" ? selectedGroup?.name : undefined,
-                customerIds: data.recipientType === "CUSTOMERS" ? data.customerIds : undefined,
-                totalRecipients,
-                isImmediate: data.isImmediate,
-                scheduledAt: data.scheduledAt,
-                timezone: data.timezone,
-                updatedAt: new Date(),
-              }
-            : b
-        )
-      )
-    } else {
-      // Create new broadcast
-      const newBroadcast: Broadcast = {
-        id: `brd_${Date.now()}`,
-        name: data.name,
-        description: data.description || undefined,
-        templateId: data.templateId,
-        templateName: selectedTemplate?.name ?? "",
-        templateCategory: selectedTemplate?.category ?? "MARKETING",
-        recipientType: data.recipientType,
-        groupId: data.recipientType === "GROUP" ? data.groupId : undefined,
-        groupName: data.recipientType === "GROUP" ? selectedGroup?.name : undefined,
-        customerIds: data.recipientType === "CUSTOMERS" ? data.customerIds : undefined,
-        totalRecipients,
-        isImmediate: data.isImmediate,
-        scheduledAt: data.scheduledAt,
-        timezone: data.timezone,
-        status: "DRAFT",
-        sentCount: 0,
-        deliveredCount: 0,
-        readCount: 0,
-        failedCount: 0,
-        createdBy: "current.user@company.com",
-        createdAt: new Date(),
-        updatedAt: new Date(),
+  const handleFormSubmit = React.useCallback(
+    async (data: BroadcastFormData) => {
+      try {
+        if (editingBroadcast) {
+          // Update existing broadcast
+          const updateData = transformFormDataToUpdateData(data)
+          const updatedBroadcast = await broadcastService.updateBroadcast(
+            editingBroadcast.id,
+            updateData
+          )
+          toast.success("Broadcast updated")
+          setBroadcasts((prev) =>
+            prev.map((b) =>
+              b.id === editingBroadcast.id ? transformApiBroadcast(updatedBroadcast) : b
+            )
+          )
+        } else {
+          // Create new broadcast
+          const createData = transformFormDataToCreateData(data)
+          const newBroadcast = await broadcastService.createBroadcast(createData)
+          toast.success("Broadcast created")
+          setBroadcasts((prev) => [transformApiBroadcast(newBroadcast), ...prev])
+        }
+        setFormDialogOpen(false)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to save broadcast"
+        toast.error("Failed to save broadcast", { description: message })
+        throw err // Re-throw to keep dialog open on error
       }
-      setBroadcasts((prev) => [newBroadcast, ...prev])
-    }
-  }
+    },
+    [editingBroadcast]
+  )
 
   // Handle bulk delete
-  const handleBulkDelete = async () => {
-    await new Promise((resolve) => setTimeout(resolve, 500))
+  const handleBulkDelete = React.useCallback(async () => {
     const selectedIds = selectedBroadcasts.map((b) => b.id)
-    setBroadcasts((prev) => prev.filter((b) => !selectedIds.includes(b.id)))
-    setSelectedBroadcasts([])
-  }
+
+    try {
+      await broadcastService.bulkDelete(selectedIds)
+      toast.success(`Deleted ${selectedIds.length} broadcast(s)`)
+      // Optimistic update
+      setBroadcasts((prev) => prev.filter((b) => !selectedIds.includes(b.id)))
+      setSelectedBroadcasts([])
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to delete broadcasts"
+      toast.error("Failed to delete broadcasts", { description: message })
+      await refetchBroadcasts()
+    }
+  }, [selectedBroadcasts, refetchBroadcasts])
 
   // Handle bulk cancel
-  const handleBulkCancel = async () => {
-    await new Promise((resolve) => setTimeout(resolve, 500))
+  const handleBulkCancel = React.useCallback(async () => {
     const cancellableIds = selectedBroadcasts
       .filter((b) => b.status === "SCHEDULED" || b.status === "PAUSED")
       .map((b) => b.id)
-    setBroadcasts((prev) =>
-      prev.map((b) =>
-        cancellableIds.includes(b.id)
-          ? { ...b, status: "CANCELLED", updatedAt: new Date() }
-          : b
+
+    if (cancellableIds.length === 0) return
+
+    try {
+      await broadcastService.bulkCancel(cancellableIds)
+      toast.success(`Cancelled ${cancellableIds.length} broadcast(s)`)
+      // Optimistic update
+      setBroadcasts((prev) =>
+        prev.map((b) =>
+          cancellableIds.includes(b.id)
+            ? { ...b, status: "CANCELLED" as const, updatedAt: new Date() }
+            : b
+        )
       )
-    )
-    setSelectedBroadcasts([])
-  }
+      setSelectedBroadcasts([])
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to cancel broadcasts"
+      toast.error("Failed to cancel broadcasts", { description: message })
+      await refetchBroadcasts()
+    }
+  }, [selectedBroadcasts, refetchBroadcasts])
 
   // Custom toolbar with advanced filters
-  const renderToolbar = () => (
-    <div className="space-y-4">
-      <BroadcastFilters filters={filters} onFiltersChange={setFilters} />
-    </div>
+  const renderToolbar = React.useCallback(
+    () => (
+      <div className="space-y-4">
+        <BroadcastFilters filters={filters} onFiltersChange={setFilters} />
+      </div>
+    ),
+    [filters]
   )
+
+  // Transform data for form dialog
+  const availableTemplatesForForm = React.useMemo(
+    () => templates.map(transformTemplateForForm),
+    [templates]
+  )
+
+  const availableGroupsForForm = React.useMemo(
+    () => groups.map(transformGroupForForm),
+    [groups]
+  )
+
+  const availableCustomersForForm = React.useMemo(
+    () => customers.map(transformCustomerForForm),
+    [customers]
+  )
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 p-12">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Loading broadcasts...</p>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error && broadcasts.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 p-12">
+        <Radio className="size-8 text-destructive" />
+        <p className="text-sm text-destructive">{error}</p>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setError(null)
+            setIsLoading(true)
+            broadcastService
+              .getBroadcasts({})
+              .then((res) => {
+                setBroadcasts(res.data.map(transformApiBroadcast))
+              })
+              .catch((err) => {
+                setError(err instanceof Error ? err.message : "Failed to load broadcasts")
+              })
+              .finally(() => {
+                setIsLoading(false)
+              })
+          }}
+        >
+          Retry
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -438,10 +838,10 @@ export function BroadcastsPage() {
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
         broadcast={editingBroadcast}
-        availableTemplates={availableTemplates}
-        availableGroups={availableGroups}
-        availableCustomers={availableCustomers}
-        availableTimezones={availableTimezones}
+        availableTemplates={availableTemplatesForForm}
+        availableGroups={availableGroupsForForm}
+        availableCustomers={availableCustomersForForm}
+        availableTimezones={TIMEZONES}
         onSubmit={handleFormSubmit}
       />
     </div>

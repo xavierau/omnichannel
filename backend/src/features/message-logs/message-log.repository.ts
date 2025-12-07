@@ -46,10 +46,16 @@ export interface CreateMessageLogData {
 
 @singleton()
 export class MessageLogRepository {
-  private repository: Repository<MessageLog>;
+  private _repository: Repository<MessageLog> | null = null;
 
-  constructor() {
-    this.repository = AppDataSource.getRepository(MessageLog);
+  /**
+   * Lazy initialization of the repository to ensure AppDataSource is initialized.
+   */
+  private get repository(): Repository<MessageLog> {
+    if (!this._repository) {
+      this._repository = AppDataSource.getRepository(MessageLog);
+    }
+    return this._repository;
   }
 
   /**

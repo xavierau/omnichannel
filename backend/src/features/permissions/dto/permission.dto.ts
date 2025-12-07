@@ -70,6 +70,8 @@ export class GroupedPermissionsResponseDto {
       [PermissionResource.CHANNELS]: 'Channels',
       [PermissionResource.CUSTOM_FIELDS]: 'Custom Fields',
       [PermissionResource.NOTES]: 'Notes',
+      [PermissionResource.TEAMS]: 'Teams',
+      [PermissionResource.INBOX]: 'Inbox',
     };
 
     const result: GroupedPermissionsResponseDto[] = [];
