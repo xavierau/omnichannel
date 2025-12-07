@@ -2,7 +2,7 @@ export class HttpException extends Error {
   constructor(
     public statusCode: number,
     public message: string,
-    public errors?: any[]
+    public errors?: unknown[]
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -11,7 +11,7 @@ export class HttpException extends Error {
 }
 
 export class BadRequestException extends HttpException {
-  constructor(message = 'Bad Request', errors?: any[]) {
+  constructor(message = 'Bad Request', errors?: unknown[]) {
     super(400, message, errors);
   }
 }
@@ -41,7 +41,7 @@ export class ConflictException extends HttpException {
 }
 
 export class ValidationException extends HttpException {
-  constructor(message = 'Validation Failed', errors?: any[]) {
+  constructor(message = 'Validation Failed', errors?: unknown[]) {
     super(422, message, errors);
   }
 }

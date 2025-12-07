@@ -42,7 +42,11 @@ export function useCustomFieldDefaults(
 ): void {
   // Use ref to avoid stale closure issues with onChange
   const onChangeRef = React.useRef(onChange)
-  onChangeRef.current = onChange
+
+  // Update ref in useEffect to avoid updating during render
+  React.useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
 
   // Track if we've initialized for current definitions
   const initializedRef = React.useRef<string | null>(null)

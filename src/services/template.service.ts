@@ -17,48 +17,58 @@ import type { PaginatedResponse, ApiResponse } from './api-client'
 const API_BASE_URL = '/api/templates'
 
 // ============================================================================
-// Enums
+// Constants
 // ============================================================================
 
-export enum TemplateCategory {
-  MARKETING = 'marketing',
-  UTILITY = 'utility',
-  AUTHENTICATION = 'authentication',
-}
+export const TemplateCategory = {
+  MARKETING: 'marketing',
+  UTILITY: 'utility',
+  AUTHENTICATION: 'authentication',
+} as const
 
-export enum TemplateStatus {
-  APPROVED = 'approved',
-  PENDING = 'pending',
-  REJECTED = 'rejected',
-  DISABLED = 'disabled',
-  PAUSED = 'paused',
-  PENDING_DELETION = 'pending_deletion',
-  IN_APPEAL = 'in_appeal',
-  FLAGGED = 'flagged',
-  LIMIT_EXCEEDED = 'limit_exceeded',
-}
+export type TemplateCategory = (typeof TemplateCategory)[keyof typeof TemplateCategory]
 
-export enum TemplateQuality {
-  HIGH = 'high',
-  MEDIUM = 'medium',
-  LOW = 'low',
-  PENDING = 'pending',
-}
+export const TemplateStatus = {
+  APPROVED: 'approved',
+  PENDING: 'pending',
+  REJECTED: 'rejected',
+  DISABLED: 'disabled',
+  PAUSED: 'paused',
+  PENDING_DELETION: 'pending_deletion',
+  IN_APPEAL: 'in_appeal',
+  FLAGGED: 'flagged',
+  LIMIT_EXCEEDED: 'limit_exceeded',
+} as const
 
-export enum HeaderType {
-  TEXT = 'text',
-  IMAGE = 'image',
-  VIDEO = 'video',
-  DOCUMENT = 'document',
-  NONE = 'none',
-}
+export type TemplateStatus = (typeof TemplateStatus)[keyof typeof TemplateStatus]
 
-export enum ButtonType {
-  QUICK_REPLY = 'quick_reply',
-  CALL = 'call',
-  URL = 'url',
-  COPY_CODE = 'copy_code',
-}
+export const TemplateQuality = {
+  HIGH: 'high',
+  MEDIUM: 'medium',
+  LOW: 'low',
+  PENDING: 'pending',
+} as const
+
+export type TemplateQuality = (typeof TemplateQuality)[keyof typeof TemplateQuality]
+
+export const HeaderType = {
+  TEXT: 'text',
+  IMAGE: 'image',
+  VIDEO: 'video',
+  DOCUMENT: 'document',
+  NONE: 'none',
+} as const
+
+export type HeaderType = (typeof HeaderType)[keyof typeof HeaderType]
+
+export const ButtonType = {
+  QUICK_REPLY: 'quick_reply',
+  CALL: 'call',
+  URL: 'url',
+  COPY_CODE: 'copy_code',
+} as const
+
+export type ButtonType = (typeof ButtonType)[keyof typeof ButtonType]
 
 // ============================================================================
 // Types

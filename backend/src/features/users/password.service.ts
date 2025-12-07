@@ -19,7 +19,7 @@ export class PasswordService {
   async verifyPassword(hash: string, password: string): Promise<boolean> {
     try {
       return await argon2.verify(hash, password);
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -64,7 +64,7 @@ export class PasswordService {
       violations.push('missing_number');
     }
 
-    if (!/[@$!%*?&#^()_+=\-]/.test(password)) {
+    if (!/[@$!%*?&#^()_+=-]/.test(password)) {
       violations.push('missing_special');
     }
 

@@ -32,6 +32,7 @@ describe('TagService', () => {
     color: TagColor.PURPLE,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenant: {} as any,
   };
 
@@ -42,6 +43,7 @@ describe('TagService', () => {
     color: TagColor.BLUE,
     createdAt: new Date('2024-01-02'),
     updatedAt: new Date('2024-01-02'),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenant: {} as any,
   };
 
@@ -172,6 +174,7 @@ describe('TagService', () => {
         color: createDto.color,
         createdAt: new Date(),
         updatedAt: new Date(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         tenant: {} as any,
       };
 

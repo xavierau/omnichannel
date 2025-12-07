@@ -7,7 +7,7 @@ import {
   RequestWithContext,
   CORRELATION_ID_HEADER,
 } from '../request-context';
-import { v4 as uuidv4, resetMockUuid } from '../../__mocks__/uuid';
+import { resetMockUuid } from '../../__mocks__/uuid';
 
 describe('requestContextMiddleware', () => {
   let mockRequest: Partial<Request>;

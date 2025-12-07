@@ -25,10 +25,12 @@ import { UpdateTagDto } from '../dto/update-tag.dto';
 // Custom error handler that works with both exception class files
 // (The codebase has two identical HttpException definitions)
 const testErrorHandler = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   err: any,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _next: NextFunction
 ) => {
   // Check for statusCode property (present on both HttpException versions)
   const statusCode = err.statusCode || 500;
@@ -113,6 +115,7 @@ describe('Tag Integration Tests', () => {
     color: TagColor.PURPLE,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenant: {} as any,
   };
 
@@ -123,20 +126,22 @@ describe('Tag Integration Tests', () => {
     color: TagColor.BLUE,
     createdAt: new Date('2024-01-02'),
     updatedAt: new Date('2024-01-02'),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenant: {} as any,
   };
 
   // Mock authentication middleware
-  const mockAuthenticate = (req: Request, res: Response, next: NextFunction) => {
+  const mockAuthenticate = (req: Request, _res: Response, next: NextFunction) => {
     req.user = mockUser;
     // Also set tenantId as the requireTenant middleware would
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (req as any).tenantId = tenantId;
     next();
   };
 
   // Mock authorization middleware
   const mockRequirePermission = () => {
-    return (req: Request, res: Response, next: NextFunction) => {
+    return (_req: Request, _res: Response, next: NextFunction) => {
       next();
     };
   };
@@ -293,6 +298,7 @@ describe('Tag Integration Tests', () => {
         color: TagColor.GREEN,
         createdAt: new Date(),
         updatedAt: new Date(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         tenant: {} as any,
       };
 

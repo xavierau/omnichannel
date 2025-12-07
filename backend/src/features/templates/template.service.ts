@@ -183,7 +183,7 @@ export class TemplateService {
     tenantId: string
   ): Promise<TemplateTranslation> {
     // Verify template exists and belongs to tenant
-    const template = await this.getTemplate(tenantId, templateId);
+    await this.getTemplate(tenantId, templateId);
 
     // Check if translation for this language already exists
     const exists = await this.templateRepository.existsTranslationByLanguage(

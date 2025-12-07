@@ -17,49 +17,59 @@ import type { PaginatedResponse, ApiResponse } from './api-client'
 const API_BASE_URL = '/api/inbox'
 
 // ============================================================================
-// Enums
+// Constants
 // ============================================================================
 
-export enum ConversationStatus {
-  UNASSIGNED = 'unassigned',
-  ACTIVE = 'active',
-  WAITING = 'waiting',
-  RESOLVED = 'resolved',
-  CLOSED = 'closed',
-}
+export const ConversationStatus = {
+  UNASSIGNED: 'unassigned',
+  ACTIVE: 'active',
+  WAITING: 'waiting',
+  RESOLVED: 'resolved',
+  CLOSED: 'closed',
+} as const
 
-export enum MessageDirection {
-  INBOUND = 'inbound',
-  OUTBOUND = 'outbound',
-}
+export type ConversationStatus = (typeof ConversationStatus)[keyof typeof ConversationStatus]
 
-export enum MessageContentType {
-  TEXT = 'text',
-  IMAGE = 'image',
-  VIDEO = 'video',
-  AUDIO = 'audio',
-  DOCUMENT = 'document',
-  TEMPLATE = 'template',
-  LOCATION = 'location',
-  STICKER = 'sticker',
-  CONTACT = 'contact',
-  REACTION = 'reaction',
-  INTERACTIVE = 'interactive',
-}
+export const MessageDirection = {
+  INBOUND: 'inbound',
+  OUTBOUND: 'outbound',
+} as const
 
-export enum MessageDeliveryStatus {
-  PENDING = 'pending',
-  QUEUED = 'queued',
-  SENT = 'sent',
-  DELIVERED = 'delivered',
-  READ = 'read',
-  FAILED = 'failed',
-}
+export type MessageDirection = (typeof MessageDirection)[keyof typeof MessageDirection]
 
-export enum NoteScope {
-  CONVERSATION = 'conversation',
-  CUSTOMER = 'customer',
-}
+export const MessageContentType = {
+  TEXT: 'text',
+  IMAGE: 'image',
+  VIDEO: 'video',
+  AUDIO: 'audio',
+  DOCUMENT: 'document',
+  TEMPLATE: 'template',
+  LOCATION: 'location',
+  STICKER: 'sticker',
+  CONTACT: 'contact',
+  REACTION: 'reaction',
+  INTERACTIVE: 'interactive',
+} as const
+
+export type MessageContentType = (typeof MessageContentType)[keyof typeof MessageContentType]
+
+export const MessageDeliveryStatus = {
+  PENDING: 'pending',
+  QUEUED: 'queued',
+  SENT: 'sent',
+  DELIVERED: 'delivered',
+  READ: 'read',
+  FAILED: 'failed',
+} as const
+
+export type MessageDeliveryStatus = (typeof MessageDeliveryStatus)[keyof typeof MessageDeliveryStatus]
+
+export const NoteScope = {
+  CONVERSATION: 'conversation',
+  CUSTOMER: 'customer',
+} as const
+
+export type NoteScope = (typeof NoteScope)[keyof typeof NoteScope]
 
 // ============================================================================
 // Types
@@ -194,7 +204,7 @@ export interface MessageQuery {
 }
 
 export interface SendTextMessageData {
-  contentType: MessageContentType.TEXT
+  contentType: typeof MessageContentType.TEXT
   text: {
     content: string
   }
@@ -202,10 +212,10 @@ export interface SendTextMessageData {
 
 export interface SendMediaMessageData {
   contentType:
-    | MessageContentType.IMAGE
-    | MessageContentType.VIDEO
-    | MessageContentType.AUDIO
-    | MessageContentType.DOCUMENT
+    | typeof MessageContentType.IMAGE
+    | typeof MessageContentType.VIDEO
+    | typeof MessageContentType.AUDIO
+    | typeof MessageContentType.DOCUMENT
   media: {
     url: string
     mimeType?: string
@@ -215,7 +225,7 @@ export interface SendMediaMessageData {
 }
 
 export interface SendTemplateMessageData {
-  contentType: MessageContentType.TEMPLATE
+  contentType: typeof MessageContentType.TEMPLATE
   template: {
     name: string
     language: string
@@ -224,7 +234,7 @@ export interface SendTemplateMessageData {
 }
 
 export interface SendLocationMessageData {
-  contentType: MessageContentType.LOCATION
+  contentType: typeof MessageContentType.LOCATION
   location: {
     latitude: number
     longitude: number
@@ -234,7 +244,7 @@ export interface SendLocationMessageData {
 }
 
 export interface SendReactionData {
-  contentType: MessageContentType.REACTION
+  contentType: typeof MessageContentType.REACTION
   reaction: {
     emoji: string
     messageId: string

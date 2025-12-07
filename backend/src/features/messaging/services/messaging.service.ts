@@ -4,7 +4,6 @@ import { MessageLogRepository, CreateMessageLogData } from '../../message-logs/m
 import { ChannelAccountRepository } from '../../channel-accounts/channel-account.repository';
 import {
   SendTemplateRequest,
-  SendMessageResponse,
   TemplateVariables,
   IMessagingProvider,
 } from '../interfaces/messaging-provider.interface';

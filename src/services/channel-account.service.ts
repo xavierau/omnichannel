@@ -17,14 +17,16 @@ import type { ApiResponse } from './api-client'
 const API_BASE_URL = '/api/channel-accounts'
 
 // ============================================================================
-// Enums
+// Constants
 // ============================================================================
 
-export enum ChannelAccountStatus {
-  CONNECTED = 'connected',
-  DISCONNECTED = 'disconnected',
-  ERROR = 'error',
-}
+export const ChannelAccountStatus = {
+  CONNECTED: 'connected',
+  DISCONNECTED: 'disconnected',
+  ERROR: 'error',
+} as const
+
+export type ChannelAccountStatus = (typeof ChannelAccountStatus)[keyof typeof ChannelAccountStatus]
 
 // ============================================================================
 // Types

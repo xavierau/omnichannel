@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, MaxLength, IsOptional, Matches } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, MaxLength, Matches } from 'class-validator';
 import { AUTH_CONSTANTS, VALIDATION_CONSTANTS } from '@config/constants';
 
 export class CreateInvitationDto {

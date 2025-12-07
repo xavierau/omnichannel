@@ -6,6 +6,7 @@ import { WebhookController } from './webhook.controller';
  * Extended Request type with raw body for signature verification.
  */
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       rawBody?: Buffer;

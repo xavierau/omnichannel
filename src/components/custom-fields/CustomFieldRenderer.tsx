@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/static-components */
 import type { CustomFieldDefinition, CustomFieldValue } from "@/types/custom-fields"
 import { getFieldRenderer } from "./renderers"
 
@@ -11,7 +12,10 @@ export interface CustomFieldRendererProps {
 
 /**
  * Orchestrator component that renders the appropriate field type
- * based on the field definition
+ * based on the field definition.
+ *
+ * Note: This component intentionally selects a renderer component based on fieldType.
+ * The renderers are stable references from a registry, not dynamically created components.
  */
 export function CustomFieldRenderer({
   definition,
@@ -22,7 +26,8 @@ export function CustomFieldRenderer({
 }: CustomFieldRendererProps) {
   const fieldId = `custom-field-${definition.fieldKey}`
 
-  // Get the appropriate renderer from the registry
+  // Get the appropriate renderer from the registry.
+  // The renderer is a stable reference from a pre-defined registry.
   const FieldRenderer = getFieldRenderer(definition.fieldType)
 
   return (

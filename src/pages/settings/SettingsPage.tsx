@@ -206,7 +206,8 @@ export function SettingsPage() {
     }
   }, [editingConfig])
 
-  const handleTestConnection = useCallback(async (data: WhatsAppFormData): Promise<TestConnectionResult> => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleTestConnection = useCallback(async (_data: WhatsAppFormData): Promise<TestConnectionResult> => {
     // For form validation test before saving, we need to create temporarily or use a test endpoint
     // Since the API requires an existing ID, we'll return a mock success for now
     // In production, you might have a separate endpoint for testing credentials before saving

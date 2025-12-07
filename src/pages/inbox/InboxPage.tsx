@@ -14,7 +14,18 @@ import {
   MessageContentType,
   NoteScope,
 } from "@/services/inbox.service"
-import { useInboxSSE } from "@/hooks/useInboxSSE"
+import {
+  useInboxSSE,
+  type ConversationNewEvent,
+  type MessageNewEvent,
+  type MessageStatusEvent,
+  type ConversationAssignedEvent,
+  type StatusChangedEvent,
+  type UnreadUpdatedEvent,
+  type NoteCreatedEvent,
+  type NoteUpdatedEvent,
+  type NoteDeletedEvent,
+} from "@/hooks/useInboxSSE"
 import type {
   Conversation,
   ConversationFilters,
@@ -133,7 +144,8 @@ export function InboxPage() {
   const [error, setError] = useState<string | null>(null)
 
   // Typing simulation state (will be replaced with SSE events)
-  const [typingConversations, setTypingConversations] = useState<Set<string>>(new Set())
+  // Note: setTypingConversations will be used when SSE typing events are implemented
+  const [typingConversations] = useState<Set<string>>(new Set())
 
   // Notes state
   const [notes, setNotes] = useState<Note[]>([])
@@ -212,12 +224,12 @@ export function InboxPage() {
 
   useInboxSSE({
     enabled: true,
-    onConversationNew: useCallback((event) => {
+    onConversationNew: useCallback((event: ConversationNewEvent) => {
       const newConversation = toFrontendConversation(event.conversation)
       setConversations((prev) => [newConversation, ...prev])
     }, []),
 
-    onMessageNew: useCallback((event) => {
+    onMessageNew: useCallback((event: MessageNewEvent) => {
       const newMessage = toFrontendMessage(event.message)
       setConversations((prev) =>
         prev.map((c) =>
@@ -234,7 +246,7 @@ export function InboxPage() {
       )
     }, [selectedConversationId]),
 
-    onMessageStatus: useCallback((event) => {
+    onMessageStatus: useCallback((event: MessageStatusEvent) => {
       setConversations((prev) =>
         prev.map((c) =>
           c.id === event.conversationId
@@ -251,7 +263,7 @@ export function InboxPage() {
       )
     }, []),
 
-    onConversationAssigned: useCallback((event) => {
+    onConversationAssigned: useCallback((event: ConversationAssignedEvent) => {
       setConversations((prev) =>
         prev.map((c) =>
           c.id === event.conversationId
@@ -265,7 +277,7 @@ export function InboxPage() {
       )
     }, []),
 
-    onStatusChanged: useCallback((event) => {
+    onStatusChanged: useCallback((event: StatusChangedEvent) => {
       setConversations((prev) =>
         prev.map((c) =>
           c.id === event.conversationId
@@ -275,7 +287,7 @@ export function InboxPage() {
       )
     }, []),
 
-    onUnreadUpdated: useCallback((event) => {
+    onUnreadUpdated: useCallback((event: UnreadUpdatedEvent) => {
       setConversations((prev) =>
         prev.map((c) =>
           c.id === event.conversationId
@@ -285,19 +297,19 @@ export function InboxPage() {
       )
     }, []),
 
-    onNoteCreated: useCallback((event) => {
+    onNoteCreated: useCallback((event: NoteCreatedEvent) => {
       const newNote = toFrontendNote(event.note)
       setNotes((prev) => [newNote, ...prev])
     }, []),
 
-    onNoteUpdated: useCallback((event) => {
+    onNoteUpdated: useCallback((event: NoteUpdatedEvent) => {
       const updatedNote = toFrontendNote(event.note)
       setNotes((prev) =>
         prev.map((n) => (n.id === updatedNote.id ? updatedNote : n))
       )
     }, []),
 
-    onNoteDeleted: useCallback((event) => {
+    onNoteDeleted: useCallback((event: NoteDeletedEvent) => {
       setNotes((prev) => prev.filter((n) => n.id !== event.noteId))
     }, []),
   })
@@ -432,7 +444,7 @@ export function InboxPage() {
   const handleSendMessage = useCallback(async (conversationId: string, payload: SendMessagePayload) => {
     if (!currentOperator) return
 
-    const { type, content, attachment, location, contact } = payload
+    const { type, content, attachment, location } = payload
 
     // Create optimistic message for immediate UI feedback
     const optimisticMessage: Message = {

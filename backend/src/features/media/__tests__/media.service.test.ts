@@ -68,6 +68,7 @@ describe('MediaService', () => {
     s3Bucket: 'test-bucket',
     uploadedBy: userId,
     createdAt: new Date('2024-01-01'),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenant: {} as any,
     uploader: null,
   };

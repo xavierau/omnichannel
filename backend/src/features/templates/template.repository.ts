@@ -3,7 +3,7 @@ import { singleton } from 'tsyringe';
 import { AppDataSource } from '@config/database.config';
 import { WhatsAppTemplateGroup } from './template-group.entity';
 import { TemplateTranslation, TemplateButton } from './template-translation.entity';
-import { TemplateCategory, TemplateStatus } from './enums';
+import { TemplateCategory, TemplateStatus, HeaderType } from './enums';
 
 export interface TemplateQueryOptions {
   search?: string;
@@ -442,7 +442,7 @@ export class TemplateRepository {
     const translation = this.translationRepository.create({
       templateGroupId: data.templateGroupId,
       language: data.language,
-      headerType: data.headerType as any,
+      headerType: data.headerType as HeaderType,
       headerContent: data.headerContent,
       body: data.body,
       footer: data.footer,

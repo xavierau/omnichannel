@@ -19,23 +19,27 @@ import { TemplateCategory } from './template.service'
 const API_BASE_URL = '/api/broadcasts'
 
 // ============================================================================
-// Enums
+// Constants
 // ============================================================================
 
-export enum BroadcastStatus {
-  DRAFT = 'draft',
-  SCHEDULED = 'scheduled',
-  SENDING = 'sending',
-  COMPLETED = 'completed',
-  PAUSED = 'paused',
-  CANCELLED = 'cancelled',
-  FAILED = 'failed',
-}
+export const BroadcastStatus = {
+  DRAFT: 'draft',
+  SCHEDULED: 'scheduled',
+  SENDING: 'sending',
+  COMPLETED: 'completed',
+  PAUSED: 'paused',
+  CANCELLED: 'cancelled',
+  FAILED: 'failed',
+} as const
 
-export enum RecipientType {
-  GROUP = 'group',
-  CUSTOMERS = 'customers',
-}
+export type BroadcastStatus = (typeof BroadcastStatus)[keyof typeof BroadcastStatus]
+
+export const RecipientType = {
+  GROUP: 'group',
+  CUSTOMERS: 'customers',
+} as const
+
+export type RecipientType = (typeof RecipientType)[keyof typeof RecipientType]
 
 // ============================================================================
 // Types

@@ -158,6 +158,7 @@ export function ContactPicker({
       setErrors((prev) => {
         const key = `phone_${index}`
         if (prev[key]) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { [key]: _, ...rest } = prev
           return rest
         }

@@ -13,6 +13,7 @@ import {
   HeaderType as ApiHeaderType,
   ButtonType as ApiButtonType,
 } from "@/services/template.service"
+import type { CustomFieldsData } from "@/types/custom-fields"
 import type {
   WhatsAppTemplateGroup,
   TemplateTranslation,
@@ -183,7 +184,7 @@ function transformTemplate(apiTemplate: ApiWhatsAppTemplate): WhatsAppTemplateGr
     name: apiTemplate.name,
     category: mapApiCategoryToLocal(apiTemplate.category),
     translations: apiTemplate.translations.map(transformTranslation),
-    customFields: apiTemplate.customFields,
+    customFields: apiTemplate.customFields as CustomFieldsData | undefined,
     createdAt: new Date(apiTemplate.createdAt),
     updatedAt: new Date(apiTemplate.updatedAt),
   }
@@ -210,7 +211,7 @@ interface EditTranslationDialogState {
 export function WhatsAppTemplatesPage() {
   const [templateGroups, setTemplateGroups] = React.useState<WhatsAppTemplateGroup[]>([])
   const [filters, setFilters] = React.useState<TemplateFiltersType>(defaultFilters)
-  const [_selectedGroups, setSelectedGroups] = React.useState<WhatsAppTemplateGroup[]>([])
+  const [, setSelectedGroups] = React.useState<WhatsAppTemplateGroup[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
 

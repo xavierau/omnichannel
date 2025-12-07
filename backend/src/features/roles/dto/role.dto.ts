@@ -92,7 +92,17 @@ export class RoleResponseDto {
   createdAt: Date;
   updatedAt: Date;
 
-  static fromEntity(role: any, includePermissions = true, userCount?: number): RoleResponseDto {
+  static fromEntity(role: {
+    id: string;
+    name: string;
+    displayName: string;
+    description: string | null;
+    level: number;
+    isSystem: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+    permissions?: Array<{ id: string; resource: string; action: string; scope: string }>;
+  }, includePermissions = true, userCount?: number): RoleResponseDto {
     const dto = new RoleResponseDto();
     dto.id = role.id;
     dto.name = role.name;
@@ -104,7 +114,7 @@ export class RoleResponseDto {
     dto.updatedAt = role.updatedAt;
 
     if (includePermissions && role.permissions) {
-      dto.permissions = role.permissions.map((p: any) => ({
+      dto.permissions = role.permissions.map((p) => ({
         id: p.id,
         resource: p.resource,
         action: p.action,

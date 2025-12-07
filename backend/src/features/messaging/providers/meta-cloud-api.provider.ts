@@ -12,7 +12,6 @@ import {
   TemplateStatusResponse,
   VariableValue,
   SendFreeformRequest,
-  FreeformContentType,
   LocationContent,
   ContactContent,
   ReactionContent,
@@ -137,8 +136,9 @@ interface MetaTemplateStatusWebhookValue {
 
 /**
  * Extended webhook entry that includes template status updates.
+ * Used for parsing template status webhooks from Meta.
  */
-interface MetaTemplateStatusWebhookEntry {
+interface _MetaTemplateStatusWebhookEntry {
   id: string;
   changes: Array<{
     field: 'message_template_status_update';
@@ -1081,7 +1081,7 @@ export class MetaCloudApiProvider implements IMessagingProvider {
     switch (variable.type) {
       case 'text':
         return { type: 'text', text: variable.value };
-      case 'currency':
+      case 'currency': {
         // Value should be in format: "code|amount|fallback_value"
         const [currencyCode, amount, fallback] = variable.value.split('|');
         return {
@@ -1092,6 +1092,7 @@ export class MetaCloudApiProvider implements IMessagingProvider {
             fallback_value: fallback,
           },
         };
+      }
       case 'datetime':
         return {
           type: 'date_time',

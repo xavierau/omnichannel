@@ -4,8 +4,7 @@ import { Eye, EyeOff } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
-interface PasswordInputProps
-  extends Omit<React.ComponentProps<"input">, "type"> {}
+type PasswordInputProps = Omit<React.ComponentProps<"input">, "type">
 
 export function PasswordInput({ className, ...props }: PasswordInputProps) {
   const [showPassword, setShowPassword] = useState(false)

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { inject, singleton } from 'tsyringe';
 import { UserService } from './user.service';
 import { asyncHandler } from '@middleware/async-handler';
-import { User } from './user.entity';
+import { User, UserStatus } from './user.entity';
 
 @singleton()
 export class UserController {
@@ -38,7 +38,7 @@ export class UserController {
     const result = await this.userService.listUsers({
       page,
       limit,
-      status: status as any,
+      status: status as UserStatus | undefined,
     });
 
     res.json({

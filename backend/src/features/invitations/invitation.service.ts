@@ -26,11 +26,12 @@ const TIMING_CONSTANTS = {
 } as const;
 
 /**
- * Result of creating an invitation
+ * Result of creating an invitation.
+ * Note: rawToken is only used by the email service and never exposed via API.
  */
-interface CreateInvitationResult {
+interface _CreateInvitationResult {
   invitation: Invitation;
-  rawToken: string; // Only for email service, never exposed to API response
+  rawToken: string;
 }
 
 /**

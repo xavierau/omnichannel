@@ -14,6 +14,7 @@ describe('CSRF Protection Middleware', () => {
     method?: string;
     cookies?: Record<string, string>;
     headers?: Record<string, string>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     body?: Record<string, any>;
     query?: Record<string, string>;
   } = {}): Partial<Request> => {
@@ -25,6 +26,7 @@ describe('CSRF Protection Middleware', () => {
       query: options.query || {},
       get: jest.fn((name: string): string | undefined => {
         return headers[name.toLowerCase()] || headers[name];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       }) as any,
     };
   };
@@ -100,6 +102,7 @@ describe('CSRF Protection Middleware', () => {
         })
       );
       expect(next).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((req as any).csrfToken).toBeDefined();
     });
 
@@ -116,6 +119,7 @@ describe('CSRF Protection Middleware', () => {
 
       expect(res.cookie).not.toHaveBeenCalled();
       expect(next).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((req as any).csrfToken).toBe(existingToken);
     });
 
@@ -131,6 +135,7 @@ describe('CSRF Protection Middleware', () => {
       csrf.ensureToken(req, res, next);
 
       expect(res.cookie).toHaveBeenCalled();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((req as any).csrfToken).not.toBe(existingToken);
     });
   });
@@ -359,6 +364,7 @@ describe('CSRF Protection Middleware', () => {
       const csrf = createCsrfProtection();
       const token = generateCsrfToken();
       const req = createMockRequest() as Request;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (req as any).csrfToken = token;
 
       const result = csrf.getToken(req);

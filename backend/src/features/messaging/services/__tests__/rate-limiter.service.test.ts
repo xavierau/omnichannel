@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { MessagingRateLimiterService, RateLimitResult, RateLimitConfig } from '../rate-limiter.service';
+import { MessagingRateLimiterService, RateLimitConfig } from '../rate-limiter.service';
 import Redis from 'ioredis';
 
 // Mock logger

@@ -12,7 +12,7 @@ const API_BASE_URL = '/api/invitations'
 export interface Invitation {
   id: string
   email: string
-  status: 'pending' | 'accepted' | 'expired' | 'declined'
+  status: 'pending' | 'accepted' | 'expired' | 'declined' | 'cancelled'
   inviterName: string
   tenantName: string
   createdAt: string

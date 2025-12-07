@@ -109,6 +109,7 @@ export async function mockUpdateWhatsAppConfig(
 }
 
 // Mock delete function
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function mockDeleteWhatsAppConfig(_id: string): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 500))
   // In a real app, this would call an API with the id

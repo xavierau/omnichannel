@@ -9,7 +9,6 @@ import { InboxSseService } from './inbox-sse.service';
 import { TeamService } from '../../teams/services/team.service';
 import { UserRepository } from '../../users/user.repository';
 import { Conversation } from '../entities/conversation.entity';
-import { User } from '../../users/user.entity';
 import { ConversationStatus, AssignmentAction } from '../enums';
 import {
   NotFoundException,

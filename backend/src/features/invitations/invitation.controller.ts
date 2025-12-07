@@ -68,7 +68,7 @@ export class InvitationController {
       // Re-throw known exceptions
       if (
         error instanceof BadRequestException ||
-        (error as any).statusCode
+        (error as Error & { statusCode?: number }).statusCode
       ) {
         throw error;
       }
@@ -137,7 +137,7 @@ export class InvitationController {
       // Re-throw known exceptions with their messages
       if (
         error instanceof BadRequestException ||
-        (error as any).statusCode
+        (error as Error & { statusCode?: number }).statusCode
       ) {
         throw error;
       }
@@ -171,7 +171,7 @@ export class InvitationController {
       // Re-throw known exceptions
       if (
         error instanceof BadRequestException ||
-        (error as any).statusCode
+        (error as Error & { statusCode?: number }).statusCode
       ) {
         throw error;
       }
@@ -230,7 +230,7 @@ export class InvitationController {
       // Re-throw known exceptions
       if (
         error instanceof BadRequestException ||
-        (error as any).statusCode
+        (error as Error & { statusCode?: number }).statusCode
       ) {
         throw error;
       }

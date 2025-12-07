@@ -57,6 +57,7 @@ function InvitationStatusBadge({ status }: { status: Invitation['status'] }) {
     pending: { variant: 'secondary', label: 'Pending' },
     accepted: { variant: 'default', label: 'Accepted' },
     expired: { variant: 'destructive', label: 'Expired' },
+    declined: { variant: 'outline', label: 'Declined' },
     cancelled: { variant: 'outline', label: 'Cancelled' },
   }
 

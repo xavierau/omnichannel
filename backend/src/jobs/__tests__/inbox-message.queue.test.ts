@@ -93,6 +93,7 @@ describe('InboxMessageQueue', () => {
   const messageId = 'msg-123';
   const channelAccountId = 'channel-account-123';
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const createMockMessage = (overrides: Partial<ConversationMessage> = {}): ConversationMessage =>
     ({
       id: messageId,
@@ -114,11 +115,14 @@ describe('InboxMessageQueue', () => {
       readAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       conversation: null as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tenant: null as any,
       ...overrides,
     }) as ConversationMessage;
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const createMockConversation = (overrides: Partial<Conversation> = {}): Conversation =>
     ({
       id: conversationId,
@@ -141,10 +145,12 @@ describe('InboxMessageQueue', () => {
       messages: [],
       notes: [],
       assignments: [],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tenant: null as any,
       ...overrides,
     }) as Conversation;
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const createMockChannelAccount = (
     overrides: Partial<ChannelAccount> = {}
   ): ChannelAccount =>
@@ -167,8 +173,11 @@ describe('InboxMessageQueue', () => {
       webhookSecretIv: null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tenant: null as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       channel: null as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       provider: null as any,
       ...overrides,
     }) as ChannelAccount;
@@ -353,6 +362,7 @@ describe('InboxMessageQueue', () => {
 });
 
 describe('InboxMessageQueue Job Processors', () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let inboxMessageQueue: InboxMessageQueue;
   let mockConversationRepo: jest.Mocked<ConversationRepository>;
   let mockMessageRepo: jest.Mocked<ConversationMessageRepository>;
@@ -392,7 +402,9 @@ describe('InboxMessageQueue Job Processors', () => {
       readAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       conversation: null as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tenant: null as any,
       ...overrides,
     }) as ConversationMessage;
@@ -419,6 +431,7 @@ describe('InboxMessageQueue Job Processors', () => {
       messages: [],
       notes: [],
       assignments: [],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tenant: null as any,
       ...overrides,
     }) as Conversation;
@@ -445,8 +458,11 @@ describe('InboxMessageQueue Job Processors', () => {
       webhookSecretIv: null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tenant: null as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       channel: null as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       provider: null as any,
       ...overrides,
     }) as ChannelAccount;
@@ -456,6 +472,7 @@ describe('InboxMessageQueue Job Processors', () => {
 
     // Capture the processor functions when process is called
     mockQueue.process.mockImplementation(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (jobType: string, _concurrency: number, processor: any) => {
         if (jobType === InboxJobType.SEND_MESSAGE) {
           sendMessageProcessor = processor;
@@ -554,6 +571,7 @@ describe('InboxMessageQueue Job Processors', () => {
       mockChannelAccountRepo.findByIdAndTenant.mockResolvedValue(channelAccount);
       mockConversationRepo.findById.mockResolvedValue(conversation);
       mockMessagingService.getProviderForChannelAccount.mockResolvedValue(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockProvider as any
       );
 
@@ -615,6 +633,7 @@ describe('InboxMessageQueue Job Processors', () => {
       mockChannelAccountRepo.findByIdAndTenant.mockResolvedValue(channelAccount);
       mockConversationRepo.findById.mockResolvedValue(conversation);
       mockMessagingService.getProviderForChannelAccount.mockResolvedValue(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockProvider as any
       );
 
@@ -657,6 +676,7 @@ describe('InboxMessageQueue Job Processors', () => {
       mockChannelAccountRepo.findByIdAndTenant.mockResolvedValue(channelAccount);
       mockConversationRepo.findById.mockResolvedValue(conversation);
       mockMessagingService.getProviderForChannelAccount.mockResolvedValue(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockProvider as any
       );
 
@@ -712,6 +732,7 @@ describe('InboxMessageQueue Job Processors', () => {
       mockChannelAccountRepo.findByIdAndTenant.mockResolvedValue(channelAccount);
       mockConversationRepo.findById.mockResolvedValue(conversation);
       mockMessagingService.getProviderForChannelAccount.mockResolvedValue(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockProvider as any
       );
 
@@ -802,6 +823,7 @@ describe('InboxMessageQueue Job Processors', () => {
       mockChannelAccountRepo.findByIdAndTenant.mockResolvedValue(channelAccount);
       mockConversationRepo.findById.mockResolvedValue(conversation);
       mockMessagingService.getProviderForChannelAccount.mockResolvedValue(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockProvider as any
       );
       mockMessagingWindowService.isWindowOpen.mockReturnValue(false);
@@ -858,6 +880,7 @@ describe('InboxMessageQueue Job Processors', () => {
       mockMessageRepo.findById.mockResolvedValue(message);
       mockChannelAccountRepo.findByIdAndTenant.mockResolvedValue(channelAccount);
       mockMessagingService.getProviderForChannelAccount.mockResolvedValue(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockProvider as any
       );
       // Window is closed, but template should still work
@@ -912,6 +935,7 @@ describe('InboxMessageQueue Job Processors', () => {
       mockChannelAccountRepo.findByIdAndTenant.mockResolvedValue(channelAccount);
       mockConversationRepo.findById.mockResolvedValue(conversation);
       mockMessagingService.getProviderForChannelAccount.mockResolvedValue(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockProvider as any
       );
       mockMessagingWindowService.isWindowOpen.mockReturnValue(true);
@@ -957,7 +981,10 @@ describe('InboxMessageQueue Job Processors', () => {
       const channelAccount = createMockChannelAccount();
 
       mockChannelAccountRepo.findById.mockResolvedValue(channelAccount);
-      mockCustomerRepo.findByWhatsApp.mockResolvedValue(customer as any);
+      mockCustomerRepo.findByWhatsApp.mockResolvedValue(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        customer as any
+      );
       mockConversationRepo.findByCustomerAndChannel.mockResolvedValue(conversation);
       mockMessageRepo.create.mockResolvedValue(createMockMessage());
 
@@ -1015,7 +1042,10 @@ describe('InboxMessageQueue Job Processors', () => {
 
       mockChannelAccountRepo.findById.mockResolvedValue(channelAccount);
       mockCustomerRepo.findByWhatsApp.mockResolvedValue(null);
-      mockCustomerRepo.create.mockResolvedValue(newCustomer as any);
+      mockCustomerRepo.create.mockResolvedValue(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        newCustomer as any
+      );
       mockConversationRepo.findByCustomerAndChannel.mockResolvedValue(null);
       mockConversationRepo.create.mockResolvedValue(newConversation);
       mockMessageRepo.create.mockResolvedValue(createMockMessage());
@@ -1056,7 +1086,10 @@ describe('InboxMessageQueue Job Processors', () => {
       const newConversation = createMockConversation();
 
       mockChannelAccountRepo.findById.mockResolvedValue(channelAccount);
-      mockCustomerRepo.findByWhatsApp.mockResolvedValue(customer as any);
+      mockCustomerRepo.findByWhatsApp.mockResolvedValue(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        customer as any
+      );
       mockConversationRepo.findByCustomerAndChannel.mockResolvedValue(null);
       mockConversationRepo.create.mockResolvedValue(newConversation);
       mockMessageRepo.create.mockResolvedValue(createMockMessage());

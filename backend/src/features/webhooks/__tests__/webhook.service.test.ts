@@ -6,10 +6,9 @@ import { ChannelAccountRepository } from '../../channel-accounts/channel-account
 import { TemplateRepository } from '../../templates/template.repository';
 import { TemplateSseService } from '../../templates/template-sse.service';
 import { CredentialService } from '../../messaging/services/credential.service';
-import { InboxMessageQueue, ProcessInboundJobData } from '../../../jobs/inbox-message.queue';
+import { InboxMessageQueue } from '../../../jobs/inbox-message.queue';
 import { WebhookEvent } from '../../messaging/interfaces/messaging-provider.interface';
 import { ChannelAccount, ChannelAccountStatus } from '../../channel-accounts/channel-account.entity';
-import { MessageStatus } from '../../message-logs/message-log.entity';
 
 // Mock logger
 jest.mock('../../../config/logger.config', () => ({
@@ -52,8 +51,11 @@ describe('WebhookService', () => {
       webhookSecretIv: null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tenant: null as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       channel: null as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       provider: null as any,
       ...overrides,
     }) as ChannelAccount;
@@ -135,6 +137,7 @@ describe('WebhookService', () => {
         mockChannelAccountRepo.findByPhoneNumberId.mockResolvedValue(channelAccount);
 
         // Access private method through processWebhookEvent
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (webhookService as any).processInboundMessage(event);
 
         expect(mockChannelAccountRepo.findByPhoneNumberId).toHaveBeenCalledWith('123456789');
@@ -159,6 +162,7 @@ describe('WebhookService', () => {
 
         mockChannelAccountRepo.findByPhoneNumberId.mockResolvedValue(channelAccount);
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (webhookService as any).processInboundMessage(event);
 
         expect(mockInboxMessageQueue.queueInboundProcessing).toHaveBeenCalledWith(
@@ -177,6 +181,7 @@ describe('WebhookService', () => {
 
         mockChannelAccountRepo.findByPhoneNumberId.mockResolvedValue(channelAccount);
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (webhookService as any).processInboundMessage(event);
 
         expect(mockInboxMessageQueue.queueInboundProcessing).toHaveBeenCalledWith(
@@ -195,6 +200,7 @@ describe('WebhookService', () => {
 
         mockChannelAccountRepo.findByPhoneNumberId.mockResolvedValue(channelAccount);
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (webhookService as any).processInboundMessage(event);
 
         expect(mockInboxMessageQueue.queueInboundProcessing).toHaveBeenCalledWith(
@@ -213,6 +219,7 @@ describe('WebhookService', () => {
 
         mockChannelAccountRepo.findByPhoneNumberId.mockResolvedValue(channelAccount);
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (webhookService as any).processInboundMessage(event);
 
         expect(mockInboxMessageQueue.queueInboundProcessing).toHaveBeenCalledWith(
@@ -231,6 +238,7 @@ describe('WebhookService', () => {
 
         mockChannelAccountRepo.findByPhoneNumberId.mockResolvedValue(channelAccount);
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (webhookService as any).processInboundMessage(event);
 
         expect(mockInboxMessageQueue.queueInboundProcessing).toHaveBeenCalledWith(
@@ -256,6 +264,7 @@ describe('WebhookService', () => {
           },
         };
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (webhookService as any).processInboundMessage(event);
 
         expect(mockChannelAccountRepo.findByPhoneNumberId).not.toHaveBeenCalled();
@@ -271,6 +280,7 @@ describe('WebhookService', () => {
 
         mockChannelAccountRepo.findByPhoneNumberId.mockResolvedValue(null);
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (webhookService as any).processInboundMessage(event);
 
         expect(mockChannelAccountRepo.findByPhoneNumberId).toHaveBeenCalledWith('123456789');
@@ -286,6 +296,7 @@ describe('WebhookService', () => {
         text: { body: 'Hello World' },
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const content = (webhookService as any).extractMessageContent(rawMessage);
 
       expect(content).toEqual({ text: 'Hello World' });
@@ -297,6 +308,7 @@ describe('WebhookService', () => {
         image: { id: 'media-123', mime_type: 'image/jpeg', caption: 'Photo' },
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const content = (webhookService as any).extractMessageContent(rawMessage);
 
       expect(content).toEqual({ id: 'media-123', mime_type: 'image/jpeg', caption: 'Photo' });
@@ -308,6 +320,7 @@ describe('WebhookService', () => {
         document: { id: 'doc-456', mime_type: 'application/pdf', filename: 'report.pdf' },
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const content = (webhookService as any).extractMessageContent(rawMessage);
 
       expect(content).toEqual({ id: 'doc-456', mime_type: 'application/pdf', filename: 'report.pdf' });
@@ -319,6 +332,7 @@ describe('WebhookService', () => {
         audio: { id: 'audio-789', mime_type: 'audio/ogg' },
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const content = (webhookService as any).extractMessageContent(rawMessage);
 
       expect(content).toEqual({ id: 'audio-789', mime_type: 'audio/ogg' });
@@ -330,6 +344,7 @@ describe('WebhookService', () => {
         video: { id: 'video-111', mime_type: 'video/mp4', caption: 'Video' },
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const content = (webhookService as any).extractMessageContent(rawMessage);
 
       expect(content).toEqual({ id: 'video-111', mime_type: 'video/mp4', caption: 'Video' });
@@ -341,6 +356,7 @@ describe('WebhookService', () => {
         sticker: { id: 'sticker-222' },
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const content = (webhookService as any).extractMessageContent(rawMessage);
 
       expect(content).toEqual(rawMessage);
@@ -367,6 +383,7 @@ describe('WebhookService', () => {
         ]),
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockProviderFactory.createProviderForWebhook.mockReturnValue(mockProvider as any);
 
       const channelAccount = createMockChannelAccount();

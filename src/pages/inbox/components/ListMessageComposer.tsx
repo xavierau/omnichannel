@@ -198,6 +198,7 @@ export function ListMessageComposer({
       setErrors((prev) => {
         const key = `section_${sectionIndex}_row_${rowIndex}_${field === "title" ? "title" : "desc"}`
         if (prev[key]) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { [key]: _, ...rest } = prev
           return rest
         }

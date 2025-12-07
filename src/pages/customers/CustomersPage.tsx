@@ -19,6 +19,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { exportToCSV, exportToExcel } from "@/lib/export-utils"
 import { customerService, type Customer as ApiCustomer } from "@/services/customer.service"
 import { tagService, type Tag as ApiTag } from "@/services/tag.service"
+import type { CustomFieldsData } from "@/types/custom-fields"
 import type {
   Customer,
   Tag,
@@ -42,6 +43,7 @@ function transformCustomer(apiCustomer: ApiCustomer): Customer {
       name: t.name,
       color: t.color,
     })),
+    customFields: apiCustomer.customFields as CustomFieldsData | undefined,
     createdAt: new Date(apiCustomer.createdAt),
     updatedAt: new Date(apiCustomer.updatedAt),
   }

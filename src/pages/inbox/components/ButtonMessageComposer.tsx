@@ -140,6 +140,7 @@ export function ButtonMessageComposer({
     setErrors((prev) => {
       const key = `button_${index}`
       if (prev[key]) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { [key]: _, ...rest } = prev
         return rest
       }

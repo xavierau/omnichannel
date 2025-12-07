@@ -1,7 +1,6 @@
 import {
   IsEnum,
   IsString,
-  IsOptional,
   MaxLength,
   IsUrl,
   Matches,

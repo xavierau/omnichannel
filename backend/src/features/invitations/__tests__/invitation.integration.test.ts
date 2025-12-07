@@ -35,10 +35,10 @@ const TEST_UUIDS = {
 
 // Test error handler
 const testErrorHandler = (
-  err: any,
-  req: Request,
+  err: { statusCode?: number; message?: string; errors?: unknown },
+  _req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
@@ -47,7 +47,7 @@ const testErrorHandler = (
   res.status(statusCode).json({
     statusCode,
     message,
-    ...(errors && { errors }),
+    ...(errors !== undefined && errors !== null && typeof errors === 'object' ? { errors } : {}),
   });
 };
 

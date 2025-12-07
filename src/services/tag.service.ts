@@ -15,19 +15,21 @@ import type { ApiResponse } from './api-client'
 const API_BASE_URL = '/api/tags'
 
 // ============================================================================
-// Enums
+// Constants
 // ============================================================================
 
-export enum TagColor {
-  PURPLE = 'purple',
-  BLUE = 'blue',
-  GREEN = 'green',
-  GRAY = 'gray',
-  YELLOW = 'yellow',
-  ORANGE = 'orange',
-  RED = 'red',
-  PINK = 'pink',
-}
+export const TagColor = {
+  PURPLE: 'purple',
+  BLUE: 'blue',
+  GREEN: 'green',
+  GRAY: 'gray',
+  YELLOW: 'yellow',
+  ORANGE: 'orange',
+  RED: 'red',
+  PINK: 'pink',
+} as const
+
+export type TagColor = (typeof TagColor)[keyof typeof TagColor]
 
 // ============================================================================
 // Types

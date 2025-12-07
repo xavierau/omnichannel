@@ -355,6 +355,7 @@ const allMockFields: CustomFieldDefinition[] = [
  */
 export function getCustomFieldsForEntity(
   entityType: CustomFieldEntityType,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _tenantId?: string
 ): CustomFieldDefinition[] {
   return allMockFields

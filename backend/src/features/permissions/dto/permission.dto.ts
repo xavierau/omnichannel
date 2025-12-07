@@ -37,7 +37,15 @@ export class PermissionResponseDto {
   createdAt: Date;
   updatedAt: Date;
 
-  static fromEntity(permission: any): PermissionResponseDto {
+  static fromEntity(permission: {
+    id: string;
+    resource: PermissionResource;
+    action: PermissionAction;
+    scope: PermissionScope;
+    description: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }): PermissionResponseDto {
     const dto = new PermissionResponseDto();
     dto.id = permission.id;
     dto.resource = permission.resource;
@@ -51,13 +59,23 @@ export class PermissionResponseDto {
   }
 }
 
+interface PermissionEntity {
+  id: string;
+  resource: PermissionResource;
+  action: PermissionAction;
+  scope: PermissionScope;
+  description: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class GroupedPermissionsResponseDto {
   resource: PermissionResource;
   displayName: string;
   permissions: PermissionResponseDto[];
 
   static fromGroupedMap(
-    grouped: Map<PermissionResource, any[]>
+    grouped: Map<PermissionResource, PermissionEntity[]>
   ): GroupedPermissionsResponseDto[] {
     const resourceDisplayNames: Record<PermissionResource, string> = {
       [PermissionResource.BROADCASTS]: 'Broadcasts',

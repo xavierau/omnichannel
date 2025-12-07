@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
   useContext,
@@ -51,7 +52,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (!controller.signal.aborted) {
           setUser(currentUser)
         }
-      } catch (err) {
+      } catch {
         // Token is invalid or expired
         if (!controller.signal.aborted) {
           authService.removeToken()

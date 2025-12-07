@@ -102,6 +102,7 @@ describe('BroadcastQueue', () => {
     completedAt: null,
     previousStatus: null,
     customFields: {},
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenant: null as any,
     channelAccountId: null,
     channelAccount: null,
@@ -324,6 +325,7 @@ describe('BroadcastQueue', () => {
 });
 
 describe('BroadcastQueue Job Processors', () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let broadcastQueue: BroadcastQueue;
   let mockBroadcastRepository: jest.Mocked<BroadcastRepository>;
   let mockSseService: jest.Mocked<BroadcastSseService>;
@@ -371,6 +373,7 @@ describe('BroadcastQueue Job Processors', () => {
     completedAt: null,
     previousStatus: null,
     customFields: {},
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenant: null as any,
     channelAccountId: null,
     channelAccount: null,
@@ -384,6 +387,7 @@ describe('BroadcastQueue Job Processors', () => {
     jest.clearAllMocks();
 
     // Capture the processor functions when process is called
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockQueue.process.mockImplementation((jobType: string, _concurrency: number, processor: any) => {
       if (jobType === JobType.SEND_BROADCAST) {
         sendBroadcastProcessor = processor;
@@ -469,7 +473,9 @@ describe('BroadcastQueue Job Processors', () => {
       mockBroadcastRepository.findById.mockResolvedValue(broadcast);
       mockGroupRepository.getMembers.mockResolvedValue({
         data: [
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           { id: 'customer-1', name: 'John', whatsappNumber: '+1234567890', tenantId, customFields: {}, tags: [], createdAt: new Date(), updatedAt: new Date(), tenant: null as any },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           { id: 'customer-2', name: 'Jane', whatsappNumber: '+0987654321', tenantId, customFields: {}, tags: [], createdAt: new Date(), updatedAt: new Date(), tenant: null as any },
         ],
         total: 2,
@@ -506,7 +512,9 @@ describe('BroadcastQueue Job Processors', () => {
       mockBroadcastRepository.findById.mockResolvedValue(broadcast);
       // Now using batch findByIds instead of individual findById calls
       mockCustomerRepository.findByIds.mockResolvedValue([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { id: 'customer-1', name: 'John', whatsappNumber: '+1234567890', tenantId, customFields: {}, tags: [], createdAt: new Date(), updatedAt: new Date() } as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         { id: 'customer-2', name: 'Jane', whatsappNumber: '+0987654321', tenantId, customFields: {}, tags: [], createdAt: new Date(), updatedAt: new Date() } as any,
       ]);
       mockBroadcastRepository.update.mockResolvedValue(broadcast);

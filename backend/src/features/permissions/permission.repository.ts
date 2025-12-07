@@ -21,7 +21,7 @@ export class PermissionRepository {
     resource?: PermissionResource;
     action?: PermissionAction;
   }): Promise<Permission[]> {
-    const where: any = {};
+    const where: { resource?: PermissionResource; action?: PermissionAction } = {};
 
     if (options?.resource) {
       where.resource = options.resource;
@@ -50,7 +50,7 @@ export class PermissionRepository {
     action: PermissionAction,
     scope?: PermissionScope
   ): Promise<Permission | null> {
-    const where: any = { resource, action };
+    const where: { resource: PermissionResource; action: PermissionAction; scope?: PermissionScope } = { resource, action };
     if (scope) {
       where.scope = scope;
     }

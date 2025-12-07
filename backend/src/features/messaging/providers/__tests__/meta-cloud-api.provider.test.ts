@@ -49,6 +49,7 @@ describe('MetaCloudApiProvider', () => {
       get: jest.fn(),
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockedAxios.create.mockReturnValue(mockClient as any);
 
     provider = new MetaCloudApiProvider();
@@ -1255,6 +1256,7 @@ describe('MetaCloudApiProvider', () => {
           },
           status: 200,
           statusText: 'OK',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           config: {} as any,
         });
 
@@ -1284,6 +1286,7 @@ describe('MetaCloudApiProvider', () => {
           headers: {},
           status: 200,
           statusText: 'OK',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           config: {} as any,
         });
 
@@ -1333,6 +1336,7 @@ describe('MetaCloudApiProvider', () => {
             headers: { 'content-type': testCase.contentType },
             status: 200,
             statusText: 'OK',
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             config: {} as any,
           });
 
