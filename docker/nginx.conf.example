@@ -42,7 +42,16 @@ server {
     # Client body size for file uploads
     client_max_body_size 50M;
 
-    # Proxy settings
+    # ===========================================
+    # Frontend SPA (Static Files)
+    # ===========================================
+    # Root directory for frontend build output
+    root /home/forge/my-app.com/dist;
+    index index.html;
+
+    # ===========================================
+    # Backend API Proxy Settings
+    # ===========================================
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection 'upgrade';
@@ -53,30 +62,55 @@ server {
     proxy_cache_bypass $http_upgrade;
     proxy_read_timeout 86400;  # For SSE connections
 
-    # All requests go to the Docker container
-    location / {
-        proxy_pass http://localhost:3012;
+    # ===========================================
+    # API Routes → Backend (Node.js)
+    # ===========================================
+    location /api/ {
+        proxy_pass http://localhost:3000;
     }
 
-    # Health check endpoint (optional monitoring)
-    location /health {
-        proxy_pass http://localhost:3012/health;
-        access_log off;
-    }
-
-    # Webhook endpoints (keep-alive for callbacks)
+    # ===========================================
+    # Webhook Routes → Backend
+    # ===========================================
     location /webhooks {
-        proxy_pass http://localhost:3012/webhooks;
+        proxy_pass http://localhost:3000;
         proxy_buffering off;
     }
 
-    # SSE endpoints (Server-Sent Events)
+    # ===========================================
+    # Health Check → Backend
+    # ===========================================
+    location /health {
+        proxy_pass http://localhost:3000/health;
+        access_log off;
+    }
+
+    # ===========================================
+    # SSE Endpoints (Server-Sent Events)
+    # ===========================================
     location ~* /api/.*/events {
-        proxy_pass http://localhost:3012;
+        proxy_pass http://localhost:3000;
         proxy_buffering off;
         proxy_cache off;
         proxy_read_timeout 86400;
         proxy_set_header Connection '';
         chunked_transfer_encoding off;
+    }
+
+    # ===========================================
+    # Frontend SPA Catch-All
+    # ===========================================
+    # Serve static files, fallback to index.html for SPA routing
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # ===========================================
+    # Static Assets Caching
+    # ===========================================
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
     }
 }
