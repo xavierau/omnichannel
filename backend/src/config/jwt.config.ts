@@ -1,6 +1,4 @@
-import dotenv from 'dotenv';
-
-dotenv.config();
+import './env.config'; // Ensure env is loaded first
 
 export const jwtConfig = {
   accessTokenSecret: process.env.JWT_ACCESS_SECRET || '',

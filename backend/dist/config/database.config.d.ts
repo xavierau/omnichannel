@@ -1,4 +1,5 @@
 import { DataSource } from 'typeorm';
+import './env.config';
 export declare const AppDataSource: DataSource;
 /**
  * Initialize database connection with error handling, logging, and retry logic.

@@ -1,3 +1,4 @@
+import './env.config';
 export declare const jwtConfig: {
     accessTokenSecret: string;
     refreshTokenSecret: string;

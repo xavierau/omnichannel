@@ -1,7 +1,4 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppDataSource = void 0;
 exports.initializeDatabase = initializeDatabase;
@@ -9,7 +6,7 @@ exports.closeDatabase = closeDatabase;
 exports.checkDatabaseHealth = checkDatabaseHealth;
 exports.getPoolStatistics = getPoolStatistics;
 const typeorm_1 = require("typeorm");
-const dotenv_1 = __importDefault(require("dotenv"));
+require("./env.config"); // Ensure env is loaded first
 const user_entity_1 = require("@features/users/user.entity");
 const role_entity_1 = require("@features/roles/role.entity");
 const permission_entity_1 = require("@features/permissions/permission.entity");
@@ -39,7 +36,6 @@ const conversation_assignment_entity_1 = require("@features/inbox/entities/conve
 const custom_field_entity_1 = require("@features/custom-fields/custom-field.entity");
 const logger_config_1 = require("./logger.config");
 const constants_1 = require("./constants");
-dotenv_1.default.config();
 /**
  * Parse integer from environment variable with fallback to default value.
  */

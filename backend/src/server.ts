@@ -1,8 +1,8 @@
 import 'reflect-metadata'; // Required for TypeORM and tsyringe
-import dotenv from 'dotenv';
 
 // Load environment variables FIRST (before DI container needs them)
-dotenv.config();
+// This must be imported before any other config files
+import '@config/env.config';
 
 // Initialize DI container BEFORE importing anything that uses it
 import { container } from '@config/di.container';

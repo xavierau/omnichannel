@@ -1,12 +1,9 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 require("reflect-metadata"); // Required for TypeORM and tsyringe
-const dotenv_1 = __importDefault(require("dotenv"));
 // Load environment variables FIRST (before DI container needs them)
-dotenv_1.default.config();
+// This must be imported before any other config files
+require("@config/env.config");
 // Initialize DI container BEFORE importing anything that uses it
 const di_container_1 = require("@config/di.container");
 const app_1 = require("./app");

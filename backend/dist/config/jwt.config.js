@@ -1,11 +1,7 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.jwtConfig = void 0;
-const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config();
+require("./env.config"); // Ensure env is loaded first
 exports.jwtConfig = {
     accessTokenSecret: process.env.JWT_ACCESS_SECRET || '',
     refreshTokenSecret: process.env.JWT_REFRESH_SECRET || '',

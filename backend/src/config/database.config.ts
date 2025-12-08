@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
-import dotenv from 'dotenv';
+import './env.config'; // Ensure env is loaded first
 import { User } from '@features/users/user.entity';
 import { Role } from '@features/roles/role.entity';
 import { Permission } from '@features/permissions/permission.entity';
@@ -35,8 +35,6 @@ import { CustomFieldDefinition } from '@features/custom-fields/custom-field.enti
 
 import { logger } from './logger.config';
 import { DB_CONSTANTS } from './constants';
-
-dotenv.config();
 
 /**
  * Parse integer from environment variable with fallback to default value.
