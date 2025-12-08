@@ -32,38 +32,30 @@ fi
 
 log_info "Starting deployment..."
 
-# Step 1: Pull latest changes from GitHub
+# Step 1: Pull latest changes from GitHub (includes pre-built dist folders)
 log_info "Pulling latest changes from GitHub..."
 git pull origin "$(git rev-parse --abbrev-ref HEAD)"
 
-# Step 2: Install frontend dependencies
+# Step 2: Install frontend dependencies (production only)
 log_info "Installing frontend dependencies..."
-npm ci --production=false
+npm ci --omit=dev
 
-# Step 3: Build frontend
-log_info "Building frontend..."
-npm run build
-
-# Step 4: Install backend dependencies
+# Step 3: Install backend dependencies (production only)
 log_info "Installing backend dependencies..."
 cd backend
-npm ci --production=false
+npm ci --omit=dev
 
-# Step 5: Build backend
-log_info "Building backend..."
-npm run build:production
-
-# Step 6: Run database migrations
+# Step 4: Run database migrations
 log_info "Running database migrations..."
 npm run migration:run
 
-# Step 7: Return to root directory
+# Step 5: Return to root directory
 cd "$SCRIPT_DIR"
 
-# Step 8: Create logs directory if it doesn't exist
+# Step 6: Create logs directory if it doesn't exist
 mkdir -p logs
 
-# Step 9: Restart PM2
+# Step 7: Restart PM2
 log_info "Restarting PM2 processes..."
 if pm2 describe omnichannel-backend > /dev/null 2>&1; then
     pm2 reload ecosystem.config.cjs --env production
@@ -71,7 +63,7 @@ else
     pm2 start ecosystem.config.cjs --env production
 fi
 
-# Step 10: Save PM2 process list
+# Step 8: Save PM2 process list
 pm2 save
 
 log_info "Deployment completed successfully!"
