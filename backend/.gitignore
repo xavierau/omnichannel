@@ -1,8 +1,8 @@
 # Dependencies
 node_modules/
 
-# Build output
-dist/
+# Build output - commented out to allow committing built files for deployment
+# dist/
 
 # Environment variables
 .env

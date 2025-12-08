@@ -38,120 +38,31 @@ jobs:
         working-directory: ./backend
         run: npm run build
 
-      # Upload artifacts for deploy job
-      - name: Upload frontend build
-        if: github.event_name == 'push'
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: dist/
-          retention-days: 1
-
-      - name: Upload backend build
-        if: github.event_name == 'push'
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-dist
-          path: |
-            backend/dist/
-            backend/package.json
-            backend/package-lock.json
-          retention-days: 1
-
-  deploy-staging:
+  # Trigger Forge to pull latest code (dist folders committed to repo)
+  trigger-staging-deploy:
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Download frontend build
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: dist/
-
-      - name: Download backend build
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-dist
-          path: backend/
-
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Add server to known hosts
+      - name: Trigger Forge deployment
         run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          # Try port 22 first, then common alternatives
-          ssh-keyscan -H -p 22 ${{ vars.SERVER_HOST_STAGING }} >> ~/.ssh/known_hosts 2>/dev/null || \
-          ssh-keyscan -H ${{ vars.SERVER_HOST_STAGING }} >> ~/.ssh/known_hosts 2>/dev/null || \
-          echo "Warning: Could not scan host keys, using StrictHostKeyChecking=accept-new"
-          # Fallback: disable strict host key checking for this session
-          echo "Host ${{ vars.SERVER_HOST_STAGING }}" >> ~/.ssh/config
-          echo "  StrictHostKeyChecking accept-new" >> ~/.ssh/config
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.FORGE_API_TOKEN }}" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            "https://forge.laravel.com/api/v1/servers/${{ vars.FORGE_SERVER_ID_STAGING }}/sites/${{ vars.FORGE_SITE_ID_STAGING }}/deployment/deploy"
 
-      - name: Deploy to staging server
-        run: |
-          # Deploy frontend dist
-          rsync -avz --delete dist/ ${{ vars.SERVER_USER_STAGING }}@${{ vars.SERVER_HOST_STAGING }}:${{ vars.DEPLOY_PATH_STAGING }}/dist/
-
-          # Deploy backend (dist + package files for production deps)
-          rsync -avz --delete backend/dist/ ${{ vars.SERVER_USER_STAGING }}@${{ vars.SERVER_HOST_STAGING }}:${{ vars.DEPLOY_PATH_STAGING }}/backend/dist/
-          rsync -avz backend/package.json backend/package-lock.json ${{ vars.SERVER_USER_STAGING }}@${{ vars.SERVER_HOST_STAGING }}:${{ vars.DEPLOY_PATH_STAGING }}/backend/
-
-          # Install production dependencies and restart on server
-          ssh ${{ vars.SERVER_USER_STAGING }}@${{ vars.SERVER_HOST_STAGING }} "cd ${{ vars.DEPLOY_PATH_STAGING }}/backend && npm ci --production && pm2 restart all || pm2 start dist/server.js --name omnichannel-backend"
-
-  deploy-production:
+  trigger-production-deploy:
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Download frontend build
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: dist/
-
-      - name: Download backend build
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-dist
-          path: backend/
-
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Add server to known hosts
+      - name: Trigger Forge deployment
         run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          # Try port 22 first, then common alternatives
-          ssh-keyscan -H -p 22 ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || \
-          ssh-keyscan -H ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || \
-          echo "Warning: Could not scan host keys, using StrictHostKeyChecking=accept-new"
-          # Fallback: disable strict host key checking for this session
-          echo "Host ${{ vars.SERVER_HOST }}" >> ~/.ssh/config
-          echo "  StrictHostKeyChecking accept-new" >> ~/.ssh/config
-
-      - name: Deploy to production server
-        run: |
-          # Deploy frontend dist
-          rsync -avz --delete dist/ ${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }}:${{ vars.DEPLOY_PATH }}/dist/
-
-          # Deploy backend (dist + package files for production deps)
-          rsync -avz --delete backend/dist/ ${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }}:${{ vars.DEPLOY_PATH }}/backend/dist/
-          rsync -avz backend/package.json backend/package-lock.json ${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }}:${{ vars.DEPLOY_PATH }}/backend/
-
-          # Install production dependencies and restart on server
-          ssh ${{ vars.SERVER_USER }}@${{ vars.SERVER_HOST }} "cd ${{ vars.DEPLOY_PATH }}/backend && npm ci --production && pm2 restart all || pm2 start dist/server.js --name omnichannel-backend"
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.FORGE_API_TOKEN }}" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            "https://forge.laravel.com/api/v1/servers/${{ vars.FORGE_SERVER_ID }}/sites/${{ vars.FORGE_SITE_ID }}/deployment/deploy"

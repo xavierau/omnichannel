@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TemplateQueryDto = exports.UpdateTranslationDto = exports.CreateTranslationDto = exports.UpdateTemplateGroupDto = exports.CreateTemplateGroupDto = exports.TemplateButtonDto = void 0;
+var template_button_dto_1 = require("./template-button.dto");
+Object.defineProperty(exports, "TemplateButtonDto", { enumerable: true, get: function () { return template_button_dto_1.TemplateButtonDto; } });
+var create_template_group_dto_1 = require("./create-template-group.dto");
+Object.defineProperty(exports, "CreateTemplateGroupDto", { enumerable: true, get: function () { return create_template_group_dto_1.CreateTemplateGroupDto; } });
+var update_template_group_dto_1 = require("./update-template-group.dto");
+Object.defineProperty(exports, "UpdateTemplateGroupDto", { enumerable: true, get: function () { return update_template_group_dto_1.UpdateTemplateGroupDto; } });
+var create_translation_dto_1 = require("./create-translation.dto");
+Object.defineProperty(exports, "CreateTranslationDto", { enumerable: true, get: function () { return create_translation_dto_1.CreateTranslationDto; } });
+var update_translation_dto_1 = require("./update-translation.dto");
+Object.defineProperty(exports, "UpdateTranslationDto", { enumerable: true, get: function () { return update_translation_dto_1.UpdateTranslationDto; } });
+var template_query_dto_1 = require("./template-query.dto");
+Object.defineProperty(exports, "TemplateQueryDto", { enumerable: true, get: function () { return template_query_dto_1.TemplateQueryDto; } });

@@ -11,6 +11,9 @@ node_modules
 dist-ssr
 *.local
 
+# Don't ignore dist - we commit built files for deployment
+# dist/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

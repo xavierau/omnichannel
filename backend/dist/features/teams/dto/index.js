@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UpdateMemberRoleDto = exports.AddChannelAccountDto = exports.AddMemberDto = exports.UpdateTeamDto = exports.CreateTeamDto = void 0;
+var create_team_dto_1 = require("./create-team.dto");
+Object.defineProperty(exports, "CreateTeamDto", { enumerable: true, get: function () { return create_team_dto_1.CreateTeamDto; } });
+var update_team_dto_1 = require("./update-team.dto");
+Object.defineProperty(exports, "UpdateTeamDto", { enumerable: true, get: function () { return update_team_dto_1.UpdateTeamDto; } });
+var add_member_dto_1 = require("./add-member.dto");
+Object.defineProperty(exports, "AddMemberDto", { enumerable: true, get: function () { return add_member_dto_1.AddMemberDto; } });
+var add_channel_account_dto_1 = require("./add-channel-account.dto");
+Object.defineProperty(exports, "AddChannelAccountDto", { enumerable: true, get: function () { return add_channel_account_dto_1.AddChannelAccountDto; } });
+var update_member_role_dto_1 = require("./update-member-role.dto");
+Object.defineProperty(exports, "UpdateMemberRoleDto", { enumerable: true, get: function () { return update_member_role_dto_1.UpdateMemberRoleDto; } });
