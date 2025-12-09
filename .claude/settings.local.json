@@ -68,7 +68,8 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Add WhatsApp inbox with real-time messaging and comprehensive settings\n\n- Add inbox feature with conversation management, real-time SSE updates,\n  and support for text, media, interactive messages, reactions, and locations\n- Implement team management with agent assignment and permissions\n- Add custom fields for customer metadata with entity-level configuration\n- Implement user invitations system with email-based onboarding\n- Add password reset flow with forgot/reset password endpoints\n- Enhance WhatsApp templates with sync from Meta, SSE status updates,\n  and improved variable handling\n- Add channel account management with webhook URL display and setup guide\n- Implement media upload with progress tracking and Meta Cloud API integration\n- Add authentication context with protected routes for frontend\n- Include comprehensive migrations for all new database tables\n- Add rate limiting service and health check endpoint\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(DATABASE_PASSWORD=password npm run migration:run:*)"
     ],
     "deny": [],
     "ask": []
