@@ -22,6 +22,7 @@ export enum PermissionResource {
   NOTES = 'notes',
   TEAMS = 'teams',
   INBOX = 'inbox',
+  INVITATIONS = 'invitations',
 }
 
 export enum PermissionAction {
