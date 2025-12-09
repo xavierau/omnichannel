@@ -11,7 +11,7 @@ import { Tag, TagColor } from '../tag.entity';
 import {
   ConflictException,
   NotFoundException,
-} from '../../../shared/exceptions/HttpException';
+} from '../../../shared/exceptions/http-exceptions';
 import {
   csrfEnsureToken,
   csrfValidateToken,

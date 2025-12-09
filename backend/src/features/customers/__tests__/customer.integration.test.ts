@@ -15,7 +15,7 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
-} from '../../../shared/exceptions/HttpException';
+} from '../../../shared/exceptions/http-exceptions';
 import {
   csrfEnsureToken,
   csrfValidateToken,

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { HttpException } from '@shared/exceptions/HttpException';
+import { HttpException } from '@shared/exceptions/http-exceptions';
 import { logger } from '@config/logger.config';
 import {
   getCorrelationId,

@@ -55,6 +55,7 @@ export async function seedRoles() {
         PermissionResource.CUSTOM_FIELDS,
         PermissionResource.NOTES,
         PermissionResource.SETTINGS,
+        PermissionResource.INBOX,
       ],
     })
     .andWhere('permission.action = :action', { action: PermissionAction.MANAGE })
