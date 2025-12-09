@@ -10,10 +10,9 @@ const path_1 = __importDefault(require("path"));
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const envFile = `.env.${NODE_ENV}`;
 // Determine the base directory - works in both development (src/) and production (dist/)
-const isProduction = __dirname.includes('/dist/');
-const baseDir = isProduction
-    ? path_1.default.resolve(__dirname, '..') // dist/ -> backend/
-    : path_1.default.resolve(__dirname, '../..'); // src/config/ -> backend/
+// __dirname in dev: backend/src/config/ -> need ../.. to reach backend/
+// __dirname in prod: backend/dist/config/ -> need ../.. to reach backend/
+const baseDir = path_1.default.resolve(__dirname, '../..');
 const envPath = path_1.default.resolve(baseDir, envFile);
 const defaultEnvPath = path_1.default.resolve(baseDir, '.env');
 // Try to load environment-specific file first, fall back to .env
