@@ -1,4 +1,5 @@
 import { Strategy as PassportJwtStrategy, ExtractJwt } from 'passport-jwt';
+import { Request } from 'express';
 import { container } from 'tsyringe';
 import { UserService } from '@features/users/user.service';
 import { redisClient } from '@config/redis.config';
@@ -10,11 +11,31 @@ interface JwtPayload {
   email: string;
 }
 
+/**
+ * Custom JWT extractor that checks both:
+ * 1. Authorization header (Bearer token) - for regular API calls
+ * 2. Query parameter 'token' - for SSE connections (EventSource can't send headers)
+ */
+function extractJwtFromHeaderOrQuery(req: Request): string | null {
+  // First try Authorization header
+  const headerToken = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+  if (headerToken) {
+    return headerToken;
+  }
+
+  // Fall back to query parameter for SSE
+  if (req.query && req.query.token && typeof req.query.token === 'string') {
+    return req.query.token;
+  }
+
+  return null;
+}
+
 export class JwtStrategy extends PassportJwtStrategy {
   constructor() {
     super(
       {
-        jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+        jwtFromRequest: extractJwtFromHeaderOrQuery,
         secretOrKey: process.env.JWT_ACCESS_SECRET!,
         ignoreExpiration: false,
       },
