@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.broadcastBulkLimiter = exports.broadcastActionLimiter = exports.csrfTokenLimiter = exports.refreshLimiter = exports.passwordResetLimiter = exports.registerLimiter = exports.authLimiter = exports.generalLimiter = void 0;
+exports.templateSubmitLimiter = exports.broadcastBulkLimiter = exports.broadcastActionLimiter = exports.csrfTokenLimiter = exports.refreshLimiter = exports.passwordResetLimiter = exports.registerLimiter = exports.authLimiter = exports.generalLimiter = void 0;
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const constants_1 = require("../config/constants");
 /**
@@ -137,4 +137,18 @@ exports.broadcastBulkLimiter = (0, express_rate_limit_1.default)({
     keyGenerator: (req) => getClientKey(req, 'broadcast_bulk'),
     validate: { xForwardedForHeader: false },
     handler: createRateLimitHandler('Too many bulk operations. Please wait before performing more bulk actions.'),
+});
+/**
+ * Rate limiter for template submission to Meta.
+ * Prevents spamming Meta's API which could cause rate limit blocks.
+ * 5 requests per minute per user.
+ */
+exports.templateSubmitLimiter = (0, express_rate_limit_1.default)({
+    windowMs: constants_1.RATE_LIMIT_CONSTANTS.TEMPLATE_SUBMIT.WINDOW_MS,
+    max: constants_1.RATE_LIMIT_CONSTANTS.TEMPLATE_SUBMIT.MAX_REQUESTS,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => getClientKey(req, 'template_submit'),
+    validate: { xForwardedForHeader: false },
+    handler: createRateLimitHandler('Too many template submissions. Please wait before submitting more templates.'),
 });

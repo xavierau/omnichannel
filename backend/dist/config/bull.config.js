@@ -23,6 +23,13 @@ exports.BULL_CONFIG = {
      */
     concurrency: parseInt(process.env.BULL_CONCURRENCY || '5', 10),
     /**
+     * Template submission queue configuration.
+     * Lower concurrency to avoid hitting Meta API rate limits.
+     */
+    templateSubmission: {
+        concurrency: parseInt(process.env.BULL_TEMPLATE_CONCURRENCY || '2', 10),
+    },
+    /**
      * Default job options applied to all jobs.
      */
     defaultJobOptions: {

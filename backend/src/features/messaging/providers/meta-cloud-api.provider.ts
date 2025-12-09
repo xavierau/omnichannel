@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import { Agent } from 'https';
 import * as crypto from 'crypto';
 import {
   IMessagingProvider,
@@ -228,6 +229,38 @@ export class MetaCloudApiProvider implements IMessagingProvider {
   private readonly baseUrl = 'https://graph.facebook.com';
 
   /**
+   * Error codes that indicate retryable errors from Meta API.
+   * @see https://developers.facebook.com/docs/whatsapp/cloud-api/support/error-codes
+   */
+  private static readonly RETRYABLE_ERROR_CODES = [
+    1,   // Unknown error (temporary)
+    2,   // Service temporarily unavailable
+    4,   // Rate limit
+    17,  // Rate limit
+    341, // Rate limit
+    368, // Temporarily blocked
+    190, // Access token expired (might be refreshable)
+  ];
+
+  /**
+   * Error codes that are specifically non-retryable for template operations.
+   */
+  private static readonly NON_RETRYABLE_TEMPLATE_CODES = [
+    100,     // Invalid parameter
+    2388026, // Duplicate template name
+    2388027, // Invalid template name format
+  ];
+
+  /**
+   * HTTPS agent with keep-alive for connection reuse.
+   */
+  private static readonly httpsAgent = new Agent({
+    keepAlive: true,
+    maxSockets: 50,
+    timeout: 60000,
+  });
+
+  /**
    * Initialize provider with decrypted credentials.
    */
   async initialize(credentials: ProviderCredentials): Promise<void> {
@@ -246,6 +279,7 @@ export class MetaCloudApiProvider implements IMessagingProvider {
         'Content-Type': 'application/json',
       },
       timeout: parseInt(process.env.PROVIDER_TIMEOUT_MS || '30000', 10),
+      httpsAgent: MetaCloudApiProvider.httpsAgent,
     });
 
     logger.debug('MetaCloudApiProvider initialized', {
@@ -723,6 +757,11 @@ export class MetaCloudApiProvider implements IMessagingProvider {
           language: request.language,
           category: request.category,
           components: request.components,
+        },
+        {
+          headers: {
+            'X-Idempotency-Key': `template-${request.name}-${request.language}`,
+          },
         }
       );
 
@@ -1274,18 +1313,10 @@ export class MetaCloudApiProvider implements IMessagingProvider {
     const errorCode = metaError?.code?.toString() || 'UNKNOWN';
     const errorMessage = metaError?.message || axiosError.message || 'Unknown error';
 
-    // Determine if error is retryable
-    const retryableCodes = [
-      1, // Unknown error (temporary)
-      2, // Service temporarily unavailable
-      4, // Rate limit
-      17, // Rate limit
-      341, // Rate limit
-      368, // Temporarily blocked
-      190, // Access token expired (might be refreshable)
-    ];
-
-    const retryable = metaError ? retryableCodes.includes(metaError.code) : false;
+    // Determine if error is retryable using class constant
+    const retryable = metaError
+      ? MetaCloudApiProvider.RETRYABLE_ERROR_CODES.includes(metaError.code)
+      : false;
 
     logger.error('Failed to send template message', {
       errorCode,
@@ -1355,19 +1386,10 @@ export class MetaCloudApiProvider implements IMessagingProvider {
     const errorCode = metaError?.code?.toString() || 'UNKNOWN';
     const errorMessage = metaError?.message || axiosError.message || 'Unknown error';
 
-    // Determine if error is retryable
-    // Same logic as handleSendError for consistency
-    const retryableCodes = [
-      1, // Unknown error (temporary)
-      2, // Service temporarily unavailable
-      4, // Rate limit
-      17, // Rate limit
-      341, // Rate limit
-      368, // Temporarily blocked
-      190, // Access token expired (might be refreshable)
-    ];
-
-    const retryable = metaError ? retryableCodes.includes(metaError.code) : false;
+    // Determine if error is retryable using class constant
+    const retryable = metaError
+      ? MetaCloudApiProvider.RETRYABLE_ERROR_CODES.includes(metaError.code)
+      : false;
 
     logger.error('Failed to send freeform message', {
       errorCode,
@@ -1407,29 +1429,12 @@ export class MetaCloudApiProvider implements IMessagingProvider {
     const errorCode = metaError?.code?.toString() || 'UNKNOWN';
     const errorMessage = metaError?.message || axiosError.message || 'Unknown error';
 
-    // Retryable error codes for template creation
-    const retryableCodes = [
-      1,   // Unknown error (temporary)
-      2,   // Service temporarily unavailable
-      4,   // Rate limit
-      17,  // Rate limit
-      341, // Rate limit
-      368, // Temporarily blocked
-      190, // Access token expired (might be refreshable)
-    ];
-
-    // Non-retryable template-specific error codes
-    const nonRetryableCodes = [
-      100,     // Invalid parameter
-      2388026, // Duplicate template name
-      2388027, // Invalid template name format
-    ];
-
+    // Determine if error is retryable using class constants
     let retryable = false;
     if (metaError) {
-      if (nonRetryableCodes.includes(metaError.code)) {
+      if (MetaCloudApiProvider.NON_RETRYABLE_TEMPLATE_CODES.includes(metaError.code)) {
         retryable = false;
-      } else if (retryableCodes.includes(metaError.code)) {
+      } else if (MetaCloudApiProvider.RETRYABLE_ERROR_CODES.includes(metaError.code)) {
         retryable = true;
       }
     }

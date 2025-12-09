@@ -65,6 +65,8 @@ import { WebhookController } from '@features/webhooks/webhook.controller';
 import { BroadcastQueue } from '../jobs/broadcast.queue';
 import { BroadcastScheduler } from '../jobs/broadcast.scheduler';
 import { InboxMessageQueue } from '../jobs/inbox-message.queue';
+import { TemplateSubmissionQueue } from '../jobs/template-submission.queue';
+import { ITemplateSubmissionQueue } from '../jobs/interfaces/template-submission-queue.interface';
 
 // Teams
 import { TeamRepository } from '@features/teams/repositories/team.repository';
@@ -176,6 +178,13 @@ container.registerSingleton(WebhookController);
 container.registerSingleton(BroadcastQueue);
 container.registerSingleton(BroadcastScheduler);
 container.registerSingleton(InboxMessageQueue);
+
+// Template Submission Queue
+container.registerSingleton(TemplateSubmissionQueue);
+container.register<ITemplateSubmissionQueue>(
+  ITemplateSubmissionQueue,
+  { useToken: TemplateSubmissionQueue }
+);
 
 // Register Teams Repositories
 container.registerSingleton(TeamRepository);

@@ -19,7 +19,7 @@ const template_repository_1 = require("./template.repository");
 const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
 const logger_config_1 = require("../../config/logger.config");
 const channel_account_repository_1 = require("../channel-accounts/channel-account.repository");
-const template_submission_queue_1 = require("../../jobs/template-submission.queue");
+const template_submission_queue_interface_1 = require("../../jobs/interfaces/template-submission-queue.interface");
 const enums_1 = require("./enums");
 let TemplateService = class TemplateService {
     templateRepository;
@@ -144,8 +144,8 @@ let TemplateService = class TemplateService {
      * the translation for submission to Meta.
      */
     async addTranslation(templateId, dto, tenantId) {
-        // Verify template exists and belongs to tenant
-        await this.getTemplate(tenantId, templateId);
+        // Verify template exists and belongs to tenant (reuse for channel account check)
+        const template = await this.getTemplate(tenantId, templateId);
         // Check if translation for this language already exists
         const exists = await this.templateRepository.existsTranslationByLanguage(templateId, dto.language);
         if (exists) {
@@ -169,7 +169,6 @@ let TemplateService = class TemplateService {
             buttons,
         });
         // Queue for Meta submission if channel account is configured
-        const template = await this.getTemplate(tenantId, templateId);
         if (template.channelAccountId) {
             await this.submissionQueue.queueSubmission({
                 tenantId,
@@ -303,8 +302,7 @@ exports.TemplateService = TemplateService = __decorate([
     (0, tsyringe_1.singleton)(),
     __param(0, (0, tsyringe_1.inject)(template_repository_1.TemplateRepository)),
     __param(1, (0, tsyringe_1.inject)(channel_account_repository_1.ChannelAccountRepository)),
-    __param(2, (0, tsyringe_1.inject)(template_submission_queue_1.TemplateSubmissionQueue)),
+    __param(2, (0, tsyringe_1.inject)(template_submission_queue_interface_1.ITemplateSubmissionQueue)),
     __metadata("design:paramtypes", [template_repository_1.TemplateRepository,
-        channel_account_repository_1.ChannelAccountRepository,
-        template_submission_queue_1.TemplateSubmissionQueue])
+        channel_account_repository_1.ChannelAccountRepository, Object])
 ], TemplateService);

@@ -59,6 +59,19 @@ export declare class MetaCloudApiProvider implements IMessagingProvider {
     private readonly apiVersion;
     private readonly baseUrl;
     /**
+     * Error codes that indicate retryable errors from Meta API.
+     * @see https://developers.facebook.com/docs/whatsapp/cloud-api/support/error-codes
+     */
+    private static readonly RETRYABLE_ERROR_CODES;
+    /**
+     * Error codes that are specifically non-retryable for template operations.
+     */
+    private static readonly NON_RETRYABLE_TEMPLATE_CODES;
+    /**
+     * HTTPS agent with keep-alive for connection reuse.
+     */
+    private static readonly httpsAgent;
+    /**
      * Initialize provider with decrypted credentials.
      */
     initialize(credentials: ProviderCredentials): Promise<void>;

@@ -7,6 +7,7 @@ import { requirePermission } from '@middleware/authorize';
 import { validateDto, validateQueryDto } from '@middleware/validate-dto';
 import { requireTenant } from '@middleware/require-tenant';
 import { validateUuid } from '@middleware/validate-uuid';
+import { templateSubmitLimiter } from '@middleware/rate-limiter';
 import { CreateTemplateGroupDto } from './dto/create-template-group.dto';
 import { UpdateTemplateGroupDto } from './dto/update-template-group.dto';
 import { CreateTranslationDto } from './dto/create-translation.dto';
@@ -105,6 +106,7 @@ router.patch(
 router.post(
   '/:id/translations/:translationId/submit',
   csrfValidateToken,
+  templateSubmitLimiter,
   requirePermission('templates', 'update', 'all'),
   validateUuid('id', 'translationId'),
   controller.submitToMeta

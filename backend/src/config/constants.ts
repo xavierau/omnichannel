@@ -90,6 +90,12 @@ export const RATE_LIMIT_CONSTANTS = {
     WINDOW_MS: 60 * 1000, // 1 minute
     MAX_REQUESTS: 5,
   },
+
+  // Template submission to Meta - strict to prevent API rate limit blocks
+  TEMPLATE_SUBMIT: {
+    WINDOW_MS: 60 * 1000, // 1 minute
+    MAX_REQUESTS: 5,
+  },
 } as const;
 
 export const DB_CONSTANTS = {

@@ -6,12 +6,12 @@ import { UpdateTemplateGroupDto } from './dto/update-template-group.dto';
 import { CreateTranslationDto } from './dto/create-translation.dto';
 import { UpdateTranslationDto } from './dto/update-translation.dto';
 import { ChannelAccountRepository } from '../channel-accounts/channel-account.repository';
-import { TemplateSubmissionQueue } from '../../jobs/template-submission.queue';
+import { ITemplateSubmissionQueue } from '../../jobs/interfaces/template-submission-queue.interface';
 export declare class TemplateService {
     private templateRepository;
     private channelAccountRepository;
     private submissionQueue;
-    constructor(templateRepository: TemplateRepository, channelAccountRepository: ChannelAccountRepository, submissionQueue: TemplateSubmissionQueue);
+    constructor(templateRepository: TemplateRepository, channelAccountRepository: ChannelAccountRepository, submissionQueue: ITemplateSubmissionQueue);
     /**
      * List all templates for a tenant with pagination and filtering.
      */

@@ -87,7 +87,7 @@ let TemplateSubmissionQueue = class TemplateSubmissionQueue {
      * Setup job processors for template submission.
      */
     setupProcessors() {
-        this.queue.process(exports.TEMPLATE_SUBMISSION_JOB, bull_config_1.BULL_CONFIG.concurrency, async (job) => {
+        this.queue.process(exports.TEMPLATE_SUBMISSION_JOB, bull_config_1.BULL_CONFIG.templateSubmission.concurrency, async (job) => {
             await this.processSubmission(job);
         });
     }

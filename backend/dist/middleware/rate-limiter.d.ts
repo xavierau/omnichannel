@@ -45,3 +45,9 @@ export declare const broadcastActionLimiter: import("express-rate-limit").RateLi
  * 5 requests per minute per user.
  */
 export declare const broadcastBulkLimiter: import("express-rate-limit").RateLimitRequestHandler;
+/**
+ * Rate limiter for template submission to Meta.
+ * Prevents spamming Meta's API which could cause rate limit blocks.
+ * 5 requests per minute per user.
+ */
+export declare const templateSubmitLimiter: import("express-rate-limit").RateLimitRequestHandler;

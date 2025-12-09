@@ -9,6 +9,7 @@ const authorize_1 = require("../../middleware/authorize");
 const validate_dto_1 = require("../../middleware/validate-dto");
 const require_tenant_1 = require("../../middleware/require-tenant");
 const validate_uuid_1 = require("../../middleware/validate-uuid");
+const rate_limiter_1 = require("../../middleware/rate-limiter");
 const create_template_group_dto_1 = require("./dto/create-template-group.dto");
 const update_template_group_dto_1 = require("./dto/update-template-group.dto");
 const create_translation_dto_1 = require("./dto/create-translation.dto");
@@ -38,6 +39,8 @@ router.delete('/:id', csrf_protection_1.csrfValidateToken, (0, authorize_1.requi
 router.post('/:id/translations', csrf_protection_1.csrfValidateToken, (0, authorize_1.requirePermission)('templates', 'create', 'all'), (0, validate_uuid_1.validateUuid)(), (0, validate_dto_1.validateDto)(create_translation_dto_1.CreateTranslationDto), controller.addTranslation);
 // Update a translation
 router.patch('/:id/translations/:translationId', csrf_protection_1.csrfValidateToken, (0, authorize_1.requirePermission)('templates', 'update', 'all'), (0, validate_uuid_1.validateUuid)('id', 'translationId'), (0, validate_dto_1.validateDto)(update_translation_dto_1.UpdateTranslationDto), controller.updateTranslation);
+// Submit a translation to Meta for approval
+router.post('/:id/translations/:translationId/submit', csrf_protection_1.csrfValidateToken, rate_limiter_1.templateSubmitLimiter, (0, authorize_1.requirePermission)('templates', 'update', 'all'), (0, validate_uuid_1.validateUuid)('id', 'translationId'), controller.submitToMeta);
 // Delete a translation
 router.delete('/:id/translations/:translationId', csrf_protection_1.csrfValidateToken, (0, authorize_1.requirePermission)('templates', 'delete', 'all'), (0, validate_uuid_1.validateUuid)('id', 'translationId'), controller.deleteTranslation);
 exports.default = router;

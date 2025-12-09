@@ -16,6 +16,13 @@ export declare const BULL_CONFIG: {
      */
     concurrency: number;
     /**
+     * Template submission queue configuration.
+     * Lower concurrency to avoid hitting Meta API rate limits.
+     */
+    templateSubmission: {
+        concurrency: number;
+    };
+    /**
      * Default job options applied to all jobs.
      */
     defaultJobOptions: {

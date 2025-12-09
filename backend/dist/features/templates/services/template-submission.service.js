@@ -22,6 +22,14 @@ const credential_service_1 = require("../../messaging/services/credential.servic
 const channel_account_repository_1 = require("../../channel-accounts/channel-account.repository");
 const enums_1 = require("../enums");
 const logger_config_1 = require("../../../config/logger.config");
+const meta_cloud_api_provider_1 = require("../../messaging/providers/meta-cloud-api.provider");
+/**
+ * Type guard to check if provider supports template creation.
+ */
+function isMetaCloudApiProvider(provider) {
+    return provider.providerCode === 'meta_cloud_api'
+        && typeof provider.createTemplate === 'function';
+}
 /**
  * Error codes for template submission failures.
  */
@@ -114,7 +122,17 @@ let TemplateSubmissionService = class TemplateSubmissionService {
             return this.createError(exports.SubmissionErrorCodes.CHANNEL_ACCOUNT_NOT_FOUND, `Channel account ${template.channelAccountId} not found`, false);
         }
         // 4. Initialize provider with credentials
-        const provider = this.providerFactory.createProviderForWebhook('meta_cloud_api');
+        const provider = this.providerFactory.createProviderForWebhook(meta_cloud_api_provider_1.MetaCloudApiProvider.prototype.providerCode);
+        if (!isMetaCloudApiProvider(provider)) {
+            return {
+                success: false,
+                error: {
+                    code: 'INVALID_PROVIDER',
+                    message: 'Provider does not support template creation',
+                    retryable: false,
+                },
+            };
+        }
         const credentials = await this.credentialService.decryptCredentials(channelAccount.encryptedCredentials, channelAccount.credentialsIv);
         await provider.initialize(credentials);
         // 5. Transform to Meta format
@@ -131,7 +149,12 @@ let TemplateSubmissionService = class TemplateSubmissionService {
         if (response.success && response.id) {
             return this.handleSuccess(tenantId, templateGroupId, translationId, template.name, translation.language, response.id);
         }
-        return this.handleError(tenantId, templateGroupId, translationId, template.name, translation.language, translation.status, response.error);
+        const error = response.error ?? {
+            code: 'UNKNOWN_ERROR',
+            message: 'Template submission failed with unknown error',
+            retryable: false,
+        };
+        return this.handleError(tenantId, templateGroupId, translationId, template.name, translation.language, translation.status, error);
     }
     /**
      * Handle successful template submission.

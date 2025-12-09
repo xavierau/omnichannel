@@ -1,5 +1,6 @@
 import Bull from 'bull';
 import { TemplateSubmissionService } from '../features/templates/services/template-submission.service';
+import { ITemplateSubmissionQueue } from './interfaces/template-submission-queue.interface';
 /**
  * Job type for template submission to Meta.
  */
@@ -32,7 +33,7 @@ export interface TemplateSubmissionJobData {
  * - concurrency: configurable via BULL_CONFIG.concurrency
  * - Job ID format: submit-{translationId} for idempotency
  */
-export declare class TemplateSubmissionQueue {
+export declare class TemplateSubmissionQueue implements ITemplateSubmissionQueue {
     private submissionService;
     private queue;
     constructor(submissionService: TemplateSubmissionService);

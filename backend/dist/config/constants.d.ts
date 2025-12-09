@@ -50,6 +50,10 @@ export declare const RATE_LIMIT_CONSTANTS: {
         readonly WINDOW_MS: number;
         readonly MAX_REQUESTS: 5;
     };
+    readonly TEMPLATE_SUBMIT: {
+        readonly WINDOW_MS: number;
+        readonly MAX_REQUESTS: 5;
+    };
 };
 export declare const DB_CONSTANTS: {
     readonly CONNECTION_POOL_MAX: 20;

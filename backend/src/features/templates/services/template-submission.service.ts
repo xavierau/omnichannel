@@ -8,6 +8,17 @@ import { ChannelAccountRepository } from '../../channel-accounts/channel-account
 import { TemplateStatus } from '../enums';
 import { logger, auditLogger } from '../../../config/logger.config';
 import { MetaCloudApiProvider } from '../../messaging/providers/meta-cloud-api.provider';
+import { IMessagingProvider } from '../../messaging/interfaces/messaging-provider.interface';
+
+/**
+ * Type guard to check if provider supports template creation.
+ */
+function isMetaCloudApiProvider(
+  provider: IMessagingProvider
+): provider is MetaCloudApiProvider {
+  return provider.providerCode === 'meta_cloud_api'
+    && typeof (provider as MetaCloudApiProvider).createTemplate === 'function';
+}
 
 /**
  * Result of a template submission operation.
@@ -142,7 +153,21 @@ export class TemplateSubmissionService {
     }
 
     // 4. Initialize provider with credentials
-    const provider = this.providerFactory.createProviderForWebhook('meta_cloud_api') as MetaCloudApiProvider;
+    const provider = this.providerFactory.createProviderForWebhook(
+      MetaCloudApiProvider.prototype.providerCode
+    );
+
+    if (!isMetaCloudApiProvider(provider)) {
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_PROVIDER',
+          message: 'Provider does not support template creation',
+          retryable: false,
+        },
+      };
+    }
+
     const credentials = await this.credentialService.decryptCredentials(
       channelAccount.encryptedCredentials,
       channelAccount.credentialsIv
@@ -174,6 +199,11 @@ export class TemplateSubmissionService {
       );
     }
 
+    const error = response.error ?? {
+      code: 'UNKNOWN_ERROR',
+      message: 'Template submission failed with unknown error',
+      retryable: false,
+    };
     return this.handleError(
       tenantId,
       templateGroupId,
@@ -181,7 +211,7 @@ export class TemplateSubmissionService {
       template.name,
       translation.language,
       translation.status,
-      response.error!
+      error
     );
   }
 

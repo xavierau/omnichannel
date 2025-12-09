@@ -3,6 +3,7 @@ import Bull from 'bull';
 import { createQueue, BULL_CONFIG } from '../config/bull.config';
 import { TemplateSubmissionService } from '../features/templates/services/template-submission.service';
 import { logger } from '../config/logger.config';
+import { ITemplateSubmissionQueue } from './interfaces/template-submission-queue.interface';
 
 /**
  * Job type for template submission to Meta.
@@ -39,7 +40,7 @@ export interface TemplateSubmissionJobData {
  * - Job ID format: submit-{translationId} for idempotency
  */
 @singleton()
-export class TemplateSubmissionQueue {
+export class TemplateSubmissionQueue implements ITemplateSubmissionQueue {
   private queue: Bull.Queue;
 
   constructor(
@@ -97,7 +98,7 @@ export class TemplateSubmissionQueue {
   private setupProcessors(): void {
     this.queue.process(
       TEMPLATE_SUBMISSION_JOB,
-      BULL_CONFIG.concurrency,
+      BULL_CONFIG.templateSubmission.concurrency,
       async (job: Bull.Job<TemplateSubmissionJobData>) => {
         await this.processSubmission(job);
       }

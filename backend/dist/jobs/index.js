@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TEMPLATE_SUBMISSION_JOB = exports.TemplateSubmissionQueue = exports.InboxMessageQueue = exports.BroadcastScheduler = exports.JobType = exports.BroadcastQueue = void 0;
+exports.ITemplateSubmissionQueue = exports.TEMPLATE_SUBMISSION_JOB = exports.TemplateSubmissionQueue = exports.InboxMessageQueue = exports.BroadcastScheduler = exports.JobType = exports.BroadcastQueue = void 0;
 var broadcast_queue_1 = require("./broadcast.queue");
 Object.defineProperty(exports, "BroadcastQueue", { enumerable: true, get: function () { return broadcast_queue_1.BroadcastQueue; } });
 Object.defineProperty(exports, "JobType", { enumerable: true, get: function () { return broadcast_queue_1.JobType; } });
@@ -11,3 +11,5 @@ Object.defineProperty(exports, "InboxMessageQueue", { enumerable: true, get: fun
 var template_submission_queue_1 = require("./template-submission.queue");
 Object.defineProperty(exports, "TemplateSubmissionQueue", { enumerable: true, get: function () { return template_submission_queue_1.TemplateSubmissionQueue; } });
 Object.defineProperty(exports, "TEMPLATE_SUBMISSION_JOB", { enumerable: true, get: function () { return template_submission_queue_1.TEMPLATE_SUBMISSION_JOB; } });
+var template_submission_queue_interface_1 = require("./interfaces/template-submission-queue.interface");
+Object.defineProperty(exports, "ITemplateSubmissionQueue", { enumerable: true, get: function () { return template_submission_queue_interface_1.ITemplateSubmissionQueue; } });

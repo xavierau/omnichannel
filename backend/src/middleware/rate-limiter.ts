@@ -174,3 +174,20 @@ export const broadcastBulkLimiter = rateLimit({
     'Too many bulk operations. Please wait before performing more bulk actions.'
   ),
 });
+
+/**
+ * Rate limiter for template submission to Meta.
+ * Prevents spamming Meta's API which could cause rate limit blocks.
+ * 5 requests per minute per user.
+ */
+export const templateSubmitLimiter = rateLimit({
+  windowMs: RATE_LIMIT_CONSTANTS.TEMPLATE_SUBMIT.WINDOW_MS,
+  max: RATE_LIMIT_CONSTANTS.TEMPLATE_SUBMIT.MAX_REQUESTS,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => getClientKey(req, 'template_submit'),
+  validate: { xForwardedForHeader: false },
+  handler: createRateLimitHandler(
+    'Too many template submissions. Please wait before submitting more templates.'
+  ),
+});

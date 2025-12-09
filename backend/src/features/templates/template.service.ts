@@ -15,7 +15,7 @@ import {
 } from '../../shared/exceptions/http-exceptions';
 import { auditLogger } from '../../config/logger.config';
 import { ChannelAccountRepository } from '../channel-accounts/channel-account.repository';
-import { TemplateSubmissionQueue } from '../../jobs/template-submission.queue';
+import { ITemplateSubmissionQueue } from '../../jobs/interfaces/template-submission-queue.interface';
 import { TemplateStatus } from './enums';
 
 @singleton()
@@ -23,7 +23,7 @@ export class TemplateService {
   constructor(
     @inject(TemplateRepository) private templateRepository: TemplateRepository,
     @inject(ChannelAccountRepository) private channelAccountRepository: ChannelAccountRepository,
-    @inject(TemplateSubmissionQueue) private submissionQueue: TemplateSubmissionQueue
+    @inject(ITemplateSubmissionQueue) private submissionQueue: ITemplateSubmissionQueue
   ) {}
 
   /**
@@ -187,8 +187,8 @@ export class TemplateService {
     dto: CreateTranslationDto,
     tenantId: string
   ): Promise<TemplateTranslation> {
-    // Verify template exists and belongs to tenant
-    await this.getTemplate(tenantId, templateId);
+    // Verify template exists and belongs to tenant (reuse for channel account check)
+    const template = await this.getTemplate(tenantId, templateId);
 
     // Check if translation for this language already exists
     const exists = await this.templateRepository.existsTranslationByLanguage(
@@ -221,7 +221,6 @@ export class TemplateService {
     });
 
     // Queue for Meta submission if channel account is configured
-    const template = await this.getTemplate(tenantId, templateId);
     if (template.channelAccountId) {
       await this.submissionQueue.queueSubmission({
         tenantId,

@@ -55,6 +55,8 @@ const webhook_controller_1 = require("../features/webhooks/webhook.controller");
 const broadcast_queue_1 = require("../jobs/broadcast.queue");
 const broadcast_scheduler_1 = require("../jobs/broadcast.scheduler");
 const inbox_message_queue_1 = require("../jobs/inbox-message.queue");
+const template_submission_queue_1 = require("../jobs/template-submission.queue");
+const template_submission_queue_interface_1 = require("../jobs/interfaces/template-submission-queue.interface");
 // Teams
 const team_repository_1 = require("../features/teams/repositories/team.repository");
 const team_member_repository_1 = require("../features/teams/repositories/team-member.repository");
@@ -146,6 +148,9 @@ tsyringe_1.container.registerSingleton(webhook_controller_1.WebhookController);
 tsyringe_1.container.registerSingleton(broadcast_queue_1.BroadcastQueue);
 tsyringe_1.container.registerSingleton(broadcast_scheduler_1.BroadcastScheduler);
 tsyringe_1.container.registerSingleton(inbox_message_queue_1.InboxMessageQueue);
+// Template Submission Queue
+tsyringe_1.container.registerSingleton(template_submission_queue_1.TemplateSubmissionQueue);
+tsyringe_1.container.register(template_submission_queue_interface_1.ITemplateSubmissionQueue, { useToken: template_submission_queue_1.TemplateSubmissionQueue });
 // Register Teams Repositories
 tsyringe_1.container.registerSingleton(team_repository_1.TeamRepository);
 tsyringe_1.container.registerSingleton(team_member_repository_1.TeamMemberRepository);
