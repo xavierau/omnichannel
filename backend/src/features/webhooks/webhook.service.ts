@@ -560,6 +560,7 @@ export class WebhookService {
       audio?: { id: string; mime_type: string };
       video?: { id: string; mime_type: string; caption?: string };
       metadata?: { phone_number_id: string };
+      senderName?: string;
     };
 
     const phoneNumberId = rawMessage.metadata?.phone_number_id;
@@ -586,6 +587,7 @@ export class WebhookService {
       channelAccountId: channelAccount.id,
       providerMessageId: event.providerMessageId,
       fromNumber: rawMessage.from,
+      senderName: rawMessage.senderName,
       messageType: rawMessage.type,
       content: this.extractMessageContent(rawMessage),
       timestamp: event.timestamp,
@@ -596,6 +598,7 @@ export class WebhookService {
       providerMessageId: event.providerMessageId,
       channelAccountId: channelAccount.id,
       phoneNumberId,
+      senderName: rawMessage.senderName,
     });
   }
 

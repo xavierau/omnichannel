@@ -132,6 +132,8 @@ export interface ProcessInboundJobData {
   providerMessageId: string;
   /** Customer's phone number in E.164 format */
   fromNumber: string;
+  /** Sender's display name from WhatsApp profile */
+  senderName?: string;
   /** Type of message content */
   messageType: string;
   /** Extracted message content */
@@ -748,6 +750,7 @@ export class InboxMessageQueue {
       channelAccountId,
       providerMessageId,
       fromNumber,
+      senderName,
       messageType,
       content,
       timestamp,
@@ -758,6 +761,7 @@ export class InboxMessageQueue {
       providerMessageId,
       channelAccountId,
       fromNumber: maskPhoneNumber(fromNumber),
+      senderName,
     });
 
     // 1. Validate channel account
@@ -771,10 +775,11 @@ export class InboxMessageQueue {
 
     if (!customer) {
       // Create a new customer record for this phone number
+      // Use senderName from WhatsApp profile if available, otherwise fallback to phone number
       customer = await this.customerRepository.create({
         tenantId,
         whatsappNumber: fromNumber,
-        name: fromNumber, // Default name is phone number until updated
+        name: senderName || fromNumber,
         customFields: {},
       });
 
@@ -782,6 +787,19 @@ export class InboxMessageQueue {
         customerId: customer.id,
         tenantId,
         fromNumber: maskPhoneNumber(fromNumber),
+        name: senderName || fromNumber,
+      });
+    } else if (senderName && customer.name === fromNumber) {
+      // Update existing customer's name if it's still set to phone number
+      // and we now have their WhatsApp profile name
+      await this.customerRepository.update(customer.id, tenantId, { name: senderName });
+      customer.name = senderName;
+
+      logger.info('Updated customer name from WhatsApp profile', {
+        customerId: customer.id,
+        tenantId,
+        previousName: maskPhoneNumber(fromNumber),
+        newName: senderName,
       });
     }
 

@@ -108,6 +108,12 @@ interface MetaWebhookEntry {
           body: string;
         };
       }>;
+      contacts?: Array<{
+        profile: {
+          name: string;
+        };
+        wa_id: string;
+      }>;
     };
     field: string;
   }>;
@@ -407,6 +413,9 @@ export class MetaCloudApiProvider implements IMessagingProvider {
         // Process incoming messages
         if (value.messages) {
           for (const message of value.messages) {
+            // Find matching contact for this message to get profile name
+            const contact = value.contacts?.find((c) => c.wa_id === message.from);
+
             events.push({
               type: 'message_received',
               providerMessageId: message.id,
@@ -414,6 +423,7 @@ export class MetaCloudApiProvider implements IMessagingProvider {
               rawEvent: {
                 ...message,
                 metadata: value.metadata,
+                senderName: contact?.profile?.name,
               },
             });
           }
