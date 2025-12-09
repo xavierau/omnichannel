@@ -99,15 +99,15 @@ EOF
     echo -e "${GREEN}✅ All tables dropped${NC}"
 
     echo -e "${YELLOW}🔄 Running migrations...${NC}"
-    npm run migration:run
+    npm run migration:run:prod
 
     echo -e "${YELLOW}🌱 Seeding database...${NC}"
-    npm run seed
+    npm run seed:prod
 
     echo -e "${GREEN}✅ Database refreshed and seeded${NC}"
 else
     echo -e "${YELLOW}🔄 Running migrations...${NC}"
-    npm run migration:run
+    npm run migration:run:prod
 fi
 
 # Step 4: Restart services

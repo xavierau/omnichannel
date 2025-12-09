@@ -15,6 +15,7 @@
     "migration:run:prod": "node ./node_modules/typeorm/cli.js migration:run -d dist/config/database.config.js",
     "migration:revert:prod": "node ./node_modules/typeorm/cli.js migration:revert -d dist/config/database.config.js",
     "seed": "ts-node -r tsconfig-paths/register src/database/seeds/run-seeds.ts",
+    "seed:prod": "node dist/database/seeds/run-seeds.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
