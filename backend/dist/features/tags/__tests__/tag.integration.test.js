@@ -13,7 +13,7 @@ const tag_service_1 = require("../tag.service");
 const user_entity_1 = require("../../users/user.entity");
 const tag_entity_1 = require("../tag.entity");
 // Use the same HttpException class as the error handler
-const HttpException_1 = require("../../../shared/exceptions/HttpException");
+const http_exceptions_1 = require("../../../shared/exceptions/http-exceptions");
 const csrf_protection_1 = require("../../../middleware/csrf-protection");
 const request_context_1 = require("../../../middleware/request-context");
 const validate_dto_1 = require("../../../middleware/validate-dto");
@@ -218,7 +218,7 @@ describe('Tag Integration Tests', () => {
             expect(response.body.data.color).toBe('purple');
         });
         it('should return 404 when tag not found', async () => {
-            mockTagService.findById.mockRejectedValue(new HttpException_1.NotFoundException('Tag not found'));
+            mockTagService.findById.mockRejectedValue(new http_exceptions_1.NotFoundException('Tag not found'));
             const response = await (0, supertest_1.default)(app)
                 .get('/api/tags/nonexistent')
                 .expect(404);
@@ -299,7 +299,7 @@ describe('Tag Integration Tests', () => {
                 .expect(400);
         });
         it('should return 409 for duplicate name', async () => {
-            mockTagService.create.mockRejectedValue(new HttpException_1.ConflictException('Tag with this name already exists'));
+            mockTagService.create.mockRejectedValue(new http_exceptions_1.ConflictException('Tag with this name already exists'));
             const { token, cookie } = await getCsrf();
             const response = await (0, supertest_1.default)(app)
                 .post('/api/tags')
@@ -398,7 +398,7 @@ describe('Tag Integration Tests', () => {
                 .expect(403);
         });
         it('should return 404 when tag not found', async () => {
-            mockTagService.update.mockRejectedValue(new HttpException_1.NotFoundException('Tag not found'));
+            mockTagService.update.mockRejectedValue(new http_exceptions_1.NotFoundException('Tag not found'));
             const { token, cookie } = await getCsrf();
             await (0, supertest_1.default)(app)
                 .put('/api/tags/nonexistent')
@@ -408,7 +408,7 @@ describe('Tag Integration Tests', () => {
                 .expect(404);
         });
         it('should return 409 for duplicate name', async () => {
-            mockTagService.update.mockRejectedValue(new HttpException_1.ConflictException('Tag with this name already exists'));
+            mockTagService.update.mockRejectedValue(new http_exceptions_1.ConflictException('Tag with this name already exists'));
             const { token, cookie } = await getCsrf();
             await (0, supertest_1.default)(app)
                 .put('/api/tags/tag-1')
@@ -444,7 +444,7 @@ describe('Tag Integration Tests', () => {
                 .expect(403);
         });
         it('should return 404 when tag not found', async () => {
-            mockTagService.delete.mockRejectedValue(new HttpException_1.NotFoundException('Tag not found'));
+            mockTagService.delete.mockRejectedValue(new http_exceptions_1.NotFoundException('Tag not found'));
             const { token, cookie } = await getCsrf();
             await (0, supertest_1.default)(app)
                 .delete('/api/tags/nonexistent')

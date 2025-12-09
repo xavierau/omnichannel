@@ -12,7 +12,7 @@ const invitation_controller_1 = require("../invitation.controller");
 const invitation_service_1 = require("../invitation.service");
 const user_entity_1 = require("../../users/user.entity");
 const invitation_entity_1 = require("../invitation.entity");
-const HttpException_1 = require("../../../shared/exceptions/HttpException");
+const http_exceptions_1 = require("../../../shared/exceptions/http-exceptions");
 const csrf_protection_1 = require("../../../middleware/csrf-protection");
 const request_context_1 = require("../../../middleware/request-context");
 const validate_dto_1 = require("../../../middleware/validate-dto");
@@ -188,7 +188,7 @@ describe('Invitation Integration Tests', () => {
             expect(response.body.message).toBe('Validation failed');
         });
         it('should return 409 for duplicate invitation', async () => {
-            mockInvitationService.createInvitation.mockRejectedValue(new HttpException_1.ConflictException('An invitation for this email is already pending'));
+            mockInvitationService.createInvitation.mockRejectedValue(new http_exceptions_1.ConflictException('An invitation for this email is already pending'));
             const { token, cookie } = await getCsrf();
             const response = await (0, supertest_1.default)(app)
                 .post('/api/invitations')
@@ -201,7 +201,7 @@ describe('Invitation Integration Tests', () => {
             expect(response.body.message).toContain('already pending');
         });
         it('should return 409 when user already exists in tenant', async () => {
-            mockInvitationService.createInvitation.mockRejectedValue(new HttpException_1.ConflictException('A user with this email already exists in this tenant'));
+            mockInvitationService.createInvitation.mockRejectedValue(new http_exceptions_1.ConflictException('A user with this email already exists in this tenant'));
             const { token, cookie } = await getCsrf();
             const response = await (0, supertest_1.default)(app)
                 .post('/api/invitations')
@@ -272,7 +272,7 @@ describe('Invitation Integration Tests', () => {
             expect(response.body.data.email).toBe('invited@example.com');
         });
         it('should return 400 for invalid token', async () => {
-            mockInvitationService.acceptInvitation.mockRejectedValue(new HttpException_1.BadRequestException('Invalid or expired invitation token'));
+            mockInvitationService.acceptInvitation.mockRejectedValue(new http_exceptions_1.BadRequestException('Invalid or expired invitation token'));
             const response = await (0, supertest_1.default)(app)
                 .post('/api/invitations/invalid-token/accept')
                 .send({
@@ -305,7 +305,7 @@ describe('Invitation Integration Tests', () => {
             expect(response.body.message).toBe('Validation failed');
         });
         it('should return 409 when user already exists', async () => {
-            mockInvitationService.acceptInvitation.mockRejectedValue(new HttpException_1.ConflictException('A user with this email already exists'));
+            mockInvitationService.acceptInvitation.mockRejectedValue(new http_exceptions_1.ConflictException('A user with this email already exists'));
             const response = await (0, supertest_1.default)(app)
                 .post('/api/invitations/valid-token-123/accept')
                 .send({
@@ -327,14 +327,14 @@ describe('Invitation Integration Tests', () => {
             expect(mockInvitationService.declineInvitation).toHaveBeenCalledWith('valid-token-123');
         });
         it('should return 400 for invalid token', async () => {
-            mockInvitationService.declineInvitation.mockRejectedValue(new HttpException_1.BadRequestException('Invalid invitation token'));
+            mockInvitationService.declineInvitation.mockRejectedValue(new http_exceptions_1.BadRequestException('Invalid invitation token'));
             const response = await (0, supertest_1.default)(app)
                 .post('/api/invitations/invalid-token/decline')
                 .expect(400);
             expect(response.body.message).toContain('Invalid');
         });
         it('should return 400 for already processed invitation', async () => {
-            mockInvitationService.declineInvitation.mockRejectedValue(new HttpException_1.BadRequestException('This invitation has already been processed'));
+            mockInvitationService.declineInvitation.mockRejectedValue(new http_exceptions_1.BadRequestException('This invitation has already been processed'));
             const response = await (0, supertest_1.default)(app)
                 .post('/api/invitations/processed-token/decline')
                 .expect(400);
@@ -369,7 +369,7 @@ describe('Invitation Integration Tests', () => {
                 .expect(403);
         });
         it('should return 404 when no invitation found', async () => {
-            mockInvitationService.resendInvitation.mockRejectedValue(new HttpException_1.NotFoundException('No invitation found for this email'));
+            mockInvitationService.resendInvitation.mockRejectedValue(new http_exceptions_1.NotFoundException('No invitation found for this email'));
             const { token, cookie } = await getCsrf();
             const response = await (0, supertest_1.default)(app)
                 .post('/api/invitations/resend')
@@ -484,7 +484,7 @@ describe('Invitation Integration Tests', () => {
                 .expect(403);
         });
         it('should return 404 when invitation not found', async () => {
-            mockInvitationService.deleteInvitation.mockRejectedValue(new HttpException_1.NotFoundException('Invitation not found'));
+            mockInvitationService.deleteInvitation.mockRejectedValue(new http_exceptions_1.NotFoundException('Invitation not found'));
             const { token, cookie } = await getCsrf();
             const response = await (0, supertest_1.default)(app)
                 .delete('/api/invitations/non-existent-id')

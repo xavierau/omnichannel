@@ -10,7 +10,7 @@ const app_1 = require("./app");
 const database_config_1 = require("./config/database.config");
 const jobs_1 = require("./jobs");
 const logger_config_1 = require("./config/logger.config");
-const PORT = parseInt(process.env.PORT || '3142', 10);
+const PORT = parseInt(process.env.PORT || '3000', 10);
 // Scheduler check interval (default: 60 seconds)
 const SCHEDULER_INTERVAL_MS = parseInt(process.env.SCHEDULER_INTERVAL_MS || '60000', 10);
 // Job services - initialized after DI container setup

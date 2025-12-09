@@ -6,10 +6,27 @@ const tsyringe_1 = require("tsyringe");
 const user_service_1 = require("../../users/user.service");
 const redis_config_1 = require("../../../config/redis.config");
 const constants_1 = require("../../../config/constants");
+/**
+ * Custom JWT extractor that checks both:
+ * 1. Authorization header (Bearer token) - for regular API calls
+ * 2. Query parameter 'token' - for SSE connections (EventSource can't send headers)
+ */
+function extractJwtFromHeaderOrQuery(req) {
+    // First try Authorization header
+    const headerToken = passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+    if (headerToken) {
+        return headerToken;
+    }
+    // Fall back to query parameter for SSE
+    if (req.query && req.query.token && typeof req.query.token === 'string') {
+        return req.query.token;
+    }
+    return null;
+}
 class JwtStrategy extends passport_jwt_1.Strategy {
     constructor() {
         super({
-            jwtFromRequest: passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
+            jwtFromRequest: extractJwtFromHeaderOrQuery,
             secretOrKey: process.env.JWT_ACCESS_SECRET,
             ignoreExpiration: false,
         }, 

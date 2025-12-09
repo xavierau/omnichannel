@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.errorHandler = errorHandler;
 exports.asyncErrorHandler = asyncErrorHandler;
-const HttpException_1 = require("../shared/exceptions/HttpException");
+const http_exceptions_1 = require("../shared/exceptions/http-exceptions");
 const logger_config_1 = require("../config/logger.config");
 const request_context_1 = require("./request-context");
 /**
@@ -111,7 +111,7 @@ next) {
     let statusCode;
     let message;
     let errors;
-    if (error instanceof HttpException_1.HttpException) {
+    if (error instanceof http_exceptions_1.HttpException) {
         statusCode = error.statusCode;
         message = error.message;
         errors = error.errors;

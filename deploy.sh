@@ -1,8 +1,10 @@
 #!/bin/bash
 
 # Deploy script for Omnichannel application
+# Builds are done locally and committed - production only pulls
+#
 # Usage:
-#   ./deploy.sh              # Incremental update (migrations only)
+#   ./deploy.sh              # Incremental update (pull, install deps, migrate)
 #   ./deploy.sh --refresh    # Full reset (drop tables, migrate, reseed)
 
 set -e
@@ -18,7 +20,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$SCRIPT_DIR/backend"
 FRONTEND_DIR="$SCRIPT_DIR"
 
-# Database configuration (override with environment variables)
+# Load .env file from project root
+ENV_FILE="$SCRIPT_DIR/.env"
+if [ -f "$ENV_FILE" ]; then
+    echo -e "${YELLOW}📄 Loading environment from .env...${NC}"
+    set -a  # automatically export all variables
+    source "$ENV_FILE"
+    set +a
+fi
+
+# Database configuration (from .env or defaults)
 DB_NAME="${DATABASE_NAME:-omnichannel_db}"
 DB_USER="${DATABASE_USER:-postgres}"
 DB_PASSWORD="${DATABASE_PASSWORD:-password}"
@@ -40,7 +51,7 @@ for arg in "$@"; do
             echo "  --refresh    Drop all tables and reseed (WARNING: destroys all data)"
             echo "  --help, -h   Show this help message"
             echo ""
-            echo "Without options, performs incremental update (git pull, build, migrate)"
+            echo "Without options, performs incremental update (git pull, migrate)"
             exit 0
             ;;
     esac
@@ -53,25 +64,12 @@ echo ""
 echo -e "${YELLOW}📥 Pulling latest code...${NC}"
 git pull origin develop
 
-# Step 2: Install dependencies if package-lock changed
-echo -e "${YELLOW}📦 Checking dependencies...${NC}"
+# Step 2: Install backend dependencies (for running migrations/seeds)
+echo -e "${YELLOW}📦 Installing backend dependencies...${NC}"
 cd "$BACKEND_DIR"
-npm ci --prefer-offline 2>/dev/null || npm install
+npm ci --prefer-offline 2>/dev/null || npm install --production
 
-cd "$FRONTEND_DIR"
-npm ci --prefer-offline 2>/dev/null || npm install
-
-# Step 3: Build frontend
-echo -e "${YELLOW}🏗️  Building frontend...${NC}"
-cd "$FRONTEND_DIR"
-npm run build
-
-# Step 4: Build backend
-echo -e "${YELLOW}🏗️  Building backend...${NC}"
-cd "$BACKEND_DIR"
-npm run build
-
-# Step 5: Database operations
+# Step 3: Database operations
 if [ "$REFRESH_MODE" = true ]; then
     echo ""
     echo -e "${RED}⚠️  REFRESH MODE: This will DELETE ALL DATA!${NC}"
@@ -112,7 +110,7 @@ else
     npm run migration:run
 fi
 
-# Step 6: Restart services
+# Step 4: Restart services
 echo -e "${YELLOW}🔄 Restarting services...${NC}"
 if command -v pm2 &> /dev/null; then
     pm2 restart all 2>/dev/null || echo -e "${YELLOW}Note: No PM2 processes found${NC}"

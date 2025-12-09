@@ -13,7 +13,7 @@ const customer_service_1 = require("../customer.service");
 const user_entity_1 = require("../../users/user.entity");
 const tag_entity_1 = require("../../tags/tag.entity");
 // Use the same HttpException class as the error handler
-const HttpException_1 = require("../../../shared/exceptions/HttpException");
+const http_exceptions_1 = require("../../../shared/exceptions/http-exceptions");
 const csrf_protection_1 = require("../../../middleware/csrf-protection");
 const request_context_1 = require("../../../middleware/request-context");
 const validate_dto_1 = require("../../../middleware/validate-dto");
@@ -290,7 +290,7 @@ describe('Customer Integration Tests', () => {
             expect(response.body.data.whatsappNumber).toBe('1234567890');
         });
         it('should return 404 when customer not found', async () => {
-            mockCustomerService.getCustomer.mockRejectedValue(new HttpException_1.NotFoundException('Customer not found'));
+            mockCustomerService.getCustomer.mockRejectedValue(new http_exceptions_1.NotFoundException('Customer not found'));
             const response = await (0, supertest_1.default)(app)
                 .get('/api/customers/nonexistent')
                 .expect(404);
@@ -355,7 +355,7 @@ describe('Customer Integration Tests', () => {
             expect(response.body.message).toBe('Validation failed');
         });
         it('should return 409 for duplicate WhatsApp number', async () => {
-            mockCustomerService.createCustomer.mockRejectedValue(new HttpException_1.ConflictException('Customer with this WhatsApp number already exists'));
+            mockCustomerService.createCustomer.mockRejectedValue(new http_exceptions_1.ConflictException('Customer with this WhatsApp number already exists'));
             const { token, cookie } = await getCsrf();
             const response = await (0, supertest_1.default)(app)
                 .post('/api/customers')
@@ -369,7 +369,7 @@ describe('Customer Integration Tests', () => {
             expect(response.body.message).toBe('Customer with this WhatsApp number already exists');
         });
         it('should return 400 for invalid tag IDs', async () => {
-            mockCustomerService.createCustomer.mockRejectedValue(new HttpException_1.BadRequestException('One or more tags not found'));
+            mockCustomerService.createCustomer.mockRejectedValue(new http_exceptions_1.BadRequestException('One or more tags not found'));
             const { token, cookie } = await getCsrf();
             // Use valid UUID format to pass validation, but mock service will reject
             const response = await (0, supertest_1.default)(app)
@@ -431,7 +431,7 @@ describe('Customer Integration Tests', () => {
                 .expect(403);
         });
         it('should return 404 when customer not found', async () => {
-            mockCustomerService.updateCustomer.mockRejectedValue(new HttpException_1.NotFoundException('Customer not found'));
+            mockCustomerService.updateCustomer.mockRejectedValue(new http_exceptions_1.NotFoundException('Customer not found'));
             const { token, cookie } = await getCsrf();
             await (0, supertest_1.default)(app)
                 .put('/api/customers/nonexistent')
@@ -441,7 +441,7 @@ describe('Customer Integration Tests', () => {
                 .expect(404);
         });
         it('should return 409 for duplicate WhatsApp number', async () => {
-            mockCustomerService.updateCustomer.mockRejectedValue(new HttpException_1.ConflictException('Customer with this WhatsApp number already exists'));
+            mockCustomerService.updateCustomer.mockRejectedValue(new http_exceptions_1.ConflictException('Customer with this WhatsApp number already exists'));
             const { token, cookie } = await getCsrf();
             await (0, supertest_1.default)(app)
                 .put('/api/customers/customer-1')
@@ -468,7 +468,7 @@ describe('Customer Integration Tests', () => {
                 .expect(403);
         });
         it('should return 404 when customer not found', async () => {
-            mockCustomerService.deleteCustomer.mockRejectedValue(new HttpException_1.NotFoundException('Customer not found'));
+            mockCustomerService.deleteCustomer.mockRejectedValue(new http_exceptions_1.NotFoundException('Customer not found'));
             const { token, cookie } = await getCsrf();
             await (0, supertest_1.default)(app)
                 .delete('/api/customers/nonexistent')
@@ -587,7 +587,7 @@ describe('Customer Integration Tests', () => {
                 .expect(403);
         });
         it('should return 400 for invalid tags', async () => {
-            mockCustomerService.bulkUpdateTags.mockRejectedValue(new HttpException_1.BadRequestException('One or more tags not found'));
+            mockCustomerService.bulkUpdateTags.mockRejectedValue(new http_exceptions_1.BadRequestException('One or more tags not found'));
             const { token, cookie } = await getCsrf();
             await (0, supertest_1.default)(app)
                 .patch('/api/customers/bulk/tags')
@@ -860,7 +860,7 @@ describe('Customer Integration Tests', () => {
             // so invalid UUIDs are passed to the service.
             // In production routes, validateUuid middleware rejects invalid UUIDs
             // before they reach the controller.
-            mockCustomerService.getCustomer.mockRejectedValue(new HttpException_1.NotFoundException('Customer not found'));
+            mockCustomerService.getCustomer.mockRejectedValue(new http_exceptions_1.NotFoundException('Customer not found'));
             await (0, supertest_1.default)(app)
                 .get('/api/customers/not-a-valid-uuid')
                 .expect(404);

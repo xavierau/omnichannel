@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const error_handler_1 = require("../error-handler");
-const HttpException_1 = require("../../shared/exceptions/HttpException");
+const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
 const logger_config_1 = require("../../config/logger.config");
 // Mock the logger
 jest.mock('@config/logger.config', () => ({
@@ -46,7 +46,7 @@ describe('errorHandler', () => {
     });
     describe('HttpException handling', () => {
         it('should handle BadRequestException (400) with warn log level', () => {
-            const error = new HttpException_1.HttpException(400, 'Bad request data');
+            const error = new http_exceptions_1.HttpException(400, 'Bad request data');
             (0, error_handler_1.errorHandler)(error, mockRequest, mockResponse, nextFunction);
             expect(logger_config_1.logger.warn).toHaveBeenCalled();
             expect(logger_config_1.logger.error).not.toHaveBeenCalled();
@@ -59,19 +59,19 @@ describe('errorHandler', () => {
             }));
         });
         it('should handle UnauthorizedException (401) with warn log level', () => {
-            const error = new HttpException_1.HttpException(401, 'Unauthorized access');
+            const error = new http_exceptions_1.HttpException(401, 'Unauthorized access');
             (0, error_handler_1.errorHandler)(error, mockRequest, mockResponse, nextFunction);
             expect(logger_config_1.logger.warn).toHaveBeenCalled();
             expect(statusMock).toHaveBeenCalledWith(401);
         });
         it('should handle NotFoundException (404) with warn log level', () => {
-            const error = new HttpException_1.HttpException(404, 'Resource not found');
+            const error = new http_exceptions_1.HttpException(404, 'Resource not found');
             (0, error_handler_1.errorHandler)(error, mockRequest, mockResponse, nextFunction);
             expect(logger_config_1.logger.warn).toHaveBeenCalled();
             expect(statusMock).toHaveBeenCalledWith(404);
         });
         it('should handle InternalServerError (500) with error log level', () => {
-            const error = new HttpException_1.HttpException(500, 'Internal server error');
+            const error = new http_exceptions_1.HttpException(500, 'Internal server error');
             (0, error_handler_1.errorHandler)(error, mockRequest, mockResponse, nextFunction);
             expect(logger_config_1.logger.error).toHaveBeenCalled();
             expect(logger_config_1.logger.warn).not.toHaveBeenCalled();
@@ -81,7 +81,7 @@ describe('errorHandler', () => {
             const validationErrors = [
                 { field: 'email', message: 'Invalid email format' },
             ];
-            const error = new HttpException_1.HttpException(422, 'Validation failed', validationErrors);
+            const error = new http_exceptions_1.HttpException(422, 'Validation failed', validationErrors);
             (0, error_handler_1.errorHandler)(error, mockRequest, mockResponse, nextFunction);
             expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
                 statusCode: 422,
@@ -113,7 +113,7 @@ describe('errorHandler', () => {
             }));
         });
         it('should not include validation errors for 5xx responses', () => {
-            const error = new HttpException_1.HttpException(500, 'Server error', [
+            const error = new http_exceptions_1.HttpException(500, 'Server error', [
                 { internal: 'debug info' },
             ]);
             (0, error_handler_1.errorHandler)(error, mockRequest, mockResponse, nextFunction);
@@ -123,7 +123,7 @@ describe('errorHandler', () => {
     });
     describe('request context logging', () => {
         it('should include request context in log metadata', () => {
-            const error = new HttpException_1.HttpException(400, 'Bad request');
+            const error = new http_exceptions_1.HttpException(400, 'Bad request');
             (0, error_handler_1.errorHandler)(error, mockRequest, mockResponse, nextFunction);
             expect(logger_config_1.logger.warn).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
                 correlationId: 'test-correlation-id',
@@ -137,7 +137,7 @@ describe('errorHandler', () => {
         it('should include user ID when authenticated', () => {
             // Use type assertion to bypass strict typing for test
             mockRequest.user = { id: 'user-123' };
-            const error = new HttpException_1.HttpException(403, 'Forbidden');
+            const error = new http_exceptions_1.HttpException(403, 'Forbidden');
             (0, error_handler_1.errorHandler)(error, mockRequest, mockResponse, nextFunction);
             expect(logger_config_1.logger.warn).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
                 userId: 'user-123',
@@ -145,14 +145,14 @@ describe('errorHandler', () => {
         });
         it('should log "anonymous" for unauthenticated requests', () => {
             mockRequest.user = undefined;
-            const error = new HttpException_1.HttpException(401, 'Unauthorized');
+            const error = new http_exceptions_1.HttpException(401, 'Unauthorized');
             (0, error_handler_1.errorHandler)(error, mockRequest, mockResponse, nextFunction);
             expect(logger_config_1.logger.warn).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
                 userId: 'anonymous',
             }));
         });
         it('should include request duration in logs', () => {
-            const error = new HttpException_1.HttpException(400, 'Bad request');
+            const error = new http_exceptions_1.HttpException(400, 'Bad request');
             (0, error_handler_1.errorHandler)(error, mockRequest, mockResponse, nextFunction);
             expect(logger_config_1.logger.warn).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
                 duration: expect.stringMatching(/^\d+ms$/),
@@ -161,12 +161,12 @@ describe('errorHandler', () => {
     });
     describe('correlation ID in response', () => {
         it('should set correlation ID header in response', () => {
-            const error = new HttpException_1.HttpException(400, 'Bad request');
+            const error = new http_exceptions_1.HttpException(400, 'Bad request');
             (0, error_handler_1.errorHandler)(error, mockRequest, mockResponse, nextFunction);
             expect(setHeaderMock).toHaveBeenCalledWith('x-correlation-id', 'test-correlation-id');
         });
         it('should include correlation ID in response body', () => {
-            const error = new HttpException_1.HttpException(400, 'Bad request');
+            const error = new http_exceptions_1.HttpException(400, 'Bad request');
             (0, error_handler_1.errorHandler)(error, mockRequest, mockResponse, nextFunction);
             expect(jsonMock).toHaveBeenCalledWith(expect.objectContaining({
                 correlationId: 'test-correlation-id',
@@ -177,7 +177,7 @@ describe('errorHandler', () => {
                 ...mockRequest,
                 context: undefined,
             };
-            const error = new HttpException_1.HttpException(400, 'Bad request');
+            const error = new http_exceptions_1.HttpException(400, 'Bad request');
             // Should not throw
             expect(() => {
                 (0, error_handler_1.errorHandler)(error, requestWithoutContext, mockResponse, nextFunction);
@@ -189,7 +189,7 @@ describe('errorHandler', () => {
     });
     describe('error response structure', () => {
         it('should return consistent error response shape', () => {
-            const error = new HttpException_1.HttpException(400, 'Bad request');
+            const error = new http_exceptions_1.HttpException(400, 'Bad request');
             (0, error_handler_1.errorHandler)(error, mockRequest, mockResponse, nextFunction);
             const response = jsonMock.mock.calls[0][0];
             expect(response).toHaveProperty('statusCode');
@@ -199,7 +199,7 @@ describe('errorHandler', () => {
             expect(response).toHaveProperty('path');
         });
         it('should include ISO timestamp in response', () => {
-            const error = new HttpException_1.HttpException(400, 'Bad request');
+            const error = new http_exceptions_1.HttpException(400, 'Bad request');
             (0, error_handler_1.errorHandler)(error, mockRequest, mockResponse, nextFunction);
             const response = jsonMock.mock.calls[0][0];
             expect(new Date(response.timestamp).toISOString()).toBe(response.timestamp);
