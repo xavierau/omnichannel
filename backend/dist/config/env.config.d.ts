@@ -1,1 +1,1 @@
-export declare const loadedEnvFile: string;
+export {};
