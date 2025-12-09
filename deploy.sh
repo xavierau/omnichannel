@@ -111,7 +111,7 @@ else
 fi
 
 # Step 4: Restart services
-PM2_APP_NAME="${PM2_APP_NAME:-omnichannel}"
+PM2_APP_NAME="${PM2_APP_NAME:-omnichannel-backend}"
 echo -e "${YELLOW}🔄 Restarting $PM2_APP_NAME...${NC}"
 if command -v pm2 &> /dev/null; then
     pm2 restart "$PM2_APP_NAME" 2>/dev/null || echo -e "${YELLOW}Note: PM2 process '$PM2_APP_NAME' not found${NC}"
