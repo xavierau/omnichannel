@@ -93,6 +93,19 @@ import { CustomFieldRepository } from '@features/custom-fields/custom-field.repo
 import { CustomFieldService } from '@features/custom-fields/custom-field.service';
 import { CustomFieldController } from '@features/custom-fields/custom-field.controller';
 
+// Users
+import { UserRepository } from '@features/users/user.repository';
+import { UserService } from '@features/users/user.service';
+import { PasswordService } from '@features/users/password.service';
+import { PermissionService } from '@features/users/permission.service';
+
+// Roles
+import { RoleRepository } from '@features/roles/role.repository';
+
+// Tenants
+import { TenantRepository } from '@features/tenants/tenant.repository';
+import { TenantService } from '@features/tenants/tenant.service';
+
 // Invitations
 import { InvitationRepository } from '@features/invitations/invitation.repository';
 import { EmailService } from '@features/invitations/email.service';
@@ -206,6 +219,19 @@ container.registerSingleton(HealthController);
 container.registerSingleton(CustomFieldRepository);
 container.registerSingleton(CustomFieldService);
 container.registerSingleton(CustomFieldController);
+
+// Register Users (dependencies for Invitations)
+container.registerSingleton(UserRepository);
+container.registerSingleton(PasswordService);
+container.registerSingleton(PermissionService);
+container.registerSingleton(UserService);
+
+// Register Roles
+container.registerSingleton(RoleRepository);
+
+// Register Tenants
+container.registerSingleton(TenantRepository);
+container.registerSingleton(TenantService);
 
 // Register Invitations
 container.registerSingleton(InvitationRepository);

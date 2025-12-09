@@ -78,6 +78,16 @@ const health_controller_1 = require("../features/health/health.controller");
 const custom_field_repository_1 = require("../features/custom-fields/custom-field.repository");
 const custom_field_service_1 = require("../features/custom-fields/custom-field.service");
 const custom_field_controller_1 = require("../features/custom-fields/custom-field.controller");
+// Users
+const user_repository_1 = require("../features/users/user.repository");
+const user_service_1 = require("../features/users/user.service");
+const password_service_1 = require("../features/users/password.service");
+const permission_service_1 = require("../features/users/permission.service");
+// Roles
+const role_repository_1 = require("../features/roles/role.repository");
+// Tenants
+const tenant_repository_1 = require("../features/tenants/tenant.repository");
+const tenant_service_1 = require("../features/tenants/tenant.service");
 // Invitations
 const invitation_repository_1 = require("../features/invitations/invitation.repository");
 const email_service_1 = require("../features/invitations/email.service");
@@ -168,6 +178,16 @@ tsyringe_1.container.registerSingleton(health_controller_1.HealthController);
 tsyringe_1.container.registerSingleton(custom_field_repository_1.CustomFieldRepository);
 tsyringe_1.container.registerSingleton(custom_field_service_1.CustomFieldService);
 tsyringe_1.container.registerSingleton(custom_field_controller_1.CustomFieldController);
+// Register Users (dependencies for Invitations)
+tsyringe_1.container.registerSingleton(user_repository_1.UserRepository);
+tsyringe_1.container.registerSingleton(password_service_1.PasswordService);
+tsyringe_1.container.registerSingleton(permission_service_1.PermissionService);
+tsyringe_1.container.registerSingleton(user_service_1.UserService);
+// Register Roles
+tsyringe_1.container.registerSingleton(role_repository_1.RoleRepository);
+// Register Tenants
+tsyringe_1.container.registerSingleton(tenant_repository_1.TenantRepository);
+tsyringe_1.container.registerSingleton(tenant_service_1.TenantService);
 // Register Invitations
 tsyringe_1.container.registerSingleton(invitation_repository_1.InvitationRepository);
 tsyringe_1.container.registerSingleton(email_service_1.EmailService);

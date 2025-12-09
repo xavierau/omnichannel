@@ -45,6 +45,7 @@ async function seedRoles() {
             permission_entity_1.PermissionResource.SETTINGS,
             permission_entity_1.PermissionResource.INBOX,
             permission_entity_1.PermissionResource.INVITATIONS,
+            permission_entity_1.PermissionResource.TEAMS,
         ],
     })
         .andWhere('permission.action = :action', { action: permission_entity_1.PermissionAction.MANAGE })
