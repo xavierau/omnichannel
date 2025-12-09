@@ -47,7 +47,7 @@ npm ci --omit=dev
 
 # Step 4: Run database migrations (using compiled JS)
 log_info "Running database migrations..."
-npm run migration:run:prod
+NODE_ENV=production npm run migration:run:prod
 
 # Step 5: Return to root directory
 cd "$SCRIPT_DIR"

@@ -15,10 +15,11 @@ const envFile = `.env.${NODE_ENV}`;
 const baseDir = path_1.default.resolve(__dirname, '../..');
 const envPath = path_1.default.resolve(baseDir, envFile);
 const defaultEnvPath = path_1.default.resolve(baseDir, '.env');
-// Try to load environment-specific file first, fall back to .env
-const result = dotenv_1.default.config({ path: envPath });
+// Use override:true because dotenv v17+ auto-loads .env before our code runs
+// This ensures our environment-specific file takes precedence
+const result = dotenv_1.default.config({ path: envPath, override: true });
 if (result.error) {
     // Fall back to default .env file
-    dotenv_1.default.config({ path: defaultEnvPath });
+    dotenv_1.default.config({ path: defaultEnvPath, override: true });
 }
 exports.loadedEnvFile = result.error ? '.env' : envFile;
