@@ -77,7 +77,10 @@ function createApp() {
         allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
         exposedHeaders: ['X-CSRF-Token'],
     }));
-    // Body parsing
+    // Webhook routes MUST be registered before global body parsers
+    // They need raw body access for signature verification
+    app.use('/webhooks', (0, webhook_routes_1.createWebhookRoutes)());
+    // Body parsing (after webhook routes to preserve raw body for them)
     app.use(express_1.default.json());
     app.use(express_1.default.urlencoded({ extended: true }));
     // Cookie parser for httpOnly refresh tokens and CSRF tokens
@@ -90,9 +93,6 @@ function createApp() {
     // Health check routes (no auth required, before other routes)
     // Provides /health, /health/live, /health/ready endpoints
     app.use('/health', (0, health_routes_1.createHealthRoutes)());
-    // Webhook routes (must be before json body parser for raw body access)
-    // These routes handle provider callbacks and have their own body parsing
-    app.use('/webhooks', (0, webhook_routes_1.createWebhookRoutes)());
     // API routes
     // Note: CSRF protection is applied at route level, not globally
     // This allows exempting login/register routes while protecting others

@@ -78,7 +78,11 @@ export function createApp(): Application {
     })
   );
 
-  // Body parsing
+  // Webhook routes MUST be registered before global body parsers
+  // They need raw body access for signature verification
+  app.use('/webhooks', createWebhookRoutes());
+
+  // Body parsing (after webhook routes to preserve raw body for them)
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
@@ -95,10 +99,6 @@ export function createApp(): Application {
   // Health check routes (no auth required, before other routes)
   // Provides /health, /health/live, /health/ready endpoints
   app.use('/health', createHealthRoutes());
-
-  // Webhook routes (must be before json body parser for raw body access)
-  // These routes handle provider callbacks and have their own body parsing
-  app.use('/webhooks', createWebhookRoutes());
 
   // API routes
   // Note: CSRF protection is applied at route level, not globally
