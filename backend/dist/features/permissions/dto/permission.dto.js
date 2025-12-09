@@ -84,6 +84,7 @@ class GroupedPermissionsResponseDto {
             [permission_entity_1.PermissionResource.NOTES]: 'Notes',
             [permission_entity_1.PermissionResource.TEAMS]: 'Teams',
             [permission_entity_1.PermissionResource.INBOX]: 'Inbox',
+            [permission_entity_1.PermissionResource.INVITATIONS]: 'Invitations',
         };
         const result = [];
         for (const [resource, permissions] of grouped) {

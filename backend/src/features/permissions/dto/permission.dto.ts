@@ -90,6 +90,7 @@ export class GroupedPermissionsResponseDto {
       [PermissionResource.NOTES]: 'Notes',
       [PermissionResource.TEAMS]: 'Teams',
       [PermissionResource.INBOX]: 'Inbox',
+      [PermissionResource.INVITATIONS]: 'Invitations',
     };
 
     const result: GroupedPermissionsResponseDto[] = [];

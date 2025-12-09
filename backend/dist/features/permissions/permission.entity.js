@@ -26,6 +26,7 @@ var PermissionResource;
     PermissionResource["NOTES"] = "notes";
     PermissionResource["TEAMS"] = "teams";
     PermissionResource["INBOX"] = "inbox";
+    PermissionResource["INVITATIONS"] = "invitations";
 })(PermissionResource || (exports.PermissionResource = PermissionResource = {}));
 var PermissionAction;
 (function (PermissionAction) {

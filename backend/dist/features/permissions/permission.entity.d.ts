@@ -11,7 +11,8 @@ export declare enum PermissionResource {
     CUSTOM_FIELDS = "custom_fields",
     NOTES = "notes",
     TEAMS = "teams",
-    INBOX = "inbox"
+    INBOX = "inbox",
+    INVITATIONS = "invitations"
 }
 export declare enum PermissionAction {
     CREATE = "create",
