@@ -256,6 +256,8 @@ class MetaCloudApiProvider {
                 // Process incoming messages
                 if (value.messages) {
                     for (const message of value.messages) {
+                        // Find matching contact for this message to get profile name
+                        const contact = value.contacts?.find((c) => c.wa_id === message.from);
                         events.push({
                             type: 'message_received',
                             providerMessageId: message.id,
@@ -263,6 +265,7 @@ class MetaCloudApiProvider {
                             rawEvent: {
                                 ...message,
                                 metadata: value.metadata,
+                                senderName: contact?.profile?.name,
                             },
                         });
                     }

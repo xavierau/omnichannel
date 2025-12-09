@@ -82,6 +82,8 @@ export interface ProcessInboundJobData {
     providerMessageId: string;
     /** Customer's phone number in E.164 format */
     fromNumber: string;
+    /** Sender's display name from WhatsApp profile */
+    senderName?: string;
     /** Type of message content */
     messageType: string;
     /** Extracted message content */

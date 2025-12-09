@@ -23,8 +23,8 @@ export declare const requireRole: (...roleNames: string[]) => (req: Request, res
  */
 export declare const requireRoleLevel: (maxLevel: number) => (req: Request, res: Response, next: NextFunction) => Promise<void>;
 /**
- * Check if user has a specific permission
- * Supports "manage" as wildcard (implies create, read, update, delete)
+ * Check if user has a specific permission.
+ * Supports "manage" as wildcard (implies all other actions).
  */
 export declare const requirePermission: (resource: string, action: string, scope?: string) => (req: Request, res: Response, next: NextFunction) => Promise<void>;
 /**

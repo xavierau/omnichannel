@@ -95,7 +95,8 @@ export const requireRoleLevel = (maxLevel: number) => {
 };
 
 /**
- * Check if the action is implied by the "manage" permission
+ * Check if the action is implied by the "manage" permission.
+ * "manage" means full control - it implies all other actions.
  */
 const isActionImpliedByManage = (action: string): boolean => {
   const impliedActions = [
@@ -103,13 +104,16 @@ const isActionImpliedByManage = (action: string): boolean => {
     PermissionAction.READ,
     PermissionAction.UPDATE,
     PermissionAction.DELETE,
+    PermissionAction.MESSAGE,
+    PermissionAction.ASSIGN,
+    PermissionAction.NOTE,
   ];
   return impliedActions.includes(action as PermissionAction);
 };
 
 /**
- * Check if user has a specific permission
- * Supports "manage" as wildcard (implies create, read, update, delete)
+ * Check if user has a specific permission.
+ * Supports "manage" as wildcard (implies all other actions).
  */
 export const requirePermission = (
   resource: string,

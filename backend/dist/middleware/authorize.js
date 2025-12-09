@@ -80,7 +80,8 @@ const requireRoleLevel = (maxLevel) => {
 };
 exports.requireRoleLevel = requireRoleLevel;
 /**
- * Check if the action is implied by the "manage" permission
+ * Check if the action is implied by the "manage" permission.
+ * "manage" means full control - it implies all other actions.
  */
 const isActionImpliedByManage = (action) => {
     const impliedActions = [
@@ -88,12 +89,15 @@ const isActionImpliedByManage = (action) => {
         permission_entity_1.PermissionAction.READ,
         permission_entity_1.PermissionAction.UPDATE,
         permission_entity_1.PermissionAction.DELETE,
+        permission_entity_1.PermissionAction.MESSAGE,
+        permission_entity_1.PermissionAction.ASSIGN,
+        permission_entity_1.PermissionAction.NOTE,
     ];
     return impliedActions.includes(action);
 };
 /**
- * Check if user has a specific permission
- * Supports "manage" as wildcard (implies create, read, update, delete)
+ * Check if user has a specific permission.
+ * Supports "manage" as wildcard (implies all other actions).
  */
 const requirePermission = (resource, action, scope = 'all') => {
     return async (req, res, next) => {

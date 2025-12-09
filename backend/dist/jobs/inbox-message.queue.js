@@ -531,12 +531,13 @@ let InboxMessageQueue = class InboxMessageQueue {
      * 6. Emit SSE events for real-time UI updates
      */
     async processInboundMessage(job) {
-        const { tenantId, channelAccountId, providerMessageId, fromNumber, messageType, content, timestamp, } = job.data;
+        const { tenantId, channelAccountId, providerMessageId, fromNumber, senderName, messageType, content, timestamp, } = job.data;
         logger_config_1.logger.debug('Processing inbound message', {
             jobId: job.id,
             providerMessageId,
             channelAccountId,
             fromNumber: maskPhoneNumber(fromNumber),
+            senderName,
         });
         // 1. Validate channel account
         const channelAccount = await this.channelAccountRepository.findById(channelAccountId);
@@ -547,16 +548,30 @@ let InboxMessageQueue = class InboxMessageQueue {
         let customer = await this.customerRepository.findByWhatsApp(fromNumber, tenantId);
         if (!customer) {
             // Create a new customer record for this phone number
+            // Use senderName from WhatsApp profile if available, otherwise fallback to phone number
             customer = await this.customerRepository.create({
                 tenantId,
                 whatsappNumber: fromNumber,
-                name: fromNumber, // Default name is phone number until updated
+                name: senderName || fromNumber,
                 customFields: {},
             });
             logger_config_1.logger.info('Created new customer from inbound message', {
                 customerId: customer.id,
                 tenantId,
                 fromNumber: maskPhoneNumber(fromNumber),
+                name: senderName || fromNumber,
+            });
+        }
+        else if (senderName && customer.name === fromNumber) {
+            // Update existing customer's name if it's still set to phone number
+            // and we now have their WhatsApp profile name
+            await this.customerRepository.update(customer.id, tenantId, { name: senderName });
+            customer.name = senderName;
+            logger_config_1.logger.info('Updated customer name from WhatsApp profile', {
+                customerId: customer.id,
+                tenantId,
+                previousName: maskPhoneNumber(fromNumber),
+                newName: senderName,
             });
         }
         // 3. Find or create conversation

@@ -487,6 +487,7 @@ let WebhookService = class WebhookService {
             channelAccountId: channelAccount.id,
             providerMessageId: event.providerMessageId,
             fromNumber: rawMessage.from,
+            senderName: rawMessage.senderName,
             messageType: rawMessage.type,
             content: this.extractMessageContent(rawMessage),
             timestamp: event.timestamp,
@@ -496,6 +497,7 @@ let WebhookService = class WebhookService {
             providerMessageId: event.providerMessageId,
             channelAccountId: channelAccount.id,
             phoneNumberId,
+            senderName: rawMessage.senderName,
         });
     }
     /**
