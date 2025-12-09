@@ -231,4 +231,21 @@ export class ChannelAccountRepository {
       relations: ['channel', 'provider'],
     });
   }
+
+  /**
+   * Find all channel accounts that have webhook configuration.
+   *
+   * Used for webhook verification to check stored verify tokens.
+   * Only returns accounts with encrypted webhook secrets.
+   *
+   * @returns Channel accounts with webhook config
+   */
+  async findAllWithWebhookConfig(): Promise<ChannelAccount[]> {
+    return this.repository
+      .createQueryBuilder('account')
+      .where('account.webhook_secret_encrypted IS NOT NULL')
+      .andWhere('account.webhook_secret_iv IS NOT NULL')
+      .andWhere('account.is_active = :isActive', { isActive: true })
+      .getMany();
+  }
 }

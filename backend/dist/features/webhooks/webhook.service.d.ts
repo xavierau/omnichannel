@@ -53,10 +53,13 @@ export declare class WebhookService {
      * Meta sends a verification request when setting up webhooks.
      * We must return the challenge to complete verification.
      *
+     * Checks the provided token against all stored per-channel verify tokens.
+     * Falls back to META_WEBHOOK_VERIFY_TOKEN env var for backward compatibility.
+     *
      * @param query - Query parameters from the request
      * @returns Verification result with challenge if valid
      */
-    verifyMetaWebhook(query: MetaWebhookVerifyQuery): WebhookVerificationResult;
+    verifyMetaWebhook(query: MetaWebhookVerifyQuery): Promise<WebhookVerificationResult>;
     /**
      * Process a Meta webhook payload.
      *

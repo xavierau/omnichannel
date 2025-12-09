@@ -75,6 +75,7 @@ describe('WebhookService', () => {
     mockChannelAccountRepo = {
       findByPhoneNumberId: jest.fn(),
       findAllActive: jest.fn(),
+      findAllWithWebhookConfig: jest.fn().mockResolvedValue([]),
     } as unknown as jest.Mocked<ChannelAccountRepository>;
 
     mockTemplateRepo = {
@@ -409,12 +410,12 @@ describe('WebhookService', () => {
   });
 
   describe('verifyMetaWebhook', () => {
-    it('should return valid result with challenge when token matches', () => {
+    it('should return valid result with challenge when token matches global env var', async () => {
       const originalEnv = process.env.META_WEBHOOK_VERIFY_TOKEN;
       process.env.META_WEBHOOK_VERIFY_TOKEN = 'test-verify-token';
 
       try {
-        const result = webhookService.verifyMetaWebhook({
+        const result = await webhookService.verifyMetaWebhook({
           'hub.mode': 'subscribe',
           'hub.verify_token': 'test-verify-token',
           'hub.challenge': 'challenge-string-123',
@@ -427,8 +428,28 @@ describe('WebhookService', () => {
       }
     });
 
-    it('should return invalid result when mode is not subscribe', () => {
-      const result = webhookService.verifyMetaWebhook({
+    it('should return valid result when token matches stored channel token', async () => {
+      const channelAccount = createMockChannelAccount({
+        webhookSecretEncrypted: 'encrypted-secret',
+        webhookSecretIv: 'iv-value',
+      });
+      mockChannelAccountRepo.findAllWithWebhookConfig = jest.fn().mockResolvedValue([channelAccount]);
+      mockCredentialService.decryptCredentials = jest.fn().mockResolvedValue({
+        verifyToken: 'channel-specific-token',
+      });
+
+      const result = await webhookService.verifyMetaWebhook({
+        'hub.mode': 'subscribe',
+        'hub.verify_token': 'channel-specific-token',
+        'hub.challenge': 'challenge-string-123',
+      });
+
+      expect(result.valid).toBe(true);
+      expect(result.challenge).toBe('challenge-string-123');
+    });
+
+    it('should return invalid result when mode is not subscribe', async () => {
+      const result = await webhookService.verifyMetaWebhook({
         'hub.mode': 'unsubscribe',
         'hub.verify_token': 'token',
         'hub.challenge': 'challenge',
@@ -438,12 +459,12 @@ describe('WebhookService', () => {
       expect(result.error).toBe('Invalid mode');
     });
 
-    it('should return invalid result when token does not match', () => {
+    it('should return invalid result when token does not match', async () => {
       const originalEnv = process.env.META_WEBHOOK_VERIFY_TOKEN;
       process.env.META_WEBHOOK_VERIFY_TOKEN = 'correct-token';
 
       try {
-        const result = webhookService.verifyMetaWebhook({
+        const result = await webhookService.verifyMetaWebhook({
           'hub.mode': 'subscribe',
           'hub.verify_token': 'wrong-token',
           'hub.challenge': 'challenge',

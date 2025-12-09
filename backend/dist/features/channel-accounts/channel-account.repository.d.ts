@@ -84,4 +84,13 @@ export declare class ChannelAccountRepository {
      * @returns All active channel accounts with relations
      */
     findAllActive(): Promise<ChannelAccount[]>;
+    /**
+     * Find all channel accounts that have webhook configuration.
+     *
+     * Used for webhook verification to check stored verify tokens.
+     * Only returns accounts with encrypted webhook secrets.
+     *
+     * @returns Channel accounts with webhook config
+     */
+    findAllWithWebhookConfig(): Promise<ChannelAccount[]>;
 }

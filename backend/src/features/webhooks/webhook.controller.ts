@@ -24,7 +24,7 @@ export class WebhookController {
     try {
       const query = req.query as unknown as MetaWebhookVerifyQuery;
 
-      const result = this.webhookService.verifyMetaWebhook(query);
+      const result = await this.webhookService.verifyMetaWebhook(query);
 
       if (result.valid && result.challenge) {
         // Must respond with the challenge for verification

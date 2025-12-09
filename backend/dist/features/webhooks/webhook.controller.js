@@ -37,7 +37,7 @@ let WebhookController = class WebhookController {
     async verifyMeta(req, res, _next) {
         try {
             const query = req.query;
-            const result = this.webhookService.verifyMetaWebhook(query);
+            const result = await this.webhookService.verifyMetaWebhook(query);
             if (result.valid && result.challenge) {
                 // Must respond with the challenge for verification
                 res.status(200).send(result.challenge);

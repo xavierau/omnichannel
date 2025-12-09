@@ -68,10 +68,13 @@ export class WebhookService {
    * Meta sends a verification request when setting up webhooks.
    * We must return the challenge to complete verification.
    *
+   * Checks the provided token against all stored per-channel verify tokens.
+   * Falls back to META_WEBHOOK_VERIFY_TOKEN env var for backward compatibility.
+   *
    * @param query - Query parameters from the request
    * @returns Verification result with challenge if valid
    */
-  verifyMetaWebhook(query: MetaWebhookVerifyQuery): WebhookVerificationResult {
+  async verifyMetaWebhook(query: MetaWebhookVerifyQuery): Promise<WebhookVerificationResult> {
     const mode = query['hub.mode'];
     const token = query['hub.verify_token'];
     const challenge = query['hub.challenge'];
@@ -84,29 +87,57 @@ export class WebhookService {
       };
     }
 
-    const expectedToken = process.env.META_WEBHOOK_VERIFY_TOKEN;
-
-    if (!expectedToken) {
-      logger.error('META_WEBHOOK_VERIFY_TOKEN not configured');
+    if (!token) {
+      logger.warn('Meta webhook verification failed: missing token');
       return {
         valid: false,
-        error: 'Server configuration error',
+        error: 'Missing verify token',
       };
     }
 
-    if (token !== expectedToken) {
-      logger.warn('Meta webhook verification failed: invalid token');
+    // Check against per-channel stored verify tokens
+    const channelAccounts = await this.channelAccountRepo.findAllWithWebhookConfig();
+
+    for (const account of channelAccounts) {
+      if (account.webhookSecretEncrypted && account.webhookSecretIv) {
+        try {
+          const decrypted = await this.credentialService.decryptCredentials(
+            account.webhookSecretEncrypted,
+            account.webhookSecretIv
+          );
+
+          if (decrypted.verifyToken === token) {
+            logger.info('Meta webhook verified successfully', {
+              channelAccountId: account.id,
+            });
+            return {
+              valid: true,
+              challenge,
+            };
+          }
+        } catch (error) {
+          logger.debug('Failed to decrypt verify token for channel account', {
+            channelAccountId: account.id,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+    }
+
+    // Fallback: Check global env var for backward compatibility
+    const globalToken = process.env.META_WEBHOOK_VERIFY_TOKEN;
+    if (globalToken && token === globalToken) {
+      logger.info('Meta webhook verified using global token');
       return {
-        valid: false,
-        error: 'Invalid verify token',
+        valid: true,
+        challenge,
       };
     }
 
-    logger.info('Meta webhook verified successfully');
-
+    logger.warn('Meta webhook verification failed: invalid token');
     return {
-      valid: true,
-      challenge,
+      valid: false,
+      error: 'Invalid verify token',
     };
   }
 
