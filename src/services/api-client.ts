@@ -3,6 +3,7 @@
  *
  * Provides common utilities for all API services including:
  * - Authentication headers
+ * - CSRF token handling
  * - Error handling
  * - Response parsing
  */
@@ -11,6 +12,21 @@ export interface ApiError extends Error {
   statusCode: number
   code?: string
   errors?: Record<string, string[]>
+}
+
+/**
+ * Gets the CSRF token from the cookie.
+ * The backend sets this as a non-HttpOnly cookie named 'csrf_token'.
+ */
+function getCsrfToken(): string | null {
+  const cookies = document.cookie.split(';')
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=')
+    if (name === 'csrf_token') {
+      return value
+    }
+  }
+  return null
 }
 
 export interface PaginatedResponse<T> {
@@ -69,6 +85,11 @@ export function getAuthHeaders(): HeadersInit {
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }
+  // Include CSRF token for state-changing requests
+  const csrfToken = getCsrfToken()
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken
+  }
   return headers
 }
 
@@ -78,6 +99,11 @@ export function getAuthHeadersWithoutContentType(): HeadersInit {
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }
+  // Include CSRF token for state-changing requests
+  const csrfToken = getCsrfToken()
+  if (csrfToken) {
+    headers['X-CSRF-Token'] = csrfToken
+  }
   return headers
 }
 
@@ -86,6 +112,7 @@ export async function apiGet<T>(endpoint: string): Promise<T> {
   const response = await fetch(endpoint, {
     method: 'GET',
     headers: getAuthHeaders(),
+    credentials: 'include', // Include cookies for CSRF
   })
   return handleResponse<T>(response)
 }
@@ -95,6 +122,7 @@ export async function apiPost<T, D = unknown>(endpoint: string, data?: D): Promi
     method: 'POST',
     headers: getAuthHeaders(),
     body: data ? JSON.stringify(data) : undefined,
+    credentials: 'include', // Include cookies for CSRF
   })
   return handleResponse<T>(response)
 }
@@ -104,6 +132,7 @@ export async function apiPut<T, D = unknown>(endpoint: string, data: D): Promise
     method: 'PUT',
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
+    credentials: 'include', // Include cookies for CSRF
   })
   return handleResponse<T>(response)
 }
@@ -113,6 +142,7 @@ export async function apiPatch<T, D = unknown>(endpoint: string, data: D): Promi
     method: 'PATCH',
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
+    credentials: 'include', // Include cookies for CSRF
   })
   return handleResponse<T>(response)
 }
@@ -121,6 +151,7 @@ export async function apiDelete<T = void>(endpoint: string): Promise<T> {
   const response = await fetch(endpoint, {
     method: 'DELETE',
     headers: getAuthHeaders(),
+    credentials: 'include', // Include cookies for CSRF
   })
 
   // Handle 204 No Content responses

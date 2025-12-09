@@ -51,6 +51,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const currentUser = await authService.getCurrentUser()
         if (!controller.signal.aborted) {
           setUser(currentUser)
+          // Fetch CSRF token for authenticated users
+          await authService.fetchCsrfToken()
         }
       } catch {
         // Token is invalid or expired

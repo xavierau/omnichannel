@@ -91,6 +91,18 @@ function getAuthHeaders(): HeadersInit {
 
 export const authService = {
   /**
+   * Fetch and store CSRF token.
+   * Should be called after login to enable CSRF protection for subsequent requests.
+   */
+  async fetchCsrfToken(): Promise<void> {
+    // This request sets the csrf_token cookie
+    await fetch(`${API_BASE_URL}/csrf-token`, {
+      method: 'GET',
+      credentials: 'include', // Include cookies
+    })
+  },
+
+  /**
    * Authenticate user with email and password
    */
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
@@ -98,9 +110,14 @@ export const authService = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials),
+      credentials: 'include', // Include cookies for CSRF
     })
 
     const apiResponse = await handleResponse<ApiAuthResponse>(response)
+
+    // Fetch CSRF token after successful login
+    await this.fetchCsrfToken()
+
     return {
       token: apiResponse.data.accessToken,
       user: apiResponse.data.user,
@@ -115,9 +132,14 @@ export const authService = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
+      credentials: 'include', // Include cookies for CSRF
     })
 
     const apiResponse = await handleResponse<ApiAuthResponse>(response)
+
+    // Fetch CSRF token after successful registration
+    await this.fetchCsrfToken()
+
     return {
       token: apiResponse.data.accessToken,
       user: apiResponse.data.user,
