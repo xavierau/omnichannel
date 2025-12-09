@@ -293,18 +293,25 @@ describe('WebhookService', () => {
             mockProviderFactory.createProviderForWebhook.mockReturnValue(mockProvider);
             const channelAccount = createMockChannelAccount();
             mockChannelAccountRepo.findByPhoneNumberId.mockResolvedValue(channelAccount);
-            // Mock environment variable
-            const originalEnv = process.env.META_APP_SECRET;
-            process.env.META_APP_SECRET = 'test-secret';
-            try {
-                const result = await webhookService.processMetaWebhook(JSON.stringify({ object: 'whatsapp_business_account', entry: [] }), 'sha256=valid-signature');
-                expect(result.success).toBe(true);
-                expect(result.eventsProcessed).toBe(1);
-                expect(mockInboxMessageQueue.queueInboundProcessing).toHaveBeenCalled();
-            }
-            finally {
-                process.env.META_APP_SECRET = originalEnv;
-            }
+            // Mock credential decryption to return appSecret
+            mockCredentialService.decryptCredentials = jest.fn().mockResolvedValue({
+                appSecret: 'test-app-secret',
+            });
+            // Create payload with phone_number_id in the expected location
+            const payload = JSON.stringify({
+                object: 'whatsapp_business_account',
+                entry: [{
+                        changes: [{
+                                value: {
+                                    metadata: { phone_number_id: '123456789' },
+                                },
+                            }],
+                    }],
+            });
+            const result = await webhookService.processMetaWebhook(payload, 'sha256=valid-signature');
+            expect(result.success).toBe(true);
+            expect(result.eventsProcessed).toBe(1);
+            expect(mockInboxMessageQueue.queueInboundProcessing).toHaveBeenCalled();
         });
     });
     describe('verifyMetaWebhook', () => {

@@ -116,6 +116,16 @@ export declare class WebhookService {
      */
     private processInboundMessage;
     /**
+     * Extract phone_number_id from Meta webhook payload.
+     *
+     * Meta webhooks have the structure:
+     * { entry: [{ changes: [{ value: { metadata: { phone_number_id: "..." } } }] }] }
+     *
+     * @param payload - Parsed webhook payload
+     * @returns phone_number_id or undefined if not found
+     */
+    private extractPhoneNumberIdFromPayload;
+    /**
      * Extract the message content based on message type.
      *
      * Returns the content object appropriate for the message type

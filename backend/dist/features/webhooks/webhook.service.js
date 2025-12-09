@@ -154,27 +154,7 @@ let WebhookService = class WebhookService {
     async processMetaWebhook(payload, signature) {
         // 1. Get provider for signature validation
         const provider = this.providerFactory.createProviderForWebhook('meta_cloud_api');
-        // 2. Get app secret for signature validation
-        const appSecret = process.env.META_APP_SECRET;
-        if (!appSecret) {
-            logger_config_1.logger.error('META_APP_SECRET not configured');
-            return {
-                success: false,
-                eventsProcessed: 0,
-                errors: ['Server configuration error: missing app secret'],
-            };
-        }
-        // 3. Validate signature
-        const isValid = provider.validateWebhookSignature(payload, signature, appSecret);
-        if (!isValid) {
-            logger_config_1.logger.warn('Meta webhook signature validation failed');
-            return {
-                success: false,
-                eventsProcessed: 0,
-                errors: ['Invalid webhook signature'],
-            };
-        }
-        // 4. Parse payload
+        // 2. Parse payload first to extract phone_number_id for channel lookup
         const payloadString = Buffer.isBuffer(payload) ? payload.toString('utf8') : payload;
         let parsedPayload;
         try {
@@ -188,7 +168,63 @@ let WebhookService = class WebhookService {
                 errors: ['Invalid JSON payload'],
             };
         }
-        // 5. Parse into standardized events
+        // 3. Extract phone_number_id from webhook payload to find channel account
+        const phoneNumberId = this.extractPhoneNumberIdFromPayload(parsedPayload);
+        if (!phoneNumberId) {
+            logger_config_1.logger.error('Could not extract phone_number_id from webhook payload');
+            return {
+                success: false,
+                eventsProcessed: 0,
+                errors: ['Missing phone_number_id in webhook payload'],
+            };
+        }
+        // 4. Find channel account and get appSecret from credentials
+        const channelAccount = await this.channelAccountRepo.findByPhoneNumberId(phoneNumberId);
+        if (!channelAccount) {
+            logger_config_1.logger.error('Channel account not found for phone_number_id', { phoneNumberId });
+            return {
+                success: false,
+                eventsProcessed: 0,
+                errors: ['Channel account not found'],
+            };
+        }
+        let appSecret;
+        try {
+            const credentials = await this.credentialService.decryptCredentials(channelAccount.encryptedCredentials, channelAccount.credentialsIv);
+            appSecret = credentials.appSecret;
+            if (!appSecret) {
+                logger_config_1.logger.error('appSecret not found in channel account credentials', {
+                    channelAccountId: channelAccount.id,
+                });
+                return {
+                    success: false,
+                    eventsProcessed: 0,
+                    errors: ['Channel account missing appSecret in credentials'],
+                };
+            }
+        }
+        catch (error) {
+            logger_config_1.logger.error('Failed to decrypt channel account credentials', {
+                channelAccountId: channelAccount.id,
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+            return {
+                success: false,
+                eventsProcessed: 0,
+                errors: ['Failed to decrypt channel credentials'],
+            };
+        }
+        // 5. Validate signature using appSecret from channel account
+        const isValid = provider.validateWebhookSignature(payload, signature, appSecret);
+        if (!isValid) {
+            logger_config_1.logger.warn('Meta webhook signature validation failed');
+            return {
+                success: false,
+                eventsProcessed: 0,
+                errors: ['Invalid webhook signature'],
+            };
+        }
+        // 6. Parse into standardized events
         const events = provider.parseWebhookPayload(parsedPayload);
         if (events.length === 0) {
             logger_config_1.logger.debug('No events to process in Meta webhook');
@@ -198,7 +234,7 @@ let WebhookService = class WebhookService {
                 errors: [],
             };
         }
-        // 6. Process each event
+        // 7. Process each event
         const errors = [];
         let eventsProcessed = 0;
         for (const event of events) {
@@ -442,6 +478,24 @@ let WebhookService = class WebhookService {
             channelAccountId: channelAccount.id,
             phoneNumberId,
         });
+    }
+    /**
+     * Extract phone_number_id from Meta webhook payload.
+     *
+     * Meta webhooks have the structure:
+     * { entry: [{ changes: [{ value: { metadata: { phone_number_id: "..." } } }] }] }
+     *
+     * @param payload - Parsed webhook payload
+     * @returns phone_number_id or undefined if not found
+     */
+    extractPhoneNumberIdFromPayload(payload) {
+        try {
+            const p = payload;
+            return p.entry?.[0]?.changes?.[0]?.value?.metadata?.phone_number_id;
+        }
+        catch {
+            return undefined;
+        }
     }
     /**
      * Extract the message content based on message type.
