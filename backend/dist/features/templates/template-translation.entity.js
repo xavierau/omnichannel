@@ -26,6 +26,7 @@ let TemplateTranslation = class TemplateTranslation {
     footer;
     buttons;
     rejectionReason;
+    metaTemplateId;
     createdAt;
     updatedAt;
 };
@@ -93,6 +94,10 @@ __decorate([
     (0, typeorm_1.Column)({ name: 'rejection_reason', type: 'text', nullable: true }),
     __metadata("design:type", Object)
 ], TemplateTranslation.prototype, "rejectionReason", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'meta_template_id', type: 'varchar', length: 50, nullable: true }),
+    __metadata("design:type", Object)
+], TemplateTranslation.prototype, "metaTemplateId", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)

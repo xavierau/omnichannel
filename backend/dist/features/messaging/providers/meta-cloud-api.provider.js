@@ -460,6 +460,51 @@ class MetaCloudApiProvider {
         };
     }
     /**
+     * Create a message template on Meta's WhatsApp Business Platform.
+     *
+     * @see https://developers.facebook.com/docs/whatsapp/business-management-api/message-templates
+     */
+    async createTemplate(request) {
+        if (!this.client || !this.credentials) {
+            return {
+                success: false,
+                error: {
+                    code: 'NOT_INITIALIZED',
+                    message: 'Provider not initialized. Call initialize() first.',
+                    retryable: false,
+                },
+            };
+        }
+        try {
+            logger_config_1.logger.debug('Creating template on Meta', {
+                name: request.name,
+                language: request.language,
+                category: request.category,
+                wabaId: this.credentials.whatsappBusinessAccountId,
+            });
+            const response = await this.client.post(`/${this.credentials.whatsappBusinessAccountId}/message_templates`, {
+                name: request.name,
+                language: request.language,
+                category: request.category,
+                components: request.components,
+            });
+            logger_config_1.logger.info('Template created successfully on Meta', {
+                templateId: response.data.id,
+                templateName: request.name,
+                language: request.language,
+                status: response.data.status,
+            });
+            return {
+                success: true,
+                id: response.data.id,
+                status: response.data.status,
+            };
+        }
+        catch (error) {
+            return this.handleCreateTemplateError(error, request);
+        }
+    }
+    /**
      * Check if an error indicates a rate limit condition from Meta.
      *
      * Meta rate limit error codes:
@@ -1029,6 +1074,61 @@ class MetaCloudApiProvider {
                 retryable,
             },
             rawResponse: axiosError.response?.data,
+        };
+    }
+    /**
+     * Handle errors from template creation operations.
+     *
+     * @param error - The error thrown during template creation
+     * @param request - The original template creation request
+     * @returns Structured error response
+     */
+    handleCreateTemplateError(error, request) {
+        const axiosError = error;
+        const metaError = axiosError.response?.data?.error;
+        const errorCode = metaError?.code?.toString() || 'UNKNOWN';
+        const errorMessage = metaError?.message || axiosError.message || 'Unknown error';
+        // Retryable error codes for template creation
+        const retryableCodes = [
+            1, // Unknown error (temporary)
+            2, // Service temporarily unavailable
+            4, // Rate limit
+            17, // Rate limit
+            341, // Rate limit
+            368, // Temporarily blocked
+            190, // Access token expired (might be refreshable)
+        ];
+        // Non-retryable template-specific error codes
+        const nonRetryableCodes = [
+            100, // Invalid parameter
+            2388026, // Duplicate template name
+            2388027, // Invalid template name format
+        ];
+        let retryable = false;
+        if (metaError) {
+            if (nonRetryableCodes.includes(metaError.code)) {
+                retryable = false;
+            }
+            else if (retryableCodes.includes(metaError.code)) {
+                retryable = true;
+            }
+        }
+        logger_config_1.logger.error('Failed to create template on Meta', {
+            errorCode,
+            errorMessage,
+            retryable,
+            templateName: request.name,
+            language: request.language,
+            category: request.category,
+            httpStatus: axiosError.response?.status,
+        });
+        return {
+            success: false,
+            error: {
+                code: errorCode,
+                message: errorMessage,
+                retryable,
+            },
         };
     }
 }

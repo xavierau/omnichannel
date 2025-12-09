@@ -30,7 +30,7 @@ class AddTeamsPermissionsToAdmin1765277567000 {
         // Check if the permission is already assigned
         const existingAssignment = await queryRunner.query(`
       SELECT * FROM role_permissions
-      WHERE "roleId" = $1 AND "permissionId" = $2
+      WHERE role_id = $1 AND permission_id = $2
       LIMIT 1
     `, [adminRoleId, teamsPermissionId]);
         if (existingAssignment && existingAssignment.length > 0) {
@@ -39,7 +39,7 @@ class AddTeamsPermissionsToAdmin1765277567000 {
         }
         // Assign the permission
         await queryRunner.query(`
-      INSERT INTO role_permissions ("roleId", "permissionId")
+      INSERT INTO role_permissions (role_id, permission_id)
       VALUES ($1, $2)
     `, [adminRoleId, teamsPermissionId]);
         console.log('Successfully added teams:manage:all permission to admin role');
@@ -66,7 +66,7 @@ class AddTeamsPermissionsToAdmin1765277567000 {
         // Remove the permission assignment
         await queryRunner.query(`
       DELETE FROM role_permissions
-      WHERE "roleId" = $1 AND "permissionId" = $2
+      WHERE role_id = $1 AND permission_id = $2
     `, [adminRoleId, teamsPermissionId]);
         console.log('Removed teams:manage:all permission from admin role');
     }

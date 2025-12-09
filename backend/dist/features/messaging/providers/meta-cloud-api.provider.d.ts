@@ -10,6 +10,42 @@ export interface MetaCloudApiCredentials {
     appSecret: string;
 }
 /**
+ * Request to create a template on Meta.
+ */
+export interface CreateMetaTemplateRequest {
+    name: string;
+    language: string;
+    category: 'MARKETING' | 'UTILITY' | 'AUTHENTICATION';
+    components: MetaTemplateComponent[];
+}
+export interface MetaTemplateComponent {
+    type: 'HEADER' | 'BODY' | 'FOOTER' | 'BUTTONS';
+    format?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
+    text?: string;
+    buttons?: MetaTemplateButton[];
+    example?: {
+        header_text?: string[];
+        header_handle?: string[];
+        body_text?: string[][];
+    };
+}
+export interface MetaTemplateButton {
+    type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER' | 'COPY_CODE';
+    text: string;
+    url?: string;
+    phone_number?: string;
+}
+export interface CreateMetaTemplateResponse {
+    success: boolean;
+    id?: string;
+    status?: string;
+    error?: {
+        code: string;
+        message: string;
+        retryable: boolean;
+    };
+}
+/**
  * Meta Cloud API Provider Implementation.
  * Integrates with Meta's WhatsApp Business Cloud API.
  *
@@ -88,6 +124,12 @@ export declare class MetaCloudApiProvider implements IMessagingProvider {
      * Get rate limit info (Meta doesn't expose this directly via API).
      */
     getRateLimitInfo(): Promise<RateLimitInfo>;
+    /**
+     * Create a message template on Meta's WhatsApp Business Platform.
+     *
+     * @see https://developers.facebook.com/docs/whatsapp/business-management-api/message-templates
+     */
+    createTemplate(request: CreateMetaTemplateRequest): Promise<CreateMetaTemplateResponse>;
     /**
      * Check if an error indicates a rate limit condition from Meta.
      *
@@ -208,4 +250,12 @@ export declare class MetaCloudApiProvider implements IMessagingProvider {
      * Handle errors from freeform send operations.
      */
     private handleFreeformSendError;
+    /**
+     * Handle errors from template creation operations.
+     *
+     * @param error - The error thrown during template creation
+     * @param request - The original template creation request
+     * @returns Structured error response
+     */
+    private handleCreateTemplateError;
 }

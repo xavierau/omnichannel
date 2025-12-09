@@ -20,6 +20,7 @@ export declare class TemplateTranslation {
     footer: string | null;
     buttons: TemplateButton[];
     rejectionReason: string | null;
+    metaTemplateId: string | null;
     createdAt: Date;
     updatedAt: Date;
 }

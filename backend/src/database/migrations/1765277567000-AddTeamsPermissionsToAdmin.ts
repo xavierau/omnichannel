@@ -35,7 +35,7 @@ export class AddTeamsPermissionsToAdmin1765277567000 implements MigrationInterfa
     // Check if the permission is already assigned
     const existingAssignment = await queryRunner.query(`
       SELECT * FROM role_permissions
-      WHERE "roleId" = $1 AND "permissionId" = $2
+      WHERE role_id = $1 AND permission_id = $2
       LIMIT 1
     `, [adminRoleId, teamsPermissionId]);
 
@@ -46,7 +46,7 @@ export class AddTeamsPermissionsToAdmin1765277567000 implements MigrationInterfa
 
     // Assign the permission
     await queryRunner.query(`
-      INSERT INTO role_permissions ("roleId", "permissionId")
+      INSERT INTO role_permissions (role_id, permission_id)
       VALUES ($1, $2)
     `, [adminRoleId, teamsPermissionId]);
 
@@ -81,7 +81,7 @@ export class AddTeamsPermissionsToAdmin1765277567000 implements MigrationInterfa
     // Remove the permission assignment
     await queryRunner.query(`
       DELETE FROM role_permissions
-      WHERE "roleId" = $1 AND "permissionId" = $2
+      WHERE role_id = $1 AND permission_id = $2
     `, [adminRoleId, teamsPermissionId]);
 
     console.log('Removed teams:manage:all permission from admin role');

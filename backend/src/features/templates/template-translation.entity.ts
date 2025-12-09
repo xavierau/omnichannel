@@ -73,6 +73,9 @@ export class TemplateTranslation {
   @Column({ name: 'rejection_reason', type: 'text', nullable: true })
   rejectionReason: string | null;
 
+  @Column({ name: 'meta_template_id', type: 'varchar', length: 50, nullable: true })
+  metaTemplateId: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
