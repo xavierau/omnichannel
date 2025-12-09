@@ -8,7 +8,8 @@ import { CredentialService } from '../messaging/services/credential.service';
 import { MessagingService } from '../messaging/services/messaging.service';
 import { ProviderRegistry } from '../messaging/provider-registry';
 import { ProviderCredentials } from '../messaging/interfaces/messaging-provider.interface';
-import { logger } from '../../config/logger.config';
+import { TeamService } from '@features/teams/services/team.service';
+import { logger, auditLogger } from '../../config/logger.config';
 
 /**
  * DTO for creating a channel account.
@@ -22,6 +23,7 @@ export interface CreateChannelAccountDto {
   credentials: ProviderCredentials;
   isActive?: boolean;
   isPrimary?: boolean;
+  teamIds?: string[]; // Optional team IDs to assign the channel account to
 }
 
 /**
@@ -88,7 +90,8 @@ export class ChannelAccountService {
     @inject(ProviderRepository) private providerRepo: ProviderRepository,
     @inject(CredentialService) private credentialService: CredentialService,
     @inject(MessagingService) private messagingService: MessagingService,
-    @inject(ProviderRegistry) private providerRegistry: ProviderRegistry
+    @inject(ProviderRegistry) private providerRegistry: ProviderRegistry,
+    @inject(TeamService) private teamService: TeamService
   ) {}
 
   /**
@@ -266,6 +269,22 @@ export class ChannelAccountService {
     // 8. If isPrimary, unset other primary accounts
     if (dto.isPrimary) {
       await this.channelAccountRepo.setPrimary(account.id, tenantId);
+    }
+
+    // 9. Assign channel account to teams if specified
+    if (dto.teamIds && dto.teamIds.length > 0) {
+      for (const teamId of dto.teamIds) {
+        try {
+          await this.teamService.addChannelAccount(teamId, account.id);
+        } catch (error) {
+          // Log but don't fail - team might not exist
+          auditLogger.warn('Failed to assign channel account to team', {
+            teamId,
+            channelAccountId: account.id,
+            error: (error as Error).message,
+          });
+        }
+      }
     }
 
     logger.info('Channel account created', {

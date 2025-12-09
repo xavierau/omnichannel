@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom"
 import {
   Radio,
   Users,
+  UsersRound,
   Key,
   Settings,
   Bell,
@@ -30,6 +31,11 @@ const settingsNavItems = [
     title: "Users",
     url: "/settings/users",
     icon: Users,
+  },
+  {
+    title: "Teams",
+    url: "/settings/teams",
+    icon: UsersRound,
   },
   {
     title: "API Keys",

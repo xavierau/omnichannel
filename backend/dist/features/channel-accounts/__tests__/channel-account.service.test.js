@@ -11,6 +11,12 @@ jest.mock('../../../config/logger.config', () => ({
         warn: jest.fn(),
         error: jest.fn(),
     },
+    auditLogger: {
+        debug: jest.fn(),
+        info: jest.fn(),
+        warn: jest.fn(),
+        error: jest.fn(),
+    },
 }));
 describe('ChannelAccountService', () => {
     let service;
@@ -20,6 +26,7 @@ describe('ChannelAccountService', () => {
     let mockCredentialService;
     let mockMessagingService;
     let mockProviderRegistry;
+    let mockTeamService;
     let mockProvider;
     const tenantId = 'tenant-123';
     const channelAccountId = 'account-123';
@@ -99,7 +106,15 @@ describe('ChannelAccountService', () => {
             register: jest.fn(),
             listProviders: jest.fn(),
         };
-        service = new channel_account_service_1.ChannelAccountService(mockChannelAccountRepo, mockChannelRepo, mockProviderRepo, mockCredentialService, mockMessagingService, mockProviderRegistry);
+        mockTeamService = {
+            addChannelAccount: jest.fn(),
+            addChannelAccounts: jest.fn(),
+            removeChannelAccount: jest.fn(),
+            getTeamChannelAccounts: jest.fn(),
+            getAccessibleChannelAccountIds: jest.fn(),
+            hasAccessToChannelAccount: jest.fn(),
+        };
+        service = new channel_account_service_1.ChannelAccountService(mockChannelAccountRepo, mockChannelRepo, mockProviderRepo, mockCredentialService, mockMessagingService, mockProviderRegistry, mockTeamService);
     });
     describe('create', () => {
         const createDto = {

@@ -5,6 +5,7 @@ import { UserService } from '../../users/user.service';
 import { UserRepository } from '../../users/user.repository';
 import { RefreshTokenRepository } from '../refresh-token.repository';
 import { TenantService } from '../../tenants/tenant.service';
+import { TeamService } from '../../teams/services/team.service';
 import { User, UserStatus } from '../../users/user.entity';
 
 // Mock the logger
@@ -101,8 +102,28 @@ describe('AuthService - Password Reset', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as unknown as jest.Mocked<any>;
 
+    const mockTeamService = {
+      createTeam: jest.fn(),
+      addMember: jest.fn(),
+      getTeams: jest.fn(),
+      getTeam: jest.fn(),
+      updateTeam: jest.fn(),
+      deleteTeam: jest.fn(),
+      removeMember: jest.fn(),
+      getTeamMembers: jest.fn(),
+      getUserTeams: jest.fn(),
+      updateMemberRole: jest.fn(),
+      addChannelAccount: jest.fn(),
+      removeChannelAccount: jest.fn(),
+      getTeamChannelAccounts: jest.fn(),
+      getAccessibleChannelAccountIds: jest.fn(),
+      hasAccessToChannelAccount: jest.fn(),
+      addMembers: jest.fn(),
+      addChannelAccounts: jest.fn(),
+    } as unknown as jest.Mocked<TeamService>;
+
     // Create AuthService with mocked dependencies
-    authService = new AuthService(mockUserService, mockTokenRepo, mockUserRepository, mockTenantService, mockRoleRepository);
+    authService = new AuthService(mockUserService, mockTokenRepo, mockUserRepository, mockTenantService, mockRoleRepository, mockTeamService);
   });
 
   afterEach(() => {

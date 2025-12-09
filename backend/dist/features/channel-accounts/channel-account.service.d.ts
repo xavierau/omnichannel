@@ -6,6 +6,7 @@ import { CredentialService } from '../messaging/services/credential.service';
 import { MessagingService } from '../messaging/services/messaging.service';
 import { ProviderRegistry } from '../messaging/provider-registry';
 import { ProviderCredentials } from '../messaging/interfaces/messaging-provider.interface';
+import { TeamService } from '../teams/services/team.service';
 /**
  * DTO for creating a channel account.
  * Credentials are provider-specific based on the provider's config_schema.
@@ -18,6 +19,7 @@ export interface CreateChannelAccountDto {
     credentials: ProviderCredentials;
     isActive?: boolean;
     isPrimary?: boolean;
+    teamIds?: string[];
 }
 /**
  * DTO for updating a channel account.
@@ -77,7 +79,8 @@ export declare class ChannelAccountService {
     private credentialService;
     private messagingService;
     private providerRegistry;
-    constructor(channelAccountRepo: ChannelAccountRepository, channelRepo: ChannelRepository, providerRepo: ProviderRepository, credentialService: CredentialService, messagingService: MessagingService, providerRegistry: ProviderRegistry);
+    private teamService;
+    constructor(channelAccountRepo: ChannelAccountRepository, channelRepo: ChannelRepository, providerRepo: ProviderRepository, credentialService: CredentialService, messagingService: MessagingService, providerRegistry: ProviderRegistry, teamService: TeamService);
     /**
      * Get all channel accounts for a tenant.
      *

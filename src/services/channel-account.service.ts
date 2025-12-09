@@ -62,6 +62,7 @@ export interface CreateChannelAccountData {
   name: string
   phoneNumber?: string
   credentials: MetaCredentials | TwilioCredentials
+  teamIds?: string[]
 }
 
 export interface MetaCredentials {

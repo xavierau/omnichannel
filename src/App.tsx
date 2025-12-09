@@ -20,6 +20,7 @@ import {
   ChannelsPage,
   CustomFieldsPage,
   UsersPage,
+  TeamsPage,
   ApiKeysPage,
   NotificationsPage,
   GeneralPage,
@@ -62,6 +63,7 @@ function App() {
                 <Route path="channels" element={<ChannelsPage />} />
                 <Route path="custom-fields" element={<CustomFieldsPage />} />
                 <Route path="users" element={<UsersPage />} />
+                <Route path="teams" element={<TeamsPage />} />
                 <Route path="api-keys" element={<ApiKeysPage />} />
                 <Route path="notifications" element={<NotificationsPage />} />
                 <Route path="general" element={<GeneralPage />} />

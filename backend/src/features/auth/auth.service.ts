@@ -6,6 +6,8 @@ import { UserRepository } from '@features/users/user.repository';
 import { RefreshTokenRepository } from './refresh-token.repository';
 import { TenantService } from '@features/tenants/tenant.service';
 import { RoleRepository } from '@features/roles/role.repository';
+import { TeamService } from '@features/teams/services/team.service';
+import { TeamMemberRole } from '@features/teams/enums';
 import { User, UserStatus } from '@features/users/user.entity';
 import { AUTH_CONSTANTS } from '@config/constants';
 import { AppDataSource } from '@config/database.config';
@@ -46,7 +48,8 @@ export class AuthService {
     @inject(RefreshTokenRepository) private tokenRepo: RefreshTokenRepository,
     @inject(UserRepository) private userRepository: UserRepository,
     @inject(TenantService) private tenantService: TenantService,
-    @inject(RoleRepository) private roleRepository: RoleRepository
+    @inject(RoleRepository) private roleRepository: RoleRepository,
+    @inject(TeamService) private teamService: TeamService
   ) {}
 
   /**
@@ -299,6 +302,14 @@ export class AuthService {
         await this.userService.addRoles(user.id, [adminRole.id]);
       }
 
+      // Create default team and add user as leader
+      const defaultTeam = await this.teamService.createTeam(
+        tenant.id,
+        'Default',
+        'Default team created on registration'
+      );
+      await this.teamService.addMember(defaultTeam.id, user.id, TeamMemberRole.LEADER);
+
       await queryRunner.commitTransaction();
 
       auditLogger.info('User registered with tenant as admin', {
@@ -307,6 +318,7 @@ export class AuthService {
         tenantId: tenant.id,
         tenantSlug: tenant.slug,
         roleAssigned: adminRole?.name || 'none',
+        defaultTeamId: defaultTeam.id,
       });
 
       return user;

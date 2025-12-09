@@ -122,8 +122,27 @@ describe('AuthService - Password Reset', () => {
             findAll: jest.fn(),
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         };
+        const mockTeamService = {
+            createTeam: jest.fn(),
+            addMember: jest.fn(),
+            getTeams: jest.fn(),
+            getTeam: jest.fn(),
+            updateTeam: jest.fn(),
+            deleteTeam: jest.fn(),
+            removeMember: jest.fn(),
+            getTeamMembers: jest.fn(),
+            getUserTeams: jest.fn(),
+            updateMemberRole: jest.fn(),
+            addChannelAccount: jest.fn(),
+            removeChannelAccount: jest.fn(),
+            getTeamChannelAccounts: jest.fn(),
+            getAccessibleChannelAccountIds: jest.fn(),
+            hasAccessToChannelAccount: jest.fn(),
+            addMembers: jest.fn(),
+            addChannelAccounts: jest.fn(),
+        };
         // Create AuthService with mocked dependencies
-        authService = new auth_service_1.AuthService(mockUserService, mockTokenRepo, mockUserRepository, mockTenantService, mockRoleRepository);
+        authService = new auth_service_1.AuthService(mockUserService, mockTokenRepo, mockUserRepository, mockTenantService, mockRoleRepository, mockTeamService);
     });
     afterEach(() => {
         jest.clearAllMocks();

@@ -211,6 +211,7 @@ export function ChannelsPage() {
             appId: data.appId,
             appSecret: data.appSecret,
           },
+          teamIds: data.teamIds,
         })
         setWhatsappConfigs((prev) => [...prev, mapChannelAccountToWhatsAppConfig(created)])
         toast.success("Channel created", { description: `${data.name} has been added.` })

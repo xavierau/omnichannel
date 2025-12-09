@@ -6,6 +6,7 @@ import { ProviderRepository } from '../../providers/provider.repository';
 import { CredentialService } from '../../messaging/services/credential.service';
 import { MessagingService } from '../../messaging/services/messaging.service';
 import { ProviderRegistry } from '../../messaging/provider-registry';
+import { TeamService } from '../../teams/services/team.service';
 import { ChannelAccount, ChannelAccountStatus } from '../channel-account.entity';
 import { IMessagingProvider, CredentialVerificationResult } from '../../messaging/interfaces/messaging-provider.interface';
 import { Channel } from '../../channels/channel.entity';
@@ -14,6 +15,12 @@ import { Provider } from '../../providers/provider.entity';
 // Mock logger
 jest.mock('../../../config/logger.config', () => ({
   logger: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
+  auditLogger: {
     debug: jest.fn(),
     info: jest.fn(),
     warn: jest.fn(),
@@ -29,6 +36,7 @@ describe('ChannelAccountService', () => {
   let mockCredentialService: jest.Mocked<CredentialService>;
   let mockMessagingService: jest.Mocked<MessagingService>;
   let mockProviderRegistry: jest.Mocked<ProviderRegistry>;
+  let mockTeamService: jest.Mocked<TeamService>;
   let mockProvider: jest.Mocked<IMessagingProvider>;
 
   const tenantId = 'tenant-123';
@@ -122,13 +130,23 @@ describe('ChannelAccountService', () => {
       listProviders: jest.fn(),
     } as unknown as jest.Mocked<ProviderRegistry>;
 
+    mockTeamService = {
+      addChannelAccount: jest.fn(),
+      addChannelAccounts: jest.fn(),
+      removeChannelAccount: jest.fn(),
+      getTeamChannelAccounts: jest.fn(),
+      getAccessibleChannelAccountIds: jest.fn(),
+      hasAccessToChannelAccount: jest.fn(),
+    } as unknown as jest.Mocked<TeamService>;
+
     service = new ChannelAccountService(
       mockChannelAccountRepo,
       mockChannelRepo,
       mockProviderRepo,
       mockCredentialService,
       mockMessagingService,
-      mockProviderRegistry
+      mockProviderRegistry,
+      mockTeamService
     );
   });
 

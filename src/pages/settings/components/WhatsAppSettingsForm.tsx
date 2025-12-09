@@ -13,10 +13,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 import { PasswordInput } from "./PasswordInput"
 import { WebhookUrlDisplay } from "./WebhookUrlDisplay"
 import { QualityRatingBadge } from "./QualityRatingBadge"
 import { SetupGuide } from "./SetupGuide"
+import { teamService, type Team } from "@/services/team.service"
 import type {
   WhatsAppFormData,
   WhatsAppFormErrors,
@@ -91,6 +94,10 @@ export function WhatsAppSettingsForm({
     initialValues?.webhookVerifyToken ??
       defaultWhatsAppFormData.webhookVerifyToken
   )
+  const [teams, setTeams] = React.useState<Team[]>([])
+  const [selectedTeamIds, setSelectedTeamIds] = React.useState<string[]>(
+    initialValues?.teamIds ?? []
+  )
   const [errors, setErrors] = React.useState<WhatsAppFormErrors>({})
 
   const isDisabled = isSubmitting || isTesting
@@ -98,6 +105,11 @@ export function WhatsAppSettingsForm({
   // Extract account info and webhook config from test result
   const accountInfo: AccountInfo | undefined = testResult?.accountInfo
   const webhookConfig: WebhookConfig | undefined = testResult?.webhookConfig
+
+  // Fetch teams on mount
+  React.useEffect(() => {
+    teamService.getTeams().then(setTeams).catch(console.error)
+  }, [])
 
   const getFormData = (): WhatsAppFormData => ({
     name: name.trim(),
@@ -107,6 +119,7 @@ export function WhatsAppSettingsForm({
     appId: appId.trim(),
     appSecret: appSecret.trim(),
     webhookVerifyToken: webhookVerifyToken.trim(),
+    teamIds: selectedTeamIds,
   })
 
   const validateForm = (): boolean => {
@@ -272,6 +285,31 @@ export function WhatsAppSettingsForm({
           {errors.name && (
             <p className="text-sm text-destructive">{errors.name}</p>
           )}
+        </div>
+
+        <div className="space-y-2">
+          <Label>Assign to Teams (optional)</Label>
+          <div className="space-y-2 max-h-32 overflow-y-auto border rounded p-2">
+            {teams.map((team) => (
+              <label key={team.id} className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={selectedTeamIds.includes(team.id)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedTeamIds([...selectedTeamIds, team.id])
+                    } else {
+                      setSelectedTeamIds(selectedTeamIds.filter(id => id !== team.id))
+                    }
+                  }}
+                  disabled={isDisabled}
+                />
+                <span className="text-sm">{team.name}</span>
+              </label>
+            ))}
+            {teams.length === 0 && (
+              <p className="text-sm text-muted-foreground">No teams available</p>
+            )}
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">

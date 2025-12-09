@@ -3,6 +3,7 @@ import { UserRepository } from '../users/user.repository';
 import { RefreshTokenRepository } from './refresh-token.repository';
 import { TenantService } from '../tenants/tenant.service';
 import { RoleRepository } from '../roles/role.repository';
+import { TeamService } from '../teams/services/team.service';
 import { User } from '../users/user.entity';
 interface TokenPair {
     accessToken: string;
@@ -25,7 +26,8 @@ export declare class AuthService {
     private userRepository;
     private tenantService;
     private roleRepository;
-    constructor(userService: UserService, tokenRepo: RefreshTokenRepository, userRepository: UserRepository, tenantService: TenantService, roleRepository: RoleRepository);
+    private teamService;
+    constructor(userService: UserService, tokenRepo: RefreshTokenRepository, userRepository: UserRepository, tenantService: TenantService, roleRepository: RoleRepository, teamService: TeamService);
     /**
      * Adds a random delay to normalize response times and prevent timing attacks.
      * Uses cryptographically secure random number generation.

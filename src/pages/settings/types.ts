@@ -45,6 +45,7 @@ export interface WhatsAppFormData {
   appId: string
   appSecret: string
   webhookVerifyToken: string
+  teamIds?: string[]
 }
 
 // Form validation errors

@@ -54,6 +54,8 @@ const user_repository_1 = require("../users/user.repository");
 const refresh_token_repository_1 = require("./refresh-token.repository");
 const tenant_service_1 = require("../tenants/tenant.service");
 const role_repository_1 = require("../roles/role.repository");
+const team_service_1 = require("../teams/services/team.service");
+const enums_1 = require("../teams/enums");
 const user_entity_1 = require("../users/user.entity");
 const constants_1 = require("../../config/constants");
 const database_config_1 = require("../../config/database.config");
@@ -73,12 +75,14 @@ let AuthService = class AuthService {
     userRepository;
     tenantService;
     roleRepository;
-    constructor(userService, tokenRepo, userRepository, tenantService, roleRepository) {
+    teamService;
+    constructor(userService, tokenRepo, userRepository, tenantService, roleRepository, teamService) {
         this.userService = userService;
         this.tokenRepo = tokenRepo;
         this.userRepository = userRepository;
         this.tenantService = tenantService;
         this.roleRepository = roleRepository;
+        this.teamService = teamService;
     }
     /**
      * Adds a random delay to normalize response times and prevent timing attacks.
@@ -272,6 +276,9 @@ let AuthService = class AuthService {
             if (adminRole) {
                 await this.userService.addRoles(user.id, [adminRole.id]);
             }
+            // Create default team and add user as leader
+            const defaultTeam = await this.teamService.createTeam(tenant.id, 'Default', 'Default team created on registration');
+            await this.teamService.addMember(defaultTeam.id, user.id, enums_1.TeamMemberRole.LEADER);
             await queryRunner.commitTransaction();
             logger_config_1.auditLogger.info('User registered with tenant as admin', {
                 userId: user.id,
@@ -279,6 +286,7 @@ let AuthService = class AuthService {
                 tenantId: tenant.id,
                 tenantSlug: tenant.slug,
                 roleAssigned: adminRole?.name || 'none',
+                defaultTeamId: defaultTeam.id,
             });
             return user;
         }
@@ -450,9 +458,11 @@ exports.AuthService = AuthService = __decorate([
     __param(2, (0, tsyringe_1.inject)(user_repository_1.UserRepository)),
     __param(3, (0, tsyringe_1.inject)(tenant_service_1.TenantService)),
     __param(4, (0, tsyringe_1.inject)(role_repository_1.RoleRepository)),
+    __param(5, (0, tsyringe_1.inject)(team_service_1.TeamService)),
     __metadata("design:paramtypes", [user_service_1.UserService,
         refresh_token_repository_1.RefreshTokenRepository,
         user_repository_1.UserRepository,
         tenant_service_1.TenantService,
-        role_repository_1.RoleRepository])
+        role_repository_1.RoleRepository,
+        team_service_1.TeamService])
 ], AuthService);

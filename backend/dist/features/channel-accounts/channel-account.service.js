@@ -55,6 +55,7 @@ const provider_repository_1 = require("../providers/provider.repository");
 const credential_service_1 = require("../messaging/services/credential.service");
 const messaging_service_1 = require("../messaging/services/messaging.service");
 const provider_registry_1 = require("../messaging/provider-registry");
+const team_service_1 = require("../teams/services/team.service");
 const logger_config_1 = require("../../config/logger.config");
 /**
  * Service for managing channel accounts.
@@ -68,13 +69,15 @@ let ChannelAccountService = class ChannelAccountService {
     credentialService;
     messagingService;
     providerRegistry;
-    constructor(channelAccountRepo, channelRepo, providerRepo, credentialService, messagingService, providerRegistry) {
+    teamService;
+    constructor(channelAccountRepo, channelRepo, providerRepo, credentialService, messagingService, providerRegistry, teamService) {
         this.channelAccountRepo = channelAccountRepo;
         this.channelRepo = channelRepo;
         this.providerRepo = providerRepo;
         this.credentialService = credentialService;
         this.messagingService = messagingService;
         this.providerRegistry = providerRegistry;
+        this.teamService = teamService;
     }
     /**
      * Get all channel accounts for a tenant.
@@ -214,6 +217,22 @@ let ChannelAccountService = class ChannelAccountService {
         // 8. If isPrimary, unset other primary accounts
         if (dto.isPrimary) {
             await this.channelAccountRepo.setPrimary(account.id, tenantId);
+        }
+        // 9. Assign channel account to teams if specified
+        if (dto.teamIds && dto.teamIds.length > 0) {
+            for (const teamId of dto.teamIds) {
+                try {
+                    await this.teamService.addChannelAccount(teamId, account.id);
+                }
+                catch (error) {
+                    // Log but don't fail - team might not exist
+                    logger_config_1.auditLogger.warn('Failed to assign channel account to team', {
+                        teamId,
+                        channelAccountId: account.id,
+                        error: error.message,
+                    });
+                }
+            }
         }
         logger_config_1.logger.info('Channel account created', {
             channelAccountId: account.id,
@@ -518,10 +537,12 @@ exports.ChannelAccountService = ChannelAccountService = __decorate([
     __param(3, (0, tsyringe_1.inject)(credential_service_1.CredentialService)),
     __param(4, (0, tsyringe_1.inject)(messaging_service_1.MessagingService)),
     __param(5, (0, tsyringe_1.inject)(provider_registry_1.ProviderRegistry)),
+    __param(6, (0, tsyringe_1.inject)(team_service_1.TeamService)),
     __metadata("design:paramtypes", [channel_account_repository_1.ChannelAccountRepository,
         channel_repository_1.ChannelRepository,
         provider_repository_1.ProviderRepository,
         credential_service_1.CredentialService,
         messaging_service_1.MessagingService,
-        provider_registry_1.ProviderRegistry])
+        provider_registry_1.ProviderRegistry,
+        team_service_1.TeamService])
 ], ChannelAccountService);
