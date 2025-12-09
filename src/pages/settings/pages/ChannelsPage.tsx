@@ -200,10 +200,9 @@ export function ChannelsPage() {
         toast.success("Channel updated", { description: `${data.name} has been updated.` })
       } else {
         // Create new channel account
-        // Note: channelId and providerId should be configured for WhatsApp
         const created = await channelAccountService.createChannelAccount({
-          channelId: "whatsapp", // This should match the channel ID in your database
-          providerId: "meta-cloud-api", // This should match the provider ID in your database
+          channelCode: "whatsapp",
+          providerCode: "meta_cloud_api",
           name: data.name,
           credentials: {
             phoneNumberId: data.phoneNumberId,

@@ -47,8 +47,8 @@ function toWhatsAppConfig(account: ChannelAccount): WhatsAppConfig {
 // Adapter: Transform frontend form data to API create payload
 function toCreateChannelAccountData(data: WhatsAppFormData): CreateChannelAccountData {
   return {
-    channelId: "whatsapp",
-    providerId: "meta-cloud-api",
+    channelCode: "whatsapp",
+    providerCode: "meta_cloud_api",
     name: data.name,
     credentials: {
       phoneNumberId: data.phoneNumberId,
@@ -106,7 +106,7 @@ export function SettingsPage() {
         const accounts = await channelAccountService.getChannelAccounts()
         // Filter for WhatsApp accounts only and transform to frontend format
         const whatsappAccounts = accounts
-          .filter((account) => account.channelId === "whatsapp")
+          .filter((account) => account.channelCode === "whatsapp")
           .map(toWhatsAppConfig)
         setWhatsappConfigs(whatsappAccounts)
       } catch (err) {

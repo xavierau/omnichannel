@@ -34,8 +34,10 @@ export type ChannelAccountStatus = (typeof ChannelAccountStatus)[keyof typeof Ch
 
 export interface ChannelAccount {
   id: string
-  channelId: string
-  providerId: string
+  channelCode: string
+  channelName: string
+  providerCode: string
+  providerName: string
   name: string
   phoneNumber: string | null
   phoneNumberId: string | null
@@ -55,8 +57,8 @@ export interface WebhookConfig {
 }
 
 export interface CreateChannelAccountData {
-  channelId: string
-  providerId: string
+  channelCode: string
+  providerCode?: string
   name: string
   phoneNumber?: string
   credentials: MetaCredentials | TwilioCredentials
