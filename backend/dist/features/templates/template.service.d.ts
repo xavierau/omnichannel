@@ -6,10 +6,12 @@ import { UpdateTemplateGroupDto } from './dto/update-template-group.dto';
 import { CreateTranslationDto } from './dto/create-translation.dto';
 import { UpdateTranslationDto } from './dto/update-translation.dto';
 import { ChannelAccountRepository } from '../channel-accounts/channel-account.repository';
+import { TemplateSubmissionQueue } from '../../jobs/template-submission.queue';
 export declare class TemplateService {
     private templateRepository;
     private channelAccountRepository;
-    constructor(templateRepository: TemplateRepository, channelAccountRepository: ChannelAccountRepository);
+    private submissionQueue;
+    constructor(templateRepository: TemplateRepository, channelAccountRepository: ChannelAccountRepository, submissionQueue: TemplateSubmissionQueue);
     /**
      * List all templates for a tenant with pagination and filtering.
      */
@@ -37,6 +39,8 @@ export declare class TemplateService {
     deleteTemplate(id: string, tenantId: string): Promise<void>;
     /**
      * Add a translation to a template group.
+     * If the template has a channel account configured, automatically queues
+     * the translation for submission to Meta.
      */
     addTranslation(templateId: string, dto: CreateTranslationDto, tenantId: string): Promise<TemplateTranslation>;
     /**
@@ -47,4 +51,9 @@ export declare class TemplateService {
      * Delete a translation.
      */
     deleteTranslation(templateId: string, translationId: string, tenantId: string): Promise<void>;
+    /**
+     * Manually trigger template submission to Meta.
+     * Used for re-submitting rejected templates.
+     */
+    submitToMeta(templateId: string, translationId: string, tenantId: string): Promise<void>;
 }

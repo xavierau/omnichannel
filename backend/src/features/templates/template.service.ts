@@ -15,12 +15,15 @@ import {
 } from '../../shared/exceptions/http-exceptions';
 import { auditLogger } from '../../config/logger.config';
 import { ChannelAccountRepository } from '../channel-accounts/channel-account.repository';
+import { TemplateSubmissionQueue } from '../../jobs/template-submission.queue';
+import { TemplateStatus } from './enums';
 
 @singleton()
 export class TemplateService {
   constructor(
     @inject(TemplateRepository) private templateRepository: TemplateRepository,
-    @inject(ChannelAccountRepository) private channelAccountRepository: ChannelAccountRepository
+    @inject(ChannelAccountRepository) private channelAccountRepository: ChannelAccountRepository,
+    @inject(TemplateSubmissionQueue) private submissionQueue: TemplateSubmissionQueue
   ) {}
 
   /**
@@ -176,6 +179,8 @@ export class TemplateService {
 
   /**
    * Add a translation to a template group.
+   * If the template has a channel account configured, automatically queues
+   * the translation for submission to Meta.
    */
   async addTranslation(
     templateId: string,
@@ -214,6 +219,16 @@ export class TemplateService {
       footer: dto.footer,
       buttons,
     });
+
+    // Queue for Meta submission if channel account is configured
+    const template = await this.getTemplate(tenantId, templateId);
+    if (template.channelAccountId) {
+      await this.submissionQueue.queueSubmission({
+        tenantId,
+        templateGroupId: templateId,
+        translationId: translation.id,
+      });
+    }
 
     auditLogger.info('Translation added', {
       action: 'template.translation.add',
@@ -309,6 +324,51 @@ export class TemplateService {
 
     auditLogger.info('Translation deleted', {
       action: 'template.translation.delete',
+      tenantId,
+      templateId,
+      translationId,
+      language: translation.language,
+    });
+  }
+
+  /**
+   * Manually trigger template submission to Meta.
+   * Used for re-submitting rejected templates.
+   */
+  async submitToMeta(
+    templateId: string,
+    translationId: string,
+    tenantId: string
+  ): Promise<void> {
+    const template = await this.getTemplate(tenantId, templateId);
+
+    if (!template.channelAccountId) {
+      throw new BadRequestException(
+        'Template must be associated with a channel account for submission'
+      );
+    }
+
+    const translation = template.translations?.find((t) => t.id === translationId);
+    if (!translation) {
+      throw new NotFoundException('Translation not found');
+    }
+
+    // Reset status to pending if previously rejected
+    if (translation.status === TemplateStatus.REJECTED) {
+      await this.templateRepository.updateTranslation(translationId, {
+        status: TemplateStatus.PENDING,
+        rejectionReason: null,
+      });
+    }
+
+    await this.submissionQueue.queueSubmission({
+      tenantId,
+      templateGroupId: templateId,
+      translationId,
+    });
+
+    auditLogger.info('Template submission queued manually', {
+      action: 'template.submit.manual',
       tenantId,
       templateId,
       translationId,

@@ -19,12 +19,16 @@ const template_repository_1 = require("./template.repository");
 const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
 const logger_config_1 = require("../../config/logger.config");
 const channel_account_repository_1 = require("../channel-accounts/channel-account.repository");
+const template_submission_queue_1 = require("../../jobs/template-submission.queue");
+const enums_1 = require("./enums");
 let TemplateService = class TemplateService {
     templateRepository;
     channelAccountRepository;
-    constructor(templateRepository, channelAccountRepository) {
+    submissionQueue;
+    constructor(templateRepository, channelAccountRepository, submissionQueue) {
         this.templateRepository = templateRepository;
         this.channelAccountRepository = channelAccountRepository;
+        this.submissionQueue = submissionQueue;
     }
     /**
      * List all templates for a tenant with pagination and filtering.
@@ -136,6 +140,8 @@ let TemplateService = class TemplateService {
     }
     /**
      * Add a translation to a template group.
+     * If the template has a channel account configured, automatically queues
+     * the translation for submission to Meta.
      */
     async addTranslation(templateId, dto, tenantId) {
         // Verify template exists and belongs to tenant
@@ -162,6 +168,15 @@ let TemplateService = class TemplateService {
             footer: dto.footer,
             buttons,
         });
+        // Queue for Meta submission if channel account is configured
+        const template = await this.getTemplate(tenantId, templateId);
+        if (template.channelAccountId) {
+            await this.submissionQueue.queueSubmission({
+                tenantId,
+                templateGroupId: templateId,
+                translationId: translation.id,
+            });
+        }
         logger_config_1.auditLogger.info('Translation added', {
             action: 'template.translation.add',
             tenantId,
@@ -249,12 +264,47 @@ let TemplateService = class TemplateService {
             language: translation.language,
         });
     }
+    /**
+     * Manually trigger template submission to Meta.
+     * Used for re-submitting rejected templates.
+     */
+    async submitToMeta(templateId, translationId, tenantId) {
+        const template = await this.getTemplate(tenantId, templateId);
+        if (!template.channelAccountId) {
+            throw new http_exceptions_1.BadRequestException('Template must be associated with a channel account for submission');
+        }
+        const translation = template.translations?.find((t) => t.id === translationId);
+        if (!translation) {
+            throw new http_exceptions_1.NotFoundException('Translation not found');
+        }
+        // Reset status to pending if previously rejected
+        if (translation.status === enums_1.TemplateStatus.REJECTED) {
+            await this.templateRepository.updateTranslation(translationId, {
+                status: enums_1.TemplateStatus.PENDING,
+                rejectionReason: null,
+            });
+        }
+        await this.submissionQueue.queueSubmission({
+            tenantId,
+            templateGroupId: templateId,
+            translationId,
+        });
+        logger_config_1.auditLogger.info('Template submission queued manually', {
+            action: 'template.submit.manual',
+            tenantId,
+            templateId,
+            translationId,
+            language: translation.language,
+        });
+    }
 };
 exports.TemplateService = TemplateService;
 exports.TemplateService = TemplateService = __decorate([
     (0, tsyringe_1.singleton)(),
     __param(0, (0, tsyringe_1.inject)(template_repository_1.TemplateRepository)),
     __param(1, (0, tsyringe_1.inject)(channel_account_repository_1.ChannelAccountRepository)),
+    __param(2, (0, tsyringe_1.inject)(template_submission_queue_1.TemplateSubmissionQueue)),
     __metadata("design:paramtypes", [template_repository_1.TemplateRepository,
-        channel_account_repository_1.ChannelAccountRepository])
+        channel_account_repository_1.ChannelAccountRepository,
+        template_submission_queue_1.TemplateSubmissionQueue])
 ], TemplateService);

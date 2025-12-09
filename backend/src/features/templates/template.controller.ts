@@ -170,6 +170,22 @@ export class TemplateController {
   });
 
   /**
+   * Submit a translation to Meta for approval.
+   * POST /:id/translations/:translationId/submit
+   */
+  submitToMeta = asyncHandler(async (req: Request, res: Response) => {
+    const { id, translationId } = req.params;
+    const tenantId = req.tenantId!;
+
+    await this.templateService.submitToMeta(id, translationId, tenantId);
+
+    res.json({
+      success: true,
+      message: 'Template submission queued',
+    });
+  });
+
+  /**
    * Delete a translation.
    * DELETE /:id/translations/:translationId
    */

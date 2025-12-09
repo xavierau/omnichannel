@@ -33,6 +33,9 @@ import { ConversationAssignment } from '@features/inbox/entities/conversation-as
 // Custom fields entity
 import { CustomFieldDefinition } from '@features/custom-fields/custom-field.entity';
 
+// Invitations entity
+import { Invitation } from '@features/invitations/invitation.entity';
+
 import { logger } from './logger.config';
 import { DB_CONSTANTS } from './constants';
 
@@ -131,6 +134,8 @@ const dataSourceOptions: PostgresConnectionOptions = {
     ConversationAssignment,
     // Custom fields entity
     CustomFieldDefinition,
+    // Invitations entity
+    Invitation,
   ],
   migrations: [__dirname + '/../database/migrations/*.{js,ts}'],
   subscribers: [],

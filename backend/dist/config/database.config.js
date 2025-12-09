@@ -34,6 +34,8 @@ const conversation_note_entity_1 = require("../features/inbox/entities/conversat
 const conversation_assignment_entity_1 = require("../features/inbox/entities/conversation-assignment.entity");
 // Custom fields entity
 const custom_field_entity_1 = require("../features/custom-fields/custom-field.entity");
+// Invitations entity
+const invitation_entity_1 = require("../features/invitations/invitation.entity");
 const logger_config_1 = require("./logger.config");
 const constants_1 = require("./constants");
 /**
@@ -115,6 +117,8 @@ const dataSourceOptions = {
         conversation_assignment_entity_1.ConversationAssignment,
         // Custom fields entity
         custom_field_entity_1.CustomFieldDefinition,
+        // Invitations entity
+        invitation_entity_1.Invitation,
     ],
     migrations: [__dirname + '/../database/migrations/*.{js,ts}'],
     subscribers: [],

@@ -101,6 +101,15 @@ router.patch(
   controller.updateTranslation
 );
 
+// Submit a translation to Meta for approval
+router.post(
+  '/:id/translations/:translationId/submit',
+  csrfValidateToken,
+  requirePermission('templates', 'update', 'all'),
+  validateUuid('id', 'translationId'),
+  controller.submitToMeta
+);
+
 // Delete a translation
 router.delete(
   '/:id/translations/:translationId',

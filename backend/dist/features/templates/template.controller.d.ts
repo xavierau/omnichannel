@@ -46,6 +46,11 @@ export declare class TemplateController {
      */
     updateTranslation: (req: Request, res: Response, next: import("express").NextFunction) => void;
     /**
+     * Submit a translation to Meta for approval.
+     * POST /:id/translations/:translationId/submit
+     */
+    submitToMeta: (req: Request, res: Response, next: import("express").NextFunction) => void;
+    /**
      * Delete a translation.
      * DELETE /:id/translations/:translationId
      */
