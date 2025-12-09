@@ -170,8 +170,15 @@ let WebhookService = class WebhookService {
         }
         // 3. Extract phone_number_id from webhook payload to find channel account
         const phoneNumberId = this.extractPhoneNumberIdFromPayload(parsedPayload);
+        logger_config_1.logger.info('Processing Meta webhook', {
+            phoneNumberId,
+            hasSignature: !!signature,
+            payloadPreview: payloadString.substring(0, 200),
+        });
         if (!phoneNumberId) {
-            logger_config_1.logger.error('Could not extract phone_number_id from webhook payload');
+            logger_config_1.logger.error('Could not extract phone_number_id from webhook payload', {
+                payloadStructure: JSON.stringify(parsedPayload).substring(0, 500),
+            });
             return {
                 success: false,
                 eventsProcessed: 0,
@@ -188,13 +195,25 @@ let WebhookService = class WebhookService {
                 errors: ['Channel account not found'],
             };
         }
+        logger_config_1.logger.debug('Found channel account', {
+            channelAccountId: channelAccount.id,
+            phoneNumberId: channelAccount.phoneNumberId,
+            hasEncryptedCredentials: !!channelAccount.encryptedCredentials,
+            hasCredentialsIv: !!channelAccount.credentialsIv,
+        });
         let appSecret;
         try {
             const credentials = await this.credentialService.decryptCredentials(channelAccount.encryptedCredentials, channelAccount.credentialsIv);
+            logger_config_1.logger.debug('Decrypted credentials', {
+                channelAccountId: channelAccount.id,
+                hasAppSecret: !!credentials.appSecret,
+                credentialKeys: Object.keys(credentials),
+            });
             appSecret = credentials.appSecret;
             if (!appSecret) {
                 logger_config_1.logger.error('appSecret not found in channel account credentials', {
                     channelAccountId: channelAccount.id,
+                    availableKeys: Object.keys(credentials),
                 });
                 return {
                     success: false,

@@ -202,8 +202,16 @@ export class WebhookService {
     // 3. Extract phone_number_id from webhook payload to find channel account
     const phoneNumberId = this.extractPhoneNumberIdFromPayload(parsedPayload);
 
+    logger.info('Processing Meta webhook', {
+      phoneNumberId,
+      hasSignature: !!signature,
+      payloadPreview: payloadString.substring(0, 200),
+    });
+
     if (!phoneNumberId) {
-      logger.error('Could not extract phone_number_id from webhook payload');
+      logger.error('Could not extract phone_number_id from webhook payload', {
+        payloadStructure: JSON.stringify(parsedPayload).substring(0, 500),
+      });
       return {
         success: false,
         eventsProcessed: 0,
@@ -223,17 +231,32 @@ export class WebhookService {
       };
     }
 
+    logger.debug('Found channel account', {
+      channelAccountId: channelAccount.id,
+      phoneNumberId: channelAccount.phoneNumberId,
+      hasEncryptedCredentials: !!channelAccount.encryptedCredentials,
+      hasCredentialsIv: !!channelAccount.credentialsIv,
+    });
+
     let appSecret: string;
     try {
       const credentials = await this.credentialService.decryptCredentials(
         channelAccount.encryptedCredentials,
         channelAccount.credentialsIv
       );
+
+      logger.debug('Decrypted credentials', {
+        channelAccountId: channelAccount.id,
+        hasAppSecret: !!credentials.appSecret,
+        credentialKeys: Object.keys(credentials),
+      });
+
       appSecret = credentials.appSecret as string;
 
       if (!appSecret) {
         logger.error('appSecret not found in channel account credentials', {
           channelAccountId: channelAccount.id,
+          availableKeys: Object.keys(credentials),
         });
         return {
           success: false,
