@@ -46,8 +46,8 @@ let ConversationMessageRepository = class ConversationMessageRepository {
         const query = this.repository
             .createQueryBuilder('message')
             .leftJoinAndSelect('message.sentBy', 'sentBy')
-            .where('message.conversation_id = :conversationId', { conversationId })
-            .orderBy('message.created_at', 'DESC');
+            .where('message.conversationId = :conversationId', { conversationId })
+            .orderBy('message.createdAt', 'DESC');
         const skip = (page - 1) * limit;
         query.skip(skip).take(limit);
         const [data, total] = await query.getManyAndCount();
@@ -223,7 +223,7 @@ let ConversationMessageRepository = class ConversationMessageRepository {
             .createQueryBuilder()
             .update(conversation_message_entity_1.ConversationMessage)
             .set(updateData)
-            .where('provider_message_id IN (:...providerMessageIds)', { providerMessageIds })
+            .where('providerMessageId IN (:...providerMessageIds)', { providerMessageIds })
             .execute();
         return result.affected ?? 0;
     }

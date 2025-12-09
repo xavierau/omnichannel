@@ -156,7 +156,7 @@ export class MessageLogRepository {
       });
     }
 
-    queryBuilder.orderBy('log.created_at', 'DESC');
+    queryBuilder.orderBy('log.createdAt', 'DESC');
 
     if (options?.limit) {
       queryBuilder.take(options.limit);
@@ -180,7 +180,7 @@ export class MessageLogRepository {
       .createQueryBuilder('log')
       .leftJoinAndSelect('log.channel', 'channel')
       .leftJoinAndSelect('log.provider', 'provider')
-      .where('log.broadcast_id = :broadcastId', { broadcastId });
+      .where('log.broadcastId = :broadcastId', { broadcastId });
 
     if (options?.status) {
       if (Array.isArray(options.status)) {
@@ -192,7 +192,7 @@ export class MessageLogRepository {
       }
     }
 
-    queryBuilder.orderBy('log.created_at', 'DESC');
+    queryBuilder.orderBy('log.createdAt', 'DESC');
 
     if (options?.limit) {
       queryBuilder.take(options.limit);

@@ -51,8 +51,8 @@ let CustomFieldRepository = class CustomFieldRepository {
             });
         }
         return queryBuilder
-            .orderBy('field.entity_type', 'ASC')
-            .addOrderBy('field.display_order', 'ASC')
+            .orderBy('field.entityType', 'ASC')
+            .addOrderBy('field.displayOrder', 'ASC')
             .getMany();
     }
     /**

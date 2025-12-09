@@ -79,7 +79,7 @@ export class InvitationRepository {
       query.take(options.take);
     }
 
-    query.orderBy('invitation.created_at', 'DESC');
+    query.orderBy('invitation.createdAt', 'DESC');
 
     return query.getManyAndCount();
   }

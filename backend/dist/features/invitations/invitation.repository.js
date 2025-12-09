@@ -68,7 +68,7 @@ let InvitationRepository = class InvitationRepository {
         if (options?.take !== undefined) {
             query.take(options.take);
         }
-        query.orderBy('invitation.created_at', 'DESC');
+        query.orderBy('invitation.createdAt', 'DESC');
         return query.getManyAndCount();
     }
     async findPendingByTenant(tenantId) {

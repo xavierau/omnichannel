@@ -291,7 +291,7 @@ export class GroupRepository {
     // Pagination
     const skip = (page - 1) * limit;
     query.skip(skip).take(limit);
-    query.orderBy('customer.created_at', 'DESC');
+    query.orderBy('customer.createdAt', 'DESC');
 
     const [data, total] = await query.getManyAndCount();
 

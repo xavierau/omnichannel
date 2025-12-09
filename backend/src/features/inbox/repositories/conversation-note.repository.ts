@@ -43,8 +43,8 @@ export class ConversationNoteRepository {
     const query = this.repository
       .createQueryBuilder('note')
       .leftJoinAndSelect('note.createdBy', 'createdBy')
-      .where('note.conversation_id = :conversationId', { conversationId })
-      .orderBy('note.created_at', 'DESC');
+      .where('note.conversationId = :conversationId', { conversationId })
+      .orderBy('note.createdAt', 'DESC');
 
     if (scope) {
       query.andWhere('note.scope = :scope', { scope });
@@ -174,11 +174,11 @@ export class ConversationNoteRepository {
       .createQueryBuilder('note')
       .leftJoinAndSelect('note.createdBy', 'createdBy')
       .leftJoinAndSelect('note.conversation', 'conversation')
-      .where('note.tenant_id = :tenantId', { tenantId })
+      .where('note.tenantId = :tenantId', { tenantId })
       .andWhere(`note.mentions @> :mention::jsonb`, {
         mention: JSON.stringify([{ userId }]),
       })
-      .orderBy('note.created_at', 'DESC')
+      .orderBy('note.createdAt', 'DESC')
       .take(limit)
       .getMany();
   }

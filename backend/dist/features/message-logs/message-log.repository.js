@@ -109,7 +109,7 @@ let MessageLogRepository = class MessageLogRepository {
                 endDate: options.endDate,
             });
         }
-        queryBuilder.orderBy('log.created_at', 'DESC');
+        queryBuilder.orderBy('log.createdAt', 'DESC');
         if (options?.limit) {
             queryBuilder.take(options.limit);
         }
@@ -126,7 +126,7 @@ let MessageLogRepository = class MessageLogRepository {
             .createQueryBuilder('log')
             .leftJoinAndSelect('log.channel', 'channel')
             .leftJoinAndSelect('log.provider', 'provider')
-            .where('log.broadcast_id = :broadcastId', { broadcastId });
+            .where('log.broadcastId = :broadcastId', { broadcastId });
         if (options?.status) {
             if (Array.isArray(options.status)) {
                 queryBuilder.andWhere('log.status IN (:...statuses)', {
@@ -137,7 +137,7 @@ let MessageLogRepository = class MessageLogRepository {
                 queryBuilder.andWhere('log.status = :status', { status: options.status });
             }
         }
-        queryBuilder.orderBy('log.created_at', 'DESC');
+        queryBuilder.orderBy('log.createdAt', 'DESC');
         if (options?.limit) {
             queryBuilder.take(options.limit);
         }
