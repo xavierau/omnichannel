@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
-import { Plus, MoreHorizontal, Pencil, Trash2, TestTube, Loader2 } from "lucide-react"
+import { Plus, MoreHorizontal, Pencil, Trash2, TestTube, Loader2, Link2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -222,6 +222,19 @@ export function ChannelsPage() {
     }
   }
 
+  const handleCopyWebhookUrl = async (config: WhatsAppConfig) => {
+    try {
+      const webhookConfig = await channelAccountService.getWebhookConfig(config.id)
+      await navigator.clipboard.writeText(webhookConfig.webhookUrl)
+      toast.success("Webhook URL copied", {
+        description: "The webhook URL has been copied to your clipboard.",
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to get webhook URL"
+      toast.error("Copy failed", { description: message })
+    }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleTestConnection = async (_data: WhatsAppFormData): Promise<TestConnectionResult> => {
     // For form-based testing (during create/edit), we can't use the service
@@ -315,6 +328,10 @@ export function ChannelsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleCopyWebhookUrl(config)}>
+                          <Link2 className="mr-2 h-4 w-4" />
+                          Copy Webhook URL
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleTestConfig(config)}
                           disabled={testingConfigId === config.id}
