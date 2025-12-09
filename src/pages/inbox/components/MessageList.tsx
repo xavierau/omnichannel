@@ -122,11 +122,17 @@ interface MessageGroup {
 /**
  * Groups messages by date for rendering with date separators.
  * Returns an array of groups, each containing a formatted date and its messages.
+ * Messages are sorted in ascending order (oldest first) for proper chat display.
  */
 function groupMessagesByDate(messages: Message[]): MessageGroup[] {
+  // Sort messages by timestamp ascending (oldest first) for proper chat order
+  const sortedMessages = [...messages].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  )
+
   const groups: Map<string, Message[]> = new Map()
 
-  messages.forEach((message) => {
+  sortedMessages.forEach((message) => {
     const dateKey = formatDateKey(message.timestamp)
     const existing = groups.get(dateKey)
     if (existing) {

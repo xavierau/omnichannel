@@ -87,15 +87,23 @@ export interface UseInboxSSEReturn {
 
 const SSE_EVENTS = {
   CONVERSATION_NEW: 'conversation:new',
-  MESSAGE_NEW: 'message:new',
-  MESSAGE_STATUS: 'message:status',
+  MESSAGE_NEW: 'conversation:message:new',
+  MESSAGE_STATUS: 'conversation:message:status',
   CONVERSATION_ASSIGNED: 'conversation:assigned',
-  STATUS_CHANGED: 'conversation:status',
-  UNREAD_UPDATED: 'conversation:unread',
+  STATUS_CHANGED: 'conversation:status:changed',
+  UNREAD_UPDATED: 'conversation:unread:updated',
   NOTE_CREATED: 'note:created',
   NOTE_UPDATED: 'note:updated',
   NOTE_DELETED: 'note:deleted',
 } as const
+
+// Debug logging helper
+const SSE_DEBUG = true
+const sseLog = (message: string, ...args: unknown[]) => {
+  if (SSE_DEBUG) {
+    console.log(`[SSE] ${message}`, ...args)
+  }
+}
 
 // ============================================================================
 // Hook Implementation
@@ -213,7 +221,10 @@ export function useInboxSSE({
   }, [])
 
   const connect = useCallback(() => {
-    if (!enabled || !mountedRef.current) return
+    if (!enabled || !mountedRef.current) {
+      sseLog('Connect skipped', { enabled, mounted: mountedRef.current })
+      return
+    }
 
     cleanup()
 
@@ -223,67 +234,93 @@ export function useInboxSSE({
       ? `/api/inbox/stream?token=${encodeURIComponent(token)}`
       : '/api/inbox/stream'
 
+    sseLog('Connecting to SSE', { url: sseUrl, hasToken: !!token })
+
     const eventSource = new EventSource(sseUrl)
     eventSourceRef.current = eventSource
 
+    // Log readyState changes
+    sseLog('EventSource created', { readyState: eventSource.readyState })
+
     // Connection opened
     eventSource.onopen = () => {
+      sseLog('Connection opened', { readyState: eventSource.readyState })
       if (!mountedRef.current) return
       setIsConnected(true)
       setError(null)
       setReconnectAttempts(0)
     }
 
+    // Listen for ALL messages (generic handler for debugging)
+    eventSource.onmessage = (event) => {
+      sseLog('Generic message received', { type: event.type, data: event.data })
+    }
+
     // Register named event listeners
+    sseLog('Registering event listeners for:', Object.values(SSE_EVENTS))
+
     eventSource.addEventListener(SSE_EVENTS.CONVERSATION_NEW, (event) => {
+      sseLog(`Event received: ${SSE_EVENTS.CONVERSATION_NEW}`, event.data)
       if (!mountedRef.current) return
       const data = parseEventData<ConversationNewEvent>(event)
       if (data) callbacksRef.current.onConversationNew?.(data)
     })
 
     eventSource.addEventListener(SSE_EVENTS.MESSAGE_NEW, (event) => {
+      sseLog(`Event received: ${SSE_EVENTS.MESSAGE_NEW}`, event.data)
       if (!mountedRef.current) return
       const data = parseEventData<MessageNewEvent>(event)
-      if (data) callbacksRef.current.onMessageNew?.(data)
+      sseLog('Parsed MESSAGE_NEW data:', data)
+      if (data) {
+        sseLog('Calling onMessageNew callback', { hasCallback: !!callbacksRef.current.onMessageNew })
+        callbacksRef.current.onMessageNew?.(data)
+      }
     })
 
     eventSource.addEventListener(SSE_EVENTS.MESSAGE_STATUS, (event) => {
+      sseLog(`Event received: ${SSE_EVENTS.MESSAGE_STATUS}`, event.data)
       if (!mountedRef.current) return
       const data = parseEventData<MessageStatusEvent>(event)
       if (data) callbacksRef.current.onMessageStatus?.(data)
     })
 
     eventSource.addEventListener(SSE_EVENTS.CONVERSATION_ASSIGNED, (event) => {
+      sseLog(`Event received: ${SSE_EVENTS.CONVERSATION_ASSIGNED}`, event.data)
       if (!mountedRef.current) return
       const data = parseEventData<ConversationAssignedEvent>(event)
       if (data) callbacksRef.current.onConversationAssigned?.(data)
     })
 
     eventSource.addEventListener(SSE_EVENTS.STATUS_CHANGED, (event) => {
+      sseLog(`Event received: ${SSE_EVENTS.STATUS_CHANGED}`, event.data)
       if (!mountedRef.current) return
       const data = parseEventData<StatusChangedEvent>(event)
       if (data) callbacksRef.current.onStatusChanged?.(data)
     })
 
     eventSource.addEventListener(SSE_EVENTS.UNREAD_UPDATED, (event) => {
+      sseLog(`Event received: ${SSE_EVENTS.UNREAD_UPDATED}`, event.data)
       if (!mountedRef.current) return
       const data = parseEventData<UnreadUpdatedEvent>(event)
       if (data) callbacksRef.current.onUnreadUpdated?.(data)
     })
 
     eventSource.addEventListener(SSE_EVENTS.NOTE_CREATED, (event) => {
+      sseLog(`Event received: ${SSE_EVENTS.NOTE_CREATED}`, event.data)
       if (!mountedRef.current) return
       const data = parseEventData<NoteCreatedEvent>(event)
       if (data) callbacksRef.current.onNoteCreated?.(data)
     })
 
     eventSource.addEventListener(SSE_EVENTS.NOTE_UPDATED, (event) => {
+      sseLog(`Event received: ${SSE_EVENTS.NOTE_UPDATED}`, event.data)
       if (!mountedRef.current) return
       const data = parseEventData<NoteUpdatedEvent>(event)
       if (data) callbacksRef.current.onNoteUpdated?.(data)
     })
 
     eventSource.addEventListener(SSE_EVENTS.NOTE_DELETED, (event) => {
+      sseLog(`Event received: ${SSE_EVENTS.NOTE_DELETED}`, event.data)
       if (!mountedRef.current) return
       const data = parseEventData<NoteDeletedEvent>(event)
       if (data) callbacksRef.current.onNoteDeleted?.(data)
@@ -291,6 +328,10 @@ export function useInboxSSE({
 
     // Error handling with reconnection
     eventSource.onerror = (errorEvent: Event) => {
+      sseLog('Connection error', {
+        readyState: eventSource.readyState,
+        error: errorEvent
+      })
       if (!mountedRef.current) return
 
       setIsConnected(false)
@@ -306,11 +347,15 @@ export function useInboxSSE({
         const newAttempts = prev + 1
         if (newAttempts <= maxReconnectAttempts) {
           const delay = reconnectInterval * Math.pow(2, newAttempts - 1)
+          sseLog(`Scheduling reconnect attempt ${newAttempts}/${maxReconnectAttempts} in ${delay}ms`)
           reconnectTimeoutRef.current = setTimeout(() => {
             if (mountedRef.current) {
+              sseLog(`Reconnecting... attempt ${newAttempts}`)
               connectRef.current()
             }
           }, delay)
+        } else {
+          sseLog('Max reconnect attempts reached, giving up')
         }
         return newAttempts
       })
@@ -324,6 +369,7 @@ export function useInboxSSE({
 
   // Initial connection and cleanup
   useEffect(() => {
+    sseLog('Hook mounted', { enabled })
     mountedRef.current = true
 
     if (enabled) {
@@ -331,6 +377,7 @@ export function useInboxSSE({
     }
 
     return () => {
+      sseLog('Hook unmounting, cleaning up')
       mountedRef.current = false
       cleanup()
       setIsConnected(false)
