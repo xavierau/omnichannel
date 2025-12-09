@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Deploy script for Omnichannel application
+# Usage:
+#   ./deploy.sh              # Incremental update (migrations only)
+#   ./deploy.sh --refresh    # Full reset (drop tables, migrate, reseed)
+
 set -e
 
 # Colors for output
@@ -8,64 +13,117 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Get the directory where the script is located
+# Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+BACKEND_DIR="$SCRIPT_DIR/backend"
+FRONTEND_DIR="$SCRIPT_DIR"
 
-log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
+# Database configuration (override with environment variables)
+DB_NAME="${DATABASE_NAME:-omnichannel_db}"
+DB_USER="${DATABASE_USER:-postgres}"
+DB_PASSWORD="${DATABASE_PASSWORD:-password}"
+DB_HOST="${DATABASE_HOST:-localhost}"
+DB_PORT="${DATABASE_PORT:-5432}"
 
-log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
+# Parse arguments
+REFRESH_MODE=false
+for arg in "$@"; do
+    case $arg in
+        --refresh)
+            REFRESH_MODE=true
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: ./deploy.sh [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  --refresh    Drop all tables and reseed (WARNING: destroys all data)"
+            echo "  --help, -h   Show this help message"
+            echo ""
+            echo "Without options, performs incremental update (git pull, build, migrate)"
+            exit 0
+            ;;
+    esac
+done
 
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
+echo -e "${GREEN}🚀 Starting deployment...${NC}"
+echo ""
 
-# Check if pm2 is installed
-if ! command -v pm2 &> /dev/null; then
-    log_error "PM2 is not installed. Please install it with: npm install -g pm2"
-    exit 1
-fi
+# Step 1: Pull latest code
+echo -e "${YELLOW}📥 Pulling latest code...${NC}"
+git pull origin develop
 
-log_info "Starting deployment..."
+# Step 2: Install dependencies if package-lock changed
+echo -e "${YELLOW}📦 Checking dependencies...${NC}"
+cd "$BACKEND_DIR"
+npm ci --prefer-offline 2>/dev/null || npm install
 
-# Step 1: Pull latest changes from GitHub (includes pre-built dist folders)
-log_info "Pulling latest changes from GitHub..."
-git pull origin "$(git rev-parse --abbrev-ref HEAD)"
+cd "$FRONTEND_DIR"
+npm ci --prefer-offline 2>/dev/null || npm install
 
-# Step 2: Install frontend dependencies (production only)
-log_info "Installing frontend dependencies..."
-npm ci --omit=dev
+# Step 3: Build frontend
+echo -e "${YELLOW}🏗️  Building frontend...${NC}"
+cd "$FRONTEND_DIR"
+npm run build
 
-# Step 3: Install backend dependencies (production only)
-log_info "Installing backend dependencies..."
-cd backend
-npm ci --omit=dev
+# Step 4: Build backend
+echo -e "${YELLOW}🏗️  Building backend...${NC}"
+cd "$BACKEND_DIR"
+npm run build
 
-# Step 4: Run database migrations (using compiled JS)
-log_info "Running database migrations..."
-npm run migration:run:prod
+# Step 5: Database operations
+if [ "$REFRESH_MODE" = true ]; then
+    echo ""
+    echo -e "${RED}⚠️  REFRESH MODE: This will DELETE ALL DATA!${NC}"
+    read -p "Are you sure you want to continue? (type 'yes' to confirm): " confirm
 
-# Step 5: Return to root directory
-cd "$SCRIPT_DIR"
+    if [ "$confirm" != "yes" ]; then
+        echo -e "${YELLOW}Aborted.${NC}"
+        exit 1
+    fi
 
-# Step 6: Create logs directory if it doesn't exist
-mkdir -p logs
+    echo -e "${YELLOW}🗑️  Dropping all tables...${NC}"
+    PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" << 'EOF'
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+    END LOOP;
+    FOR r IN (SELECT typname FROM pg_type t JOIN pg_namespace n ON t.typnamespace = n.oid
+              WHERE n.nspname = 'public' AND t.typtype = 'e') LOOP
+        EXECUTE 'DROP TYPE IF EXISTS ' || quote_ident(r.typname) || ' CASCADE';
+    END LOOP;
+END $$;
+EOF
 
-# Step 7: Restart PM2
-log_info "Restarting PM2 processes..."
-if pm2 describe omnichannel-backend > /dev/null 2>&1; then
-    pm2 reload ecosystem.config.cjs --env production
+    echo -e "${GREEN}✅ All tables dropped${NC}"
+
+    echo -e "${YELLOW}🔄 Running migrations...${NC}"
+    npm run migration:run
+
+    echo -e "${YELLOW}🌱 Seeding database...${NC}"
+    npm run seed
+
+    echo -e "${GREEN}✅ Database refreshed and seeded${NC}"
 else
-    pm2 start ecosystem.config.cjs --env production
+    echo -e "${YELLOW}🔄 Running migrations...${NC}"
+    npm run migration:run
 fi
 
-# Step 8: Save PM2 process list
-pm2 save
+# Step 6: Restart services
+echo -e "${YELLOW}🔄 Restarting services...${NC}"
+if command -v pm2 &> /dev/null; then
+    pm2 restart all 2>/dev/null || echo -e "${YELLOW}Note: No PM2 processes found${NC}"
+else
+    echo -e "${YELLOW}Note: PM2 not found. Restart your backend manually.${NC}"
+fi
 
-log_info "Deployment completed successfully!"
-log_info "View logs with: pm2 logs omnichannel-backend"
-log_info "Check status with: pm2 status"
+echo ""
+echo -e "${GREEN}✅ Deployment complete!${NC}"
+
+if [ "$REFRESH_MODE" = true ]; then
+    echo ""
+    echo -e "${YELLOW}📝 Next: Register a new account to create your tenant and admin user.${NC}"
+fi
