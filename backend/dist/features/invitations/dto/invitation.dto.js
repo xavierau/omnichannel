@@ -11,7 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ResendInvitationDto = exports.ValidateInvitationDto = exports.AcceptInvitationDto = exports.CreateInvitationDto = void 0;
 const class_validator_1 = require("class-validator");
-const constants_1 = require("@config/constants");
+const constants_1 = require("../../../config/constants");
 class CreateInvitationDto {
     email;
 }

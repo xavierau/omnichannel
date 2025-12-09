@@ -42,7 +42,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmailService = void 0;
 const tsyringe_1 = require("tsyringe");
 const nodemailer = __importStar(require("nodemailer"));
-const logger_config_1 = require("@config/logger.config");
+const logger_config_1 = require("../../config/logger.config");
 /**
  * Email service for sending invitation emails.
  *

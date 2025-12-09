@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 require("reflect-metadata");
-const database_config_1 = require("@config/database.config");
+const database_config_1 = require("../../config/database.config");
 const permissions_seed_1 = require("./permissions.seed");
 const roles_seed_1 = require("./roles.seed");
 const admin_user_seed_1 = require("./admin-user.seed");

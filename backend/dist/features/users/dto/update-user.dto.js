@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserRolesDto = exports.UpdatePasswordDto = exports.UpdateUserDto = void 0;
 const class_validator_1 = require("class-validator");
 const user_entity_1 = require("../user.entity");
-const constants_1 = require("@config/constants");
+const constants_1 = require("../../../config/constants");
 class UpdateUserDto {
     firstName;
     lastName;

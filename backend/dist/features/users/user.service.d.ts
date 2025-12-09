@@ -2,7 +2,7 @@ import { UserRepository } from './user.repository';
 import { User, UserStatus } from './user.entity';
 import { PasswordService } from './password.service';
 import { PermissionService } from './permission.service';
-import { RoleRepository } from '@features/roles/role.repository';
+import { RoleRepository } from '../roles/role.repository';
 export declare class UserService {
     private userRepo;
     private passwordService;

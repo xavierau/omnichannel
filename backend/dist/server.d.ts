@@ -1,2 +1,2 @@
 import 'reflect-metadata';
-import '@config/env.config';
+import './config/env.config';

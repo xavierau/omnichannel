@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only src/server.ts",
-    "build": "tsc",
-    "build:production": "NODE_ENV=production tsc",
+    "build": "tsc && tsc-alias",
+    "build:production": "NODE_ENV=production tsc && tsc-alias",
     "start": "node dist/server.js",
     "start:production": "NODE_ENV=production node dist/server.js",
     "migration:generate": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d src/config/database.config.ts",
@@ -83,6 +83,7 @@
     "swagger-ui-express": "^5.0.1",
     "ts-jest": "^29.4.6",
     "ts-node-dev": "^2.0.0",
+    "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3"
   }

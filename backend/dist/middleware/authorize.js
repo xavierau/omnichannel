@@ -2,10 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requireOwnerOrPermission = exports.requireAllPermissions = exports.requireAnyPermission = exports.requirePermission = exports.requireRoleLevel = exports.requireRole = exports.RoleLevel = void 0;
 const tsyringe_1 = require("tsyringe");
-const permission_service_1 = require("@features/users/permission.service");
-const http_exceptions_1 = require("@shared/exceptions/http-exceptions");
-const logger_config_1 = require("@config/logger.config");
-const permission_entity_1 = require("@features/permissions/permission.entity");
+const permission_service_1 = require("../features/users/permission.service");
+const http_exceptions_1 = require("../shared/exceptions/http-exceptions");
+const logger_config_1 = require("../config/logger.config");
+const permission_entity_1 = require("../features/permissions/permission.entity");
 /**
  * Role levels (lower number = more privileged)
  */

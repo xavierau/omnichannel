@@ -4,9 +4,9 @@ exports.LocalStrategy = void 0;
 const passport_local_1 = require("passport-local");
 const tsyringe_1 = require("tsyringe");
 const auth_service_1 = require("../auth.service");
-const user_service_1 = require("@features/users/user.service");
-const constants_1 = require("@config/constants");
-const logger_config_1 = require("@config/logger.config");
+const user_service_1 = require("../../users/user.service");
+const constants_1 = require("../../../config/constants");
+const logger_config_1 = require("../../../config/logger.config");
 class LocalStrategy extends passport_local_1.Strategy {
     constructor() {
         super({

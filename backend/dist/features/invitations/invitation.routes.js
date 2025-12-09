@@ -4,12 +4,12 @@ exports.createInvitationRoutes = createInvitationRoutes;
 const express_1 = require("express");
 const tsyringe_1 = require("tsyringe");
 const invitation_controller_1 = require("./invitation.controller");
-const authenticate_1 = require("@middleware/authenticate");
-const validate_dto_1 = require("@middleware/validate-dto");
-const csrf_protection_1 = require("@middleware/csrf-protection");
-const authorize_1 = require("@middleware/authorize");
-const require_tenant_1 = require("@middleware/require-tenant");
-const rate_limiter_1 = require("@middleware/rate-limiter");
+const authenticate_1 = require("../../middleware/authenticate");
+const validate_dto_1 = require("../../middleware/validate-dto");
+const csrf_protection_1 = require("../../middleware/csrf-protection");
+const authorize_1 = require("../../middleware/authorize");
+const require_tenant_1 = require("../../middleware/require-tenant");
+const rate_limiter_1 = require("../../middleware/rate-limiter");
 const invitation_dto_1 = require("./dto/invitation.dto");
 /**
  * Create invitation routes.

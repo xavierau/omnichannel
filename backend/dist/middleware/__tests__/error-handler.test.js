@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const error_handler_1 = require("../error-handler");
-const HttpException_1 = require("@shared/exceptions/HttpException");
-const logger_config_1 = require("@config/logger.config");
+const HttpException_1 = require("../../shared/exceptions/HttpException");
+const logger_config_1 = require("../../config/logger.config");
 // Mock the logger
 jest.mock('@config/logger.config', () => ({
     logger: {

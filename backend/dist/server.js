@@ -3,14 +3,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 require("reflect-metadata"); // Required for TypeORM and tsyringe
 // Load environment variables FIRST (before DI container needs them)
 // This must be imported before any other config files
-require("@config/env.config");
+require("./config/env.config");
 // Initialize DI container BEFORE importing anything that uses it
-const di_container_1 = require("@config/di.container");
+const di_container_1 = require("./config/di.container");
 const app_1 = require("./app");
-const database_config_1 = require("@config/database.config");
+const database_config_1 = require("./config/database.config");
 const jobs_1 = require("./jobs");
-const logger_config_1 = require("@config/logger.config");
-const PORT = parseInt(process.env.PORT || '3000', 10);
+const logger_config_1 = require("./config/logger.config");
+const PORT = parseInt(process.env.PORT || '3142', 10);
 // Scheduler check interval (default: 60 seconds)
 const SCHEDULER_INTERVAL_MS = parseInt(process.env.SCHEDULER_INTERVAL_MS || '60000', 10);
 // Job services - initialized after DI container setup

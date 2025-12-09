@@ -15,8 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TeamController = void 0;
 const tsyringe_1 = require("tsyringe");
 const team_service_1 = require("./services/team.service");
-const async_handler_1 = require("@middleware/async-handler");
-const http_exceptions_1 = require("@shared/exceptions/http-exceptions");
+const async_handler_1 = require("../../middleware/async-handler");
+const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
 const enums_1 = require("./enums");
 /**
  * Controller for team management operations.

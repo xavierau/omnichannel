@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PermissionController = void 0;
 const tsyringe_1 = require("tsyringe");
 const permission_service_1 = require("./permission.service");
-const async_handler_1 = require("@middleware/async-handler");
+const async_handler_1 = require("../../middleware/async-handler");
 const permission_dto_1 = require("./dto/permission.dto");
 let PermissionController = class PermissionController {
     permissionService;

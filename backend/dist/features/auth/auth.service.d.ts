@@ -1,9 +1,9 @@
-import { UserService } from '@features/users/user.service';
-import { UserRepository } from '@features/users/user.repository';
+import { UserService } from '../users/user.service';
+import { UserRepository } from '../users/user.repository';
 import { RefreshTokenRepository } from './refresh-token.repository';
-import { TenantService } from '@features/tenants/tenant.service';
-import { RoleRepository } from '@features/roles/role.repository';
-import { User } from '@features/users/user.entity';
+import { TenantService } from '../tenants/tenant.service';
+import { RoleRepository } from '../roles/role.repository';
+import { User } from '../users/user.entity';
 interface TokenPair {
     accessToken: string;
     refreshToken: string;

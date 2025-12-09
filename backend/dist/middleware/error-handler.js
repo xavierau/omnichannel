@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.errorHandler = errorHandler;
 exports.asyncErrorHandler = asyncErrorHandler;
-const HttpException_1 = require("@shared/exceptions/HttpException");
-const logger_config_1 = require("@config/logger.config");
+const HttpException_1 = require("../shared/exceptions/HttpException");
+const logger_config_1 = require("../config/logger.config");
 const request_context_1 = require("./request-context");
 /**
  * Extracts user ID from request if available.

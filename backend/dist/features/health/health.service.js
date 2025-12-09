@@ -19,7 +19,7 @@ exports.HealthService = void 0;
 const tsyringe_1 = require("tsyringe");
 const typeorm_1 = require("typeorm");
 const ioredis_1 = __importDefault(require("ioredis"));
-const logger_config_1 = require("@config/logger.config");
+const logger_config_1 = require("../../config/logger.config");
 /**
  * Health check timeout in milliseconds.
  * Keeps health checks fast to avoid blocking monitoring tools.

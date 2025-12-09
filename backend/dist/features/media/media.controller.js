@@ -15,8 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MediaController = void 0;
 const tsyringe_1 = require("tsyringe");
 const media_service_1 = require("./media.service");
-const async_handler_1 = require("@middleware/async-handler");
-const http_exceptions_1 = require("@shared/exceptions/http-exceptions");
+const async_handler_1 = require("../../middleware/async-handler");
+const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
 const media_entity_1 = require("./media.entity");
 /**
  * Media Controller

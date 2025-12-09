@@ -3,9 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.JwtStrategy = void 0;
 const passport_jwt_1 = require("passport-jwt");
 const tsyringe_1 = require("tsyringe");
-const user_service_1 = require("@features/users/user.service");
-const redis_config_1 = require("@config/redis.config");
-const constants_1 = require("@config/constants");
+const user_service_1 = require("../../users/user.service");
+const redis_config_1 = require("../../../config/redis.config");
+const constants_1 = require("../../../config/constants");
 class JwtStrategy extends passport_jwt_1.Strategy {
     constructor() {
         super({

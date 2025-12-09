@@ -16,7 +16,7 @@ exports.TemplateController = void 0;
 const tsyringe_1 = require("tsyringe");
 const template_service_1 = require("./template.service");
 const template_sse_service_1 = require("./template-sse.service");
-const async_handler_1 = require("@middleware/async-handler");
+const async_handler_1 = require("../../middleware/async-handler");
 const template_presenter_1 = require("./template.presenter");
 let TemplateController = class TemplateController {
     templateService;

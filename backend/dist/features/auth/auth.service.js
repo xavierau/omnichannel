@@ -49,17 +49,17 @@ exports.AuthService = void 0;
 const tsyringe_1 = require("tsyringe");
 const jwt = __importStar(require("jsonwebtoken"));
 const crypto = __importStar(require("crypto"));
-const user_service_1 = require("@features/users/user.service");
-const user_repository_1 = require("@features/users/user.repository");
+const user_service_1 = require("../users/user.service");
+const user_repository_1 = require("../users/user.repository");
 const refresh_token_repository_1 = require("./refresh-token.repository");
-const tenant_service_1 = require("@features/tenants/tenant.service");
-const role_repository_1 = require("@features/roles/role.repository");
-const user_entity_1 = require("@features/users/user.entity");
-const constants_1 = require("@config/constants");
-const database_config_1 = require("@config/database.config");
-const http_exceptions_1 = require("@shared/exceptions/http-exceptions");
-const logger_config_1 = require("@config/logger.config");
-const slug_utils_1 = require("@shared/utils/slug.utils");
+const tenant_service_1 = require("../tenants/tenant.service");
+const role_repository_1 = require("../roles/role.repository");
+const user_entity_1 = require("../users/user.entity");
+const constants_1 = require("../../config/constants");
+const database_config_1 = require("../../config/database.config");
+const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
+const logger_config_1 = require("../../config/logger.config");
+const slug_utils_1 = require("../../shared/utils/slug.utils");
 /**
  * Security constants for timing attack prevention
  */

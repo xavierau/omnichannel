@@ -34,9 +34,9 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.seedAdminUser = seedAdminUser;
-const database_config_1 = require("@config/database.config");
-const user_entity_1 = require("@features/users/user.entity");
-const role_entity_1 = require("@features/roles/role.entity");
+const database_config_1 = require("../../config/database.config");
+const user_entity_1 = require("../../features/users/user.entity");
+const role_entity_1 = require("../../features/roles/role.entity");
 const argon2 = __importStar(require("argon2"));
 async function seedAdminUser() {
     console.log('👤 Seeding default admin user...');

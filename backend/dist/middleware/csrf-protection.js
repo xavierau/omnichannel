@@ -7,7 +7,7 @@ exports.getCsrfToken = exports.csrfProtect = exports.csrfValidateToken = exports
 exports.generateCsrfToken = generateCsrfToken;
 exports.createCsrfProtection = createCsrfProtection;
 const crypto_1 = __importDefault(require("crypto"));
-const http_exceptions_1 = require("@shared/exceptions/http-exceptions");
+const http_exceptions_1 = require("../shared/exceptions/http-exceptions");
 const DEFAULT_OPTIONS = {
     cookieName: 'csrf_token',
     headerName: 'X-CSRF-Token',

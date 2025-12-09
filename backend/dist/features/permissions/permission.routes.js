@@ -3,8 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const tsyringe_1 = require("tsyringe");
 const permission_controller_1 = require("./permission.controller");
-const authenticate_1 = require("@middleware/authenticate");
-const authorize_1 = require("@middleware/authorize");
+const authenticate_1 = require("../../middleware/authenticate");
+const authorize_1 = require("../../middleware/authorize");
 const router = (0, express_1.Router)();
 const controller = tsyringe_1.container.resolve(permission_controller_1.PermissionController);
 // All routes require authentication

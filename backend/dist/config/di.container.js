@@ -7,82 +7,82 @@ Object.defineProperty(exports, "container", { enumerable: true, get: function ()
 // Redis Client
 const redis_config_1 = require("./redis.config");
 // Repositories
-const customer_repository_1 = require("@features/customers/customer.repository");
-const tag_repository_1 = require("@features/tags/tag.repository");
-const broadcast_repository_1 = require("@features/broadcasts/broadcast.repository");
-const template_repository_1 = require("@features/templates/template.repository");
-const group_repository_1 = require("@features/groups/group.repository");
-const media_repository_1 = require("@features/media/media.repository");
+const customer_repository_1 = require("../features/customers/customer.repository");
+const tag_repository_1 = require("../features/tags/tag.repository");
+const broadcast_repository_1 = require("../features/broadcasts/broadcast.repository");
+const template_repository_1 = require("../features/templates/template.repository");
+const group_repository_1 = require("../features/groups/group.repository");
+const media_repository_1 = require("../features/media/media.repository");
 // Channel/Provider Repositories
-const channel_repository_1 = require("@features/channels/channel.repository");
-const provider_repository_1 = require("@features/providers/provider.repository");
-const channel_account_repository_1 = require("@features/channel-accounts/channel-account.repository");
-const message_log_repository_1 = require("@features/message-logs/message-log.repository");
+const channel_repository_1 = require("../features/channels/channel.repository");
+const provider_repository_1 = require("../features/providers/provider.repository");
+const channel_account_repository_1 = require("../features/channel-accounts/channel-account.repository");
+const message_log_repository_1 = require("../features/message-logs/message-log.repository");
 // Services
-const customer_service_1 = require("@features/customers/customer.service");
-const tag_service_1 = require("@features/tags/tag.service");
-const broadcast_service_1 = require("@features/broadcasts/broadcast.service");
-const broadcast_sse_service_1 = require("@features/broadcasts/broadcast-sse.service");
-const broadcast_export_service_1 = require("@features/broadcasts/broadcast-export.service");
-const template_service_1 = require("@features/templates/template.service");
-const template_sse_service_1 = require("@features/templates/template-sse.service");
-const group_service_1 = require("@features/groups/group.service");
-const media_service_1 = require("@features/media/media.service");
+const customer_service_1 = require("../features/customers/customer.service");
+const tag_service_1 = require("../features/tags/tag.service");
+const broadcast_service_1 = require("../features/broadcasts/broadcast.service");
+const broadcast_sse_service_1 = require("../features/broadcasts/broadcast-sse.service");
+const broadcast_export_service_1 = require("../features/broadcasts/broadcast-export.service");
+const template_service_1 = require("../features/templates/template.service");
+const template_sse_service_1 = require("../features/templates/template-sse.service");
+const group_service_1 = require("../features/groups/group.service");
+const media_service_1 = require("../features/media/media.service");
 // Messaging Services
-const credential_service_1 = require("@features/messaging/services/credential.service");
-const provider_registry_1 = require("@features/messaging/provider-registry");
-const provider_factory_1 = require("@features/messaging/provider-factory");
-const messaging_service_1 = require("@features/messaging/services/messaging.service");
-const meta_media_service_1 = require("@features/messaging/services/meta-media.service");
-const rate_limiter_service_1 = require("@features/messaging/services/rate-limiter.service");
-const register_providers_1 = require("@features/messaging/register-providers");
+const credential_service_1 = require("../features/messaging/services/credential.service");
+const provider_registry_1 = require("../features/messaging/provider-registry");
+const provider_factory_1 = require("../features/messaging/provider-factory");
+const messaging_service_1 = require("../features/messaging/services/messaging.service");
+const meta_media_service_1 = require("../features/messaging/services/meta-media.service");
+const rate_limiter_service_1 = require("../features/messaging/services/rate-limiter.service");
+const register_providers_1 = require("../features/messaging/register-providers");
 // Channel Account Services
-const channel_account_service_1 = require("@features/channel-accounts/channel-account.service");
+const channel_account_service_1 = require("../features/channel-accounts/channel-account.service");
 // Webhook Services
-const webhook_service_1 = require("@features/webhooks/webhook.service");
+const webhook_service_1 = require("../features/webhooks/webhook.service");
 // Controllers
-const customer_controller_1 = require("@features/customers/customer.controller");
-const tag_controller_1 = require("@features/tags/tag.controller");
-const broadcast_controller_1 = require("@features/broadcasts/broadcast.controller");
-const template_controller_1 = require("@features/templates/template.controller");
-const group_controller_1 = require("@features/groups/group.controller");
-const media_controller_1 = require("@features/media/media.controller");
+const customer_controller_1 = require("../features/customers/customer.controller");
+const tag_controller_1 = require("../features/tags/tag.controller");
+const broadcast_controller_1 = require("../features/broadcasts/broadcast.controller");
+const template_controller_1 = require("../features/templates/template.controller");
+const group_controller_1 = require("../features/groups/group.controller");
+const media_controller_1 = require("../features/media/media.controller");
 // Channel Account Controllers
-const channel_account_controller_1 = require("@features/channel-accounts/channel-account.controller");
+const channel_account_controller_1 = require("../features/channel-accounts/channel-account.controller");
 // Webhook Controllers
-const webhook_controller_1 = require("@features/webhooks/webhook.controller");
+const webhook_controller_1 = require("../features/webhooks/webhook.controller");
 // Jobs
 const broadcast_queue_1 = require("../jobs/broadcast.queue");
 const broadcast_scheduler_1 = require("../jobs/broadcast.scheduler");
 const inbox_message_queue_1 = require("../jobs/inbox-message.queue");
 // Teams
-const team_repository_1 = require("@features/teams/repositories/team.repository");
-const team_member_repository_1 = require("@features/teams/repositories/team-member.repository");
-const team_channel_account_repository_1 = require("@features/teams/repositories/team-channel-account.repository");
-const team_service_1 = require("@features/teams/services/team.service");
-const team_controller_1 = require("@features/teams/team.controller");
+const team_repository_1 = require("../features/teams/repositories/team.repository");
+const team_member_repository_1 = require("../features/teams/repositories/team-member.repository");
+const team_channel_account_repository_1 = require("../features/teams/repositories/team-channel-account.repository");
+const team_service_1 = require("../features/teams/services/team.service");
+const team_controller_1 = require("../features/teams/team.controller");
 // Inbox
-const conversation_repository_1 = require("@features/inbox/repositories/conversation.repository");
-const conversation_message_repository_1 = require("@features/inbox/repositories/conversation-message.repository");
-const conversation_note_repository_1 = require("@features/inbox/repositories/conversation-note.repository");
-const conversation_assignment_repository_1 = require("@features/inbox/repositories/conversation-assignment.repository");
-const conversation_service_1 = require("@features/inbox/services/conversation.service");
-const inbox_note_service_1 = require("@features/inbox/services/inbox-note.service");
-const inbox_sse_service_1 = require("@features/inbox/services/inbox-sse.service");
-const messaging_window_service_1 = require("@features/inbox/services/messaging-window.service");
-const inbox_controller_1 = require("@features/inbox/inbox.controller");
+const conversation_repository_1 = require("../features/inbox/repositories/conversation.repository");
+const conversation_message_repository_1 = require("../features/inbox/repositories/conversation-message.repository");
+const conversation_note_repository_1 = require("../features/inbox/repositories/conversation-note.repository");
+const conversation_assignment_repository_1 = require("../features/inbox/repositories/conversation-assignment.repository");
+const conversation_service_1 = require("../features/inbox/services/conversation.service");
+const inbox_note_service_1 = require("../features/inbox/services/inbox-note.service");
+const inbox_sse_service_1 = require("../features/inbox/services/inbox-sse.service");
+const messaging_window_service_1 = require("../features/inbox/services/messaging-window.service");
+const inbox_controller_1 = require("../features/inbox/inbox.controller");
 // Health
-const health_service_1 = require("@features/health/health.service");
-const health_controller_1 = require("@features/health/health.controller");
+const health_service_1 = require("../features/health/health.service");
+const health_controller_1 = require("../features/health/health.controller");
 // Custom Fields
-const custom_field_repository_1 = require("@features/custom-fields/custom-field.repository");
-const custom_field_service_1 = require("@features/custom-fields/custom-field.service");
-const custom_field_controller_1 = require("@features/custom-fields/custom-field.controller");
+const custom_field_repository_1 = require("../features/custom-fields/custom-field.repository");
+const custom_field_service_1 = require("../features/custom-fields/custom-field.service");
+const custom_field_controller_1 = require("../features/custom-fields/custom-field.controller");
 // Invitations
-const invitation_repository_1 = require("@features/invitations/invitation.repository");
-const email_service_1 = require("@features/invitations/email.service");
-const invitation_service_1 = require("@features/invitations/invitation.service");
-const invitation_controller_1 = require("@features/invitations/invitation.controller");
+const invitation_repository_1 = require("../features/invitations/invitation.repository");
+const email_service_1 = require("../features/invitations/email.service");
+const invitation_service_1 = require("../features/invitations/invitation.service");
+const invitation_controller_1 = require("../features/invitations/invitation.controller");
 // Database
 const database_config_1 = require("./database.config");
 // Register Repositories

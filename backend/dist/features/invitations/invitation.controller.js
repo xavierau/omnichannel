@@ -15,10 +15,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.InvitationController = void 0;
 const tsyringe_1 = require("tsyringe");
 const invitation_service_1 = require("./invitation.service");
-const async_handler_1 = require("@middleware/async-handler");
+const async_handler_1 = require("../../middleware/async-handler");
 const invitation_entity_1 = require("./invitation.entity");
-const logger_config_1 = require("@config/logger.config");
-const http_exceptions_1 = require("@shared/exceptions/http-exceptions");
+const logger_config_1 = require("../../config/logger.config");
+const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
 /**
  * Generic error messages for invitation endpoints.
  * Using consistent messages prevents information leakage.

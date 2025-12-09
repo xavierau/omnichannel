@@ -51,14 +51,14 @@ const crypto = __importStar(require("crypto"));
 const invitation_repository_1 = require("./invitation.repository");
 const invitation_entity_1 = require("./invitation.entity");
 const email_service_1 = require("./email.service");
-const user_service_1 = require("@features/users/user.service");
-const user_repository_1 = require("@features/users/user.repository");
-const role_repository_1 = require("@features/roles/role.repository");
-const tenant_service_1 = require("@features/tenants/tenant.service");
-const constants_1 = require("@config/constants");
-const logger_config_1 = require("@config/logger.config");
-const database_config_1 = require("@config/database.config");
-const http_exceptions_1 = require("@shared/exceptions/http-exceptions");
+const user_service_1 = require("../users/user.service");
+const user_repository_1 = require("../users/user.repository");
+const role_repository_1 = require("../roles/role.repository");
+const tenant_service_1 = require("../tenants/tenant.service");
+const constants_1 = require("../../config/constants");
+const logger_config_1 = require("../../config/logger.config");
+const database_config_1 = require("../../config/database.config");
+const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
 /**
  * Security constants for timing attack prevention
  */

@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CustomerController = void 0;
 const tsyringe_1 = require("tsyringe");
 const customer_service_1 = require("./customer.service");
-const async_handler_1 = require("@middleware/async-handler");
+const async_handler_1 = require("../../middleware/async-handler");
 const customer_presenter_1 = require("./customer.presenter");
 let CustomerController = class CustomerController {
     customerService;

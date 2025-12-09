@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const supertest_1 = __importDefault(require("supertest"));
 const express_1 = __importDefault(require("express"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
-const csrf_protection_1 = require("@middleware/csrf-protection");
+const csrf_protection_1 = require("../../../middleware/csrf-protection");
 describe('CSRF Protection Integration Tests', () => {
     let app;
     beforeEach(() => {

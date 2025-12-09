@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RoleController = void 0;
 const tsyringe_1 = require("tsyringe");
 const role_service_1 = require("./role.service");
-const async_handler_1 = require("@middleware/async-handler");
+const async_handler_1 = require("../../middleware/async-handler");
 const role_dto_1 = require("./dto/role.dto");
 let RoleController = class RoleController {
     roleService;

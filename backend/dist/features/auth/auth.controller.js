@@ -15,10 +15,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const tsyringe_1 = require("tsyringe");
 const auth_service_1 = require("./auth.service");
-const user_service_1 = require("@features/users/user.service");
-const async_handler_1 = require("@middleware/async-handler");
-const http_exceptions_1 = require("@shared/exceptions/http-exceptions");
-const logger_config_1 = require("@config/logger.config");
+const user_service_1 = require("../users/user.service");
+const async_handler_1 = require("../../middleware/async-handler");
+const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
+const logger_config_1 = require("../../config/logger.config");
 /**
  * Generic error messages for authentication endpoints.
  * Using consistent messages prevents account enumeration attacks.

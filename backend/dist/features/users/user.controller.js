@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserController = void 0;
 const tsyringe_1 = require("tsyringe");
 const user_service_1 = require("./user.service");
-const async_handler_1 = require("@middleware/async-handler");
+const async_handler_1 = require("../../middleware/async-handler");
 let UserController = class UserController {
     userService;
     constructor(userService) {

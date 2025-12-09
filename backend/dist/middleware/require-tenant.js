@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requireTenant = void 0;
-const http_exceptions_1 = require("@shared/exceptions/http-exceptions");
+const http_exceptions_1 = require("../shared/exceptions/http-exceptions");
 /**
  * Middleware that ensures the authenticated user has an associated tenant.
  *

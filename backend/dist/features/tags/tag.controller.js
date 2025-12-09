@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TagController = void 0;
 const tsyringe_1 = require("tsyringe");
 const tag_service_1 = require("./tag.service");
-const async_handler_1 = require("@middleware/async-handler");
+const async_handler_1 = require("../../middleware/async-handler");
 /**
  * Transforms a Tag entity to its API response format.
  */

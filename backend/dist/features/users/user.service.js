@@ -18,10 +18,10 @@ const user_repository_1 = require("./user.repository");
 const user_entity_1 = require("./user.entity");
 const password_service_1 = require("./password.service");
 const permission_service_1 = require("./permission.service");
-const role_repository_1 = require("@features/roles/role.repository");
-const redis_config_1 = require("@config/redis.config");
-const logger_config_1 = require("@config/logger.config");
-const http_exceptions_1 = require("@shared/exceptions/http-exceptions");
+const role_repository_1 = require("../roles/role.repository");
+const redis_config_1 = require("../../config/redis.config");
+const logger_config_1 = require("../../config/logger.config");
+const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
 let UserService = class UserService {
     userRepo;
     passwordService;

@@ -9,7 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.GroupRepository = void 0;
 const typeorm_1 = require("typeorm");
 const tsyringe_1 = require("tsyringe");
-const database_config_1 = require("@config/database.config");
+const database_config_1 = require("../../config/database.config");
 const group_entity_1 = require("./group.entity");
 const customer_entity_1 = require("../customers/customer.entity");
 /**

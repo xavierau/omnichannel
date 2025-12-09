@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.broadcastBulkLimiter = exports.broadcastActionLimiter = exports.csrfTokenLimiter = exports.refreshLimiter = exports.passwordResetLimiter = exports.registerLimiter = exports.authLimiter = exports.generalLimiter = void 0;
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
-const constants_1 = require("@config/constants");
+const constants_1 = require("../config/constants");
 /**
  * Safely extract client identifier for rate limiting.
  * Handles IPv6 by using a consistent key format.

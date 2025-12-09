@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.seedRoles = seedRoles;
-const database_config_1 = require("@config/database.config");
-const role_entity_1 = require("@features/roles/role.entity");
-const permission_entity_1 = require("@features/permissions/permission.entity");
+const database_config_1 = require("../../config/database.config");
+const role_entity_1 = require("../../features/roles/role.entity");
+const permission_entity_1 = require("../../features/permissions/permission.entity");
 async function seedRoles() {
     console.log('👥 Seeding roles...');
     const roleRepository = database_config_1.AppDataSource.getRepository(role_entity_1.Role);

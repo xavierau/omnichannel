@@ -17,8 +17,8 @@ const tsyringe_1 = require("tsyringe");
 const conversation_service_1 = require("./services/conversation.service");
 const inbox_note_service_1 = require("./services/inbox-note.service");
 const conversation_message_repository_1 = require("./repositories/conversation-message.repository");
-const async_handler_1 = require("@middleware/async-handler");
-const http_exceptions_1 = require("@shared/exceptions/http-exceptions");
+const async_handler_1 = require("../../middleware/async-handler");
+const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
 const enums_1 = require("./enums");
 /**
  * Controller for inbox (conversation) operations.

@@ -15,7 +15,7 @@ const class_transformer_1 = require("class-transformer");
 const enums_1 = require("../enums");
 const variable_config_dto_1 = require("./variable-config.dto");
 const is_future_date_validator_1 = require("./validators/is-future-date.validator");
-const custom_fields_validator_1 = require("@features/customers/dto/custom-fields.validator");
+const custom_fields_validator_1 = require("../../customers/dto/custom-fields.validator");
 /**
  * DTO for creating a new broadcast.
  * Includes comprehensive validation for all fields including conditional requirements.

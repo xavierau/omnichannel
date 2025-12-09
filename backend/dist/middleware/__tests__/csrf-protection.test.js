@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const csrf_protection_1 = require("../csrf-protection");
-const http_exceptions_1 = require("@shared/exceptions/http-exceptions");
+const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
 describe('CSRF Protection Middleware', () => {
     // Helper to create mock request
     const createMockRequest = (options = {}) => {

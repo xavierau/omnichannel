@@ -8,7 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TagRepository = void 0;
 const tsyringe_1 = require("tsyringe");
-const database_config_1 = require("@config/database.config");
+const database_config_1 = require("../../config/database.config");
 const tag_entity_1 = require("./tag.entity");
 let TagRepository = class TagRepository {
     _repository = null;

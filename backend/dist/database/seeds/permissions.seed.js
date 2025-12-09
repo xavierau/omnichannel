@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.seedPermissions = seedPermissions;
-const database_config_1 = require("@config/database.config");
-const permission_entity_1 = require("@features/permissions/permission.entity");
+const database_config_1 = require("../../config/database.config");
+const permission_entity_1 = require("../../features/permissions/permission.entity");
 async function seedPermissions() {
     console.log('📋 Seeding permissions...');
     const permissionRepository = database_config_1.AppDataSource.getRepository(permission_entity_1.Permission);

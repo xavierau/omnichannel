@@ -16,8 +16,8 @@ exports.PermissionCrudService = void 0;
 const tsyringe_1 = require("tsyringe");
 const permission_repository_1 = require("./permission.repository");
 const permission_entity_1 = require("./permission.entity");
-const http_exceptions_1 = require("@shared/exceptions/http-exceptions");
-const logger_config_1 = require("@config/logger.config");
+const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
+const logger_config_1 = require("../../config/logger.config");
 let PermissionCrudService = class PermissionCrudService {
     permissionRepo;
     constructor(permissionRepo) {

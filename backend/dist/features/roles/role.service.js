@@ -15,9 +15,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RoleService = void 0;
 const tsyringe_1 = require("tsyringe");
 const role_repository_1 = require("./role.repository");
-const http_exceptions_1 = require("@shared/exceptions/http-exceptions");
-const redis_config_1 = require("@config/redis.config");
-const logger_config_1 = require("@config/logger.config");
+const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
+const redis_config_1 = require("../../config/redis.config");
+const logger_config_1 = require("../../config/logger.config");
 let RoleService = class RoleService {
     roleRepo;
     constructor(roleRepo) {

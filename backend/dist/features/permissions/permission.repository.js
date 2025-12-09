@@ -9,7 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PermissionRepository = void 0;
 const tsyringe_1 = require("tsyringe");
 const typeorm_1 = require("typeorm");
-const database_config_1 = require("@config/database.config");
+const database_config_1 = require("../../config/database.config");
 const permission_entity_1 = require("./permission.entity");
 let PermissionRepository = class PermissionRepository {
     _repo = null;

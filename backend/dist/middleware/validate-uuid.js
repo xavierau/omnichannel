@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateUuid = exports.isValidUuid = void 0;
-const http_exceptions_1 = require("@shared/exceptions/http-exceptions");
+const http_exceptions_1 = require("../shared/exceptions/http-exceptions");
 /**
  * UUID v4 regex pattern for validation.
  * Matches standard UUID v4 format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx

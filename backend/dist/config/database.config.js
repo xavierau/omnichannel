@@ -7,33 +7,33 @@ exports.checkDatabaseHealth = checkDatabaseHealth;
 exports.getPoolStatistics = getPoolStatistics;
 const typeorm_1 = require("typeorm");
 require("./env.config"); // Ensure env is loaded first
-const user_entity_1 = require("@features/users/user.entity");
-const role_entity_1 = require("@features/roles/role.entity");
-const permission_entity_1 = require("@features/permissions/permission.entity");
-const refresh_token_entity_1 = require("@features/auth/entities/refresh-token.entity");
-const tenant_entity_1 = require("@features/tenants/tenant.entity");
-const tag_entity_1 = require("@features/tags/tag.entity");
-const customer_entity_1 = require("@features/customers/customer.entity");
-const broadcast_entity_1 = require("@features/broadcasts/broadcast.entity");
-const template_group_entity_1 = require("@features/templates/template-group.entity");
-const template_translation_entity_1 = require("@features/templates/template-translation.entity");
-const group_entity_1 = require("@features/groups/group.entity");
-const media_entity_1 = require("@features/media/media.entity");
+const user_entity_1 = require("../features/users/user.entity");
+const role_entity_1 = require("../features/roles/role.entity");
+const permission_entity_1 = require("../features/permissions/permission.entity");
+const refresh_token_entity_1 = require("../features/auth/entities/refresh-token.entity");
+const tenant_entity_1 = require("../features/tenants/tenant.entity");
+const tag_entity_1 = require("../features/tags/tag.entity");
+const customer_entity_1 = require("../features/customers/customer.entity");
+const broadcast_entity_1 = require("../features/broadcasts/broadcast.entity");
+const template_group_entity_1 = require("../features/templates/template-group.entity");
+const template_translation_entity_1 = require("../features/templates/template-translation.entity");
+const group_entity_1 = require("../features/groups/group.entity");
+const media_entity_1 = require("../features/media/media.entity");
 // Channel and Provider entities
-const channel_entity_1 = require("@features/channels/channel.entity");
-const provider_entity_1 = require("@features/providers/provider.entity");
-const channel_account_entity_1 = require("@features/channel-accounts/channel-account.entity");
+const channel_entity_1 = require("../features/channels/channel.entity");
+const provider_entity_1 = require("../features/providers/provider.entity");
+const channel_account_entity_1 = require("../features/channel-accounts/channel-account.entity");
 // Teams entities
-const team_entity_1 = require("@features/teams/entities/team.entity");
-const team_member_entity_1 = require("@features/teams/entities/team-member.entity");
-const team_channel_account_entity_1 = require("@features/teams/entities/team-channel-account.entity");
+const team_entity_1 = require("../features/teams/entities/team.entity");
+const team_member_entity_1 = require("../features/teams/entities/team-member.entity");
+const team_channel_account_entity_1 = require("../features/teams/entities/team-channel-account.entity");
 // Inbox entities
-const conversation_entity_1 = require("@features/inbox/entities/conversation.entity");
-const conversation_message_entity_1 = require("@features/inbox/entities/conversation-message.entity");
-const conversation_note_entity_1 = require("@features/inbox/entities/conversation-note.entity");
-const conversation_assignment_entity_1 = require("@features/inbox/entities/conversation-assignment.entity");
+const conversation_entity_1 = require("../features/inbox/entities/conversation.entity");
+const conversation_message_entity_1 = require("../features/inbox/entities/conversation-message.entity");
+const conversation_note_entity_1 = require("../features/inbox/entities/conversation-note.entity");
+const conversation_assignment_entity_1 = require("../features/inbox/entities/conversation-assignment.entity");
 // Custom fields entity
-const custom_field_entity_1 = require("@features/custom-fields/custom-field.entity");
+const custom_field_entity_1 = require("../features/custom-fields/custom-field.entity");
 const logger_config_1 = require("./logger.config");
 const constants_1 = require("./constants");
 /**

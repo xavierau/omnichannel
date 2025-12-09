@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.GroupController = void 0;
 const tsyringe_1 = require("tsyringe");
 const group_service_1 = require("./group.service");
-const async_handler_1 = require("@middleware/async-handler");
+const async_handler_1 = require("../../middleware/async-handler");
 const group_presenter_1 = require("./group.presenter");
 /**
  * Controller for customer group management endpoints.

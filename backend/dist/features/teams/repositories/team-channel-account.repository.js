@@ -8,7 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TeamChannelAccountRepository = void 0;
 const tsyringe_1 = require("tsyringe");
-const database_config_1 = require("@config/database.config");
+const database_config_1 = require("../../../config/database.config");
 const team_channel_account_entity_1 = require("../entities/team-channel-account.entity");
 /**
  * Repository for TeamChannelAccount entity operations.

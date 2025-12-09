@@ -17,9 +17,9 @@ const tsyringe_1 = require("tsyringe");
 const uuid_1 = require("uuid");
 const media_repository_1 = require("./media.repository");
 const media_entity_1 = require("./media.entity");
-const s3_config_1 = require("@config/s3.config");
-const http_exceptions_1 = require("@shared/exceptions/http-exceptions");
-const logger_config_1 = require("@config/logger.config");
+const s3_config_1 = require("../../config/s3.config");
+const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
+const logger_config_1 = require("../../config/logger.config");
 /**
  * Media type configurations with file validation rules
  *

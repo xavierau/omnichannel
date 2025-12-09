@@ -1,10 +1,10 @@
 import { InvitationRepository } from './invitation.repository';
 import { InvitationStatus } from './invitation.entity';
 import { EmailService } from './email.service';
-import { UserService } from '@features/users/user.service';
-import { UserRepository } from '@features/users/user.repository';
-import { RoleRepository } from '@features/roles/role.repository';
-import { TenantService } from '@features/tenants/tenant.service';
+import { UserService } from '../users/user.service';
+import { UserRepository } from '../users/user.repository';
+import { RoleRepository } from '../roles/role.repository';
+import { TenantService } from '../tenants/tenant.service';
 import { InvitationResponseDto, ValidateInvitationResponseDto } from './dto/invitation.dto';
 /**
  * Extended response DTO that includes optional warnings

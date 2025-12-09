@@ -43,8 +43,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PasswordService = void 0;
 const tsyringe_1 = require("tsyringe");
 const argon2 = __importStar(require("argon2"));
-const constants_1 = require("@config/constants");
-const http_exceptions_1 = require("@shared/exceptions/http-exceptions");
+const constants_1 = require("../../config/constants");
+const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
 let PasswordService = class PasswordService {
     static { PasswordService_1 = this; }
     /**

@@ -9,7 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CustomerRepository = exports.MAX_EXPORT_RECORDS = void 0;
 const typeorm_1 = require("typeorm");
 const tsyringe_1 = require("tsyringe");
-const database_config_1 = require("@config/database.config");
+const database_config_1 = require("../../config/database.config");
 const customer_entity_1 = require("./customer.entity");
 /**
  * Allowed sort columns for customer queries.

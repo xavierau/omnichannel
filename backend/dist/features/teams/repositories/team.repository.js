@@ -8,7 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TeamRepository = void 0;
 const tsyringe_1 = require("tsyringe");
-const database_config_1 = require("@config/database.config");
+const database_config_1 = require("../../../config/database.config");
 const team_entity_1 = require("../entities/team.entity");
 /**
  * Repository for Team entity operations.

@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const supertest_1 = __importDefault(require("supertest"));
 const rate_limiter_1 = require("../rate-limiter");
-const constants_1 = require("@config/constants");
+const constants_1 = require("../../config/constants");
 /**
  * Unit and integration tests for rate limiting middleware.
  *

@@ -9,9 +9,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RoleRepository = void 0;
 const tsyringe_1 = require("tsyringe");
 const typeorm_1 = require("typeorm");
-const database_config_1 = require("@config/database.config");
+const database_config_1 = require("../../config/database.config");
 const role_entity_1 = require("./role.entity");
-const permission_entity_1 = require("@features/permissions/permission.entity");
+const permission_entity_1 = require("../permissions/permission.entity");
 let RoleRepository = class RoleRepository {
     _repo = null;
     /**
