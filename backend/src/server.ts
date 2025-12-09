@@ -9,7 +9,7 @@ import { container } from '@config/di.container';
 
 import { createApp } from './app';
 import { AppDataSource } from '@config/database.config';
-import { BroadcastQueue, BroadcastScheduler } from './jobs';
+import { BroadcastQueue, BroadcastScheduler, InboxMessageQueue } from './jobs';
 import { logger } from '@config/logger.config';
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -20,6 +20,7 @@ const SCHEDULER_INTERVAL_MS = parseInt(process.env.SCHEDULER_INTERVAL_MS || '600
 // Job services - initialized after DI container setup
 let broadcastQueue: BroadcastQueue | null = null;
 let broadcastScheduler: BroadcastScheduler | null = null;
+let inboxMessageQueue: InboxMessageQueue | null = null;
 
 async function bootstrap() {
   try {
@@ -54,11 +55,13 @@ async function initializeJobServices(): Promise<void> {
     // Resolve services from DI container
     broadcastQueue = container.resolve(BroadcastQueue);
     broadcastScheduler = container.resolve(BroadcastScheduler);
+    inboxMessageQueue = container.resolve(InboxMessageQueue);
 
     // Start the scheduler
     broadcastScheduler.start(SCHEDULER_INTERVAL_MS);
 
     console.log(`Broadcast scheduler started (interval: ${SCHEDULER_INTERVAL_MS}ms)`);
+    console.log('Inbox message queue initialized');
     logger.info('Job services initialized', {
       schedulerIntervalMs: SCHEDULER_INTERVAL_MS,
     });

@@ -16,6 +16,7 @@ const SCHEDULER_INTERVAL_MS = parseInt(process.env.SCHEDULER_INTERVAL_MS || '600
 // Job services - initialized after DI container setup
 let broadcastQueue = null;
 let broadcastScheduler = null;
+let inboxMessageQueue = null;
 async function bootstrap() {
     try {
         // Initialize database connection
@@ -46,9 +47,11 @@ async function initializeJobServices() {
         // Resolve services from DI container
         broadcastQueue = di_container_1.container.resolve(jobs_1.BroadcastQueue);
         broadcastScheduler = di_container_1.container.resolve(jobs_1.BroadcastScheduler);
+        inboxMessageQueue = di_container_1.container.resolve(jobs_1.InboxMessageQueue);
         // Start the scheduler
         broadcastScheduler.start(SCHEDULER_INTERVAL_MS);
         console.log(`Broadcast scheduler started (interval: ${SCHEDULER_INTERVAL_MS}ms)`);
+        console.log('Inbox message queue initialized');
         logger_config_1.logger.info('Job services initialized', {
             schedulerIntervalMs: SCHEDULER_INTERVAL_MS,
         });

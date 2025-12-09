@@ -20,6 +20,7 @@ const conversation_message_repository_1 = require("./repositories/conversation-m
 const async_handler_1 = require("../../middleware/async-handler");
 const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
 const enums_1 = require("./enums");
+const inbox_message_queue_1 = require("../../jobs/inbox-message.queue");
 /**
  * Controller for inbox (conversation) operations.
  *
@@ -36,10 +37,12 @@ let InboxController = class InboxController {
     conversationService;
     noteService;
     messageRepository;
-    constructor(conversationService, noteService, messageRepository) {
+    inboxMessageQueue;
+    constructor(conversationService, noteService, messageRepository, inboxMessageQueue) {
         this.conversationService = conversationService;
         this.noteService = noteService;
         this.messageRepository = messageRepository;
+        this.inboxMessageQueue = inboxMessageQueue;
     }
     // ============================================================================
     // Operator Listing
@@ -141,8 +144,11 @@ let InboxController = class InboxController {
         const user = req.user;
         const { id: conversationId } = req.params;
         const { contentType, text, media, template } = req.body;
-        // Validate access to the conversation
-        await this.conversationService.validateAccess(tenantId, user.id, conversationId);
+        // Get conversation with customer info (also validates access)
+        const conversation = await this.conversationService.getConversation(tenantId, user.id, conversationId);
+        if (!conversation.customer) {
+            throw new http_exceptions_1.BadRequestException('Cannot send message: conversation has no associated customer');
+        }
         // Validate content based on type
         const content = this.buildMessageContent(contentType, text, media, template);
         // Create the message record
@@ -155,8 +161,18 @@ let InboxController = class InboxController {
             sentById: user.id,
             deliveryStatus: enums_1.MessageDeliveryStatus.PENDING,
         });
-        // TODO: Queue message for delivery to the messaging provider
-        // This would be handled by a message queue (e.g., BullMQ) in production
+        // Build outbound content for the queue
+        const outboundContent = this.buildOutboundContent(contentType, content);
+        // Queue message for delivery to the messaging provider
+        await this.inboxMessageQueue.queueOutboundMessage({
+            tenantId,
+            conversationId,
+            messageId: message.id,
+            channelAccountId: conversation.channelAccountId,
+            recipient: conversation.customer.whatsappNumber,
+            contentType: contentType,
+            content: outboundContent,
+        });
         res.status(201).json({
             data: message,
         });
@@ -355,6 +371,36 @@ let InboxController = class InboxController {
                 throw new http_exceptions_1.BadRequestException(`Unsupported content type: ${contentType}`);
         }
     }
+    /**
+     * Transforms the message content to the format expected by the queue.
+     *
+     * @param contentType - The type of message content
+     * @param content - The message content from buildMessageContent
+     * @returns The outbound content for the queue
+     */
+    buildOutboundContent(contentType, content) {
+        switch (contentType) {
+            case enums_1.MessageContentType.TEXT:
+                return { text: content.body };
+            case enums_1.MessageContentType.IMAGE:
+            case enums_1.MessageContentType.VIDEO:
+            case enums_1.MessageContentType.AUDIO:
+            case enums_1.MessageContentType.DOCUMENT:
+                return {
+                    mediaUrl: content.url,
+                    caption: content.caption,
+                    filename: content.filename,
+                };
+            case enums_1.MessageContentType.TEMPLATE:
+                return {
+                    templateName: content.name,
+                    templateLanguage: content.language,
+                    templateVariables: content.variables,
+                };
+            default:
+                return {};
+        }
+    }
 };
 exports.InboxController = InboxController;
 exports.InboxController = InboxController = __decorate([
@@ -362,7 +408,9 @@ exports.InboxController = InboxController = __decorate([
     __param(0, (0, tsyringe_1.inject)(conversation_service_1.ConversationService)),
     __param(1, (0, tsyringe_1.inject)(inbox_note_service_1.InboxNoteService)),
     __param(2, (0, tsyringe_1.inject)(conversation_message_repository_1.ConversationMessageRepository)),
+    __param(3, (0, tsyringe_1.inject)(inbox_message_queue_1.InboxMessageQueue)),
     __metadata("design:paramtypes", [conversation_service_1.ConversationService,
         inbox_note_service_1.InboxNoteService,
-        conversation_message_repository_1.ConversationMessageRepository])
+        conversation_message_repository_1.ConversationMessageRepository,
+        inbox_message_queue_1.InboxMessageQueue])
 ], InboxController);

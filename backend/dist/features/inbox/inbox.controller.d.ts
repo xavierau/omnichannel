@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ConversationService } from './services/conversation.service';
 import { InboxNoteService } from './services/inbox-note.service';
 import { ConversationMessageRepository } from './repositories/conversation-message.repository';
+import { InboxMessageQueue } from '../../jobs/inbox-message.queue';
 /**
  * Controller for inbox (conversation) operations.
  *
@@ -18,7 +19,8 @@ export declare class InboxController {
     private conversationService;
     private noteService;
     private messageRepository;
-    constructor(conversationService: ConversationService, noteService: InboxNoteService, messageRepository: ConversationMessageRepository);
+    private inboxMessageQueue;
+    constructor(conversationService: ConversationService, noteService: InboxNoteService, messageRepository: ConversationMessageRepository, inboxMessageQueue: InboxMessageQueue);
     /**
      * GET /operators
      * List operators (users) available for conversation assignment.
@@ -126,4 +128,12 @@ export declare class InboxController {
      * @throws BadRequestException if required content is missing
      */
     private buildMessageContent;
+    /**
+     * Transforms the message content to the format expected by the queue.
+     *
+     * @param contentType - The type of message content
+     * @param content - The message content from buildMessageContent
+     * @returns The outbound content for the queue
+     */
+    private buildOutboundContent;
 }

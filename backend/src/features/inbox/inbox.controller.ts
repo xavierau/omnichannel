@@ -8,6 +8,12 @@ import { BadRequestException } from '@shared/exceptions/http-exceptions';
 import { User } from '@features/users/user.entity';
 import { ConversationQueryOptions } from './repositories/conversation.repository';
 import { MessageContentType, MessageDirection, MessageDeliveryStatus, NoteScope } from './enums';
+import {
+  InboxMessageQueue,
+  OutboundMessageContent,
+  OutboundContentType,
+} from '../../jobs/inbox-message.queue';
+import { TemplateVariables } from '../messaging/interfaces/messaging-provider.interface';
 
 /**
  * Controller for inbox (conversation) operations.
@@ -26,7 +32,8 @@ export class InboxController {
   constructor(
     @inject(ConversationService) private conversationService: ConversationService,
     @inject(InboxNoteService) private noteService: InboxNoteService,
-    @inject(ConversationMessageRepository) private messageRepository: ConversationMessageRepository
+    @inject(ConversationMessageRepository) private messageRepository: ConversationMessageRepository,
+    @inject(InboxMessageQueue) private inboxMessageQueue: InboxMessageQueue
   ) {}
 
   // ============================================================================
@@ -155,8 +162,12 @@ export class InboxController {
     const { id: conversationId } = req.params;
     const { contentType, text, media, template } = req.body;
 
-    // Validate access to the conversation
-    await this.conversationService.validateAccess(tenantId, user.id, conversationId);
+    // Get conversation with customer info (also validates access)
+    const conversation = await this.conversationService.getConversation(tenantId, user.id, conversationId);
+
+    if (!conversation.customer) {
+      throw new BadRequestException('Cannot send message: conversation has no associated customer');
+    }
 
     // Validate content based on type
     const content = this.buildMessageContent(contentType, text, media, template);
@@ -172,8 +183,19 @@ export class InboxController {
       deliveryStatus: MessageDeliveryStatus.PENDING,
     });
 
-    // TODO: Queue message for delivery to the messaging provider
-    // This would be handled by a message queue (e.g., BullMQ) in production
+    // Build outbound content for the queue
+    const outboundContent = this.buildOutboundContent(contentType, content);
+
+    // Queue message for delivery to the messaging provider
+    await this.inboxMessageQueue.queueOutboundMessage({
+      tenantId,
+      conversationId,
+      messageId: message.id,
+      channelAccountId: conversation.channelAccountId,
+      recipient: conversation.customer.whatsappNumber,
+      contentType: contentType as OutboundContentType,
+      content: outboundContent,
+    });
 
     res.status(201).json({
       data: message,
@@ -450,6 +472,43 @@ export class InboxController {
 
       default:
         throw new BadRequestException(`Unsupported content type: ${contentType}`);
+    }
+  }
+
+  /**
+   * Transforms the message content to the format expected by the queue.
+   *
+   * @param contentType - The type of message content
+   * @param content - The message content from buildMessageContent
+   * @returns The outbound content for the queue
+   */
+  private buildOutboundContent(
+    contentType: MessageContentType,
+    content: Record<string, unknown>
+  ): OutboundMessageContent {
+    switch (contentType) {
+      case MessageContentType.TEXT:
+        return { text: content.body as string };
+
+      case MessageContentType.IMAGE:
+      case MessageContentType.VIDEO:
+      case MessageContentType.AUDIO:
+      case MessageContentType.DOCUMENT:
+        return {
+          mediaUrl: content.url as string,
+          caption: content.caption as string | undefined,
+          filename: content.filename as string | undefined,
+        };
+
+      case MessageContentType.TEMPLATE:
+        return {
+          templateName: content.name as string,
+          templateLanguage: content.language as string,
+          templateVariables: content.variables as TemplateVariables | undefined,
+        };
+
+      default:
+        return {};
     }
   }
 }
