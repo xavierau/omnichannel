@@ -130,7 +130,7 @@ export function createApp(): Application {
     }));
 
     // SPA fallback: serve index.html for all non-API routes
-    app.get('*', (req: Request, res: Response, next: NextFunction) => {
+    app.get('/{*splat}', (req: Request, res: Response, next: NextFunction) => {
       // Skip API routes and health checks
       if (req.path.startsWith('/api') || req.path.startsWith('/health') || req.path.startsWith('/webhooks')) {
         return next();
