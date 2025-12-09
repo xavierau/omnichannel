@@ -220,18 +220,19 @@ container.registerSingleton(CustomFieldRepository);
 container.registerSingleton(CustomFieldService);
 container.registerSingleton(CustomFieldController);
 
+// Register Roles (must be before UserService which depends on RoleRepository)
+container.registerSingleton(RoleRepository);
+
+// Register Tenants (must be before InvitationService which depends on TenantService)
+container.registerSingleton(TenantRepository);
+container.registerSingleton(TenantService);
+
 // Register Users (dependencies for Invitations)
+// Order: Repository -> PasswordService -> PermissionService -> UserService
 container.registerSingleton(UserRepository);
 container.registerSingleton(PasswordService);
 container.registerSingleton(PermissionService);
 container.registerSingleton(UserService);
-
-// Register Roles
-container.registerSingleton(RoleRepository);
-
-// Register Tenants
-container.registerSingleton(TenantRepository);
-container.registerSingleton(TenantService);
 
 // Register Invitations
 container.registerSingleton(InvitationRepository);

@@ -178,16 +178,17 @@ tsyringe_1.container.registerSingleton(health_controller_1.HealthController);
 tsyringe_1.container.registerSingleton(custom_field_repository_1.CustomFieldRepository);
 tsyringe_1.container.registerSingleton(custom_field_service_1.CustomFieldService);
 tsyringe_1.container.registerSingleton(custom_field_controller_1.CustomFieldController);
+// Register Roles (must be before UserService which depends on RoleRepository)
+tsyringe_1.container.registerSingleton(role_repository_1.RoleRepository);
+// Register Tenants (must be before InvitationService which depends on TenantService)
+tsyringe_1.container.registerSingleton(tenant_repository_1.TenantRepository);
+tsyringe_1.container.registerSingleton(tenant_service_1.TenantService);
 // Register Users (dependencies for Invitations)
+// Order: Repository -> PasswordService -> PermissionService -> UserService
 tsyringe_1.container.registerSingleton(user_repository_1.UserRepository);
 tsyringe_1.container.registerSingleton(password_service_1.PasswordService);
 tsyringe_1.container.registerSingleton(permission_service_1.PermissionService);
 tsyringe_1.container.registerSingleton(user_service_1.UserService);
-// Register Roles
-tsyringe_1.container.registerSingleton(role_repository_1.RoleRepository);
-// Register Tenants
-tsyringe_1.container.registerSingleton(tenant_repository_1.TenantRepository);
-tsyringe_1.container.registerSingleton(tenant_service_1.TenantService);
 // Register Invitations
 tsyringe_1.container.registerSingleton(invitation_repository_1.InvitationRepository);
 tsyringe_1.container.registerSingleton(email_service_1.EmailService);
