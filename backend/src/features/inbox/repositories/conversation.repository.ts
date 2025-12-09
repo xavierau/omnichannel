@@ -29,21 +29,22 @@ export interface PaginatedResult<T> {
 
 /**
  * Allowed sort columns for conversation queries.
- * Maps user-facing field names to database column names.
+ * Maps user-facing field names to entity property names (camelCase).
+ * TypeORM's orderBy with entity alias expects property names, not DB column names.
  * This serves as an allowlist to prevent SQL injection.
  */
 const ALLOWED_SORT_COLUMNS: Record<string, string> = {
-  lastMessageAt: 'last_message_at',
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
+  lastMessageAt: 'lastMessageAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
   status: 'status',
-  unreadCount: 'unread_count',
+  unreadCount: 'unreadCount',
 };
 
 /**
  * Default sort column if none specified or if invalid column provided.
  */
-const DEFAULT_SORT_COLUMN = 'last_message_at';
+const DEFAULT_SORT_COLUMN = 'lastMessageAt';
 
 /**
  * Validates and maps a sort column name to its database column.
