@@ -18,6 +18,7 @@ const media_service_1 = require("./media.service");
 const async_handler_1 = require("../../middleware/async-handler");
 const http_exceptions_1 = require("../../shared/exceptions/http-exceptions");
 const media_entity_1 = require("./media.entity");
+const presigned_url_dto_1 = require("./dto/presigned-url.dto");
 /**
  * Media Controller
  *
@@ -100,21 +101,29 @@ let MediaController = class MediaController {
      *
      * Returns:
      * - uploadUrl: Presigned URL for PUT request
+     * - downloadUrl: URL to access the uploaded file (same as uploadUrl without signature for now)
      * - key: S3 object key
      * - expiresIn: URL expiry in seconds
      */
     getPresignedUrl = (0, async_handler_1.asyncHandler)(async (req, res) => {
         const tenantId = req.tenantId;
-        const { type, fileName } = req.body;
-        if (!type || !Object.values(media_entity_1.MediaType).includes(type)) {
-            throw new http_exceptions_1.BadRequestException(`Invalid media type. Must be one of: ${Object.values(media_entity_1.MediaType).join(', ')}`);
+        const dto = req.body;
+        // Get MediaType from content type
+        let mediaType;
+        try {
+            const presignedUrlDto = Object.assign(new presigned_url_dto_1.PresignedUrlDto(), dto);
+            mediaType = presignedUrlDto.getMediaType();
         }
-        if (!fileName || typeof fileName !== 'string') {
-            throw new http_exceptions_1.BadRequestException('fileName is required');
+        catch (error) {
+            throw new http_exceptions_1.BadRequestException(error.message);
         }
-        const result = await this.mediaService.getPresignedUploadUrl(type, fileName, tenantId);
+        const result = await this.mediaService.getPresignedUploadUrl(mediaType, dto.filename, tenantId);
+        // Return format expected by frontend
         res.json({
-            data: result,
+            uploadUrl: result.uploadUrl,
+            downloadUrl: result.uploadUrl.split('?')[0], // Remove query params to get base S3 URL
+            key: result.key,
+            expiresIn: result.expiresIn,
         });
     });
     /**

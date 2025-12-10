@@ -42,6 +42,7 @@ export declare class MediaController {
      *
      * Returns:
      * - uploadUrl: Presigned URL for PUT request
+     * - downloadUrl: URL to access the uploaded file (same as uploadUrl without signature for now)
      * - key: S3 object key
      * - expiresIn: URL expiry in seconds
      */

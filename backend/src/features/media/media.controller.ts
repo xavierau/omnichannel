@@ -4,6 +4,7 @@ import { MediaService, UploadedFile } from './media.service';
 import { asyncHandler } from '@middleware/async-handler';
 import { BadRequestException } from '@shared/exceptions/http-exceptions';
 import { MediaType } from './media.entity';
+import { PresignedUrlDto } from './dto/presigned-url.dto';
 
 /**
  * Express Request with multer file
@@ -113,32 +114,36 @@ export class MediaController {
    *
    * Returns:
    * - uploadUrl: Presigned URL for PUT request
+   * - downloadUrl: URL to access the uploaded file (same as uploadUrl without signature for now)
    * - key: S3 object key
    * - expiresIn: URL expiry in seconds
    */
   getPresignedUrl = asyncHandler(async (req: Request, res: Response) => {
     const tenantId = req.tenantId!;
 
-    const { type, fileName } = req.body;
+    const dto = req.body as { filename: string; contentType: string; conversationId?: string };
 
-    if (!type || !Object.values(MediaType).includes(type)) {
-      throw new BadRequestException(
-        `Invalid media type. Must be one of: ${Object.values(MediaType).join(', ')}`
-      );
-    }
-
-    if (!fileName || typeof fileName !== 'string') {
-      throw new BadRequestException('fileName is required');
+    // Get MediaType from content type
+    let mediaType: MediaType;
+    try {
+      const presignedUrlDto = Object.assign(new PresignedUrlDto(), dto);
+      mediaType = presignedUrlDto.getMediaType();
+    } catch (error) {
+      throw new BadRequestException((error as Error).message);
     }
 
     const result = await this.mediaService.getPresignedUploadUrl(
-      type as MediaType,
-      fileName,
+      mediaType,
+      dto.filename,
       tenantId
     );
 
+    // Return format expected by frontend
     res.json({
-      data: result,
+      uploadUrl: result.uploadUrl,
+      downloadUrl: result.uploadUrl.split('?')[0], // Remove query params to get base S3 URL
+      key: result.key,
+      expiresIn: result.expiresIn,
     });
   });
 
