@@ -127,10 +127,12 @@ export function ConversationFilters({
   // Memoize channel account display data
   const channelAccountsWithConfig = useMemo(
     () =>
-      availableChannelAccounts.map((account) => ({
-        ...account,
-        config: getChannelConfig(account.channel.code),
-      })),
+      availableChannelAccounts
+        .filter((account) => account.channel && account.channel.code)
+        .map((account) => ({
+          ...account,
+          config: getChannelConfig(account.channel.code),
+        })),
     [availableChannelAccounts]
   )
 

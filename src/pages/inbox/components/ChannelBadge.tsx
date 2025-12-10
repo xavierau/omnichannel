@@ -45,8 +45,8 @@ export const ChannelBadge = memo(function ChannelBadge({
 }: ChannelBadgeProps) {
   // Get channel configuration for icon and colors
   const config = useMemo(
-    () => getChannelConfig(channelAccount.channel.code),
-    [channelAccount.channel.code]
+    () => getChannelConfig(channelAccount.channel?.code || 'whatsapp'),
+    [channelAccount.channel?.code]
   )
 
   // Determine display name based on variant
@@ -63,13 +63,13 @@ export const ChannelBadge = memo(function ChannelBadge({
       'Channel:',
       channelAccount.name,
       '-',
-      channelAccount.channel.name,
+      channelAccount.channel?.name || 'Unknown Channel',
     ]
     if (channelAccount.phoneNumber) {
       parts.push(`(${channelAccount.phoneNumber})`)
     }
     return parts.join(' ')
-  }, [channelAccount.name, channelAccount.channel.name, channelAccount.phoneNumber])
+  }, [channelAccount.name, channelAccount.channel?.name, channelAccount.phoneNumber])
 
   const Icon = config.icon
 
@@ -101,7 +101,7 @@ export const ChannelBadge = memo(function ChannelBadge({
           <div className="space-y-1">
             <div className="font-semibold">{channelAccount.name}</div>
             <div className="text-xs text-muted-foreground">
-              {channelAccount.channel.name}
+              {channelAccount.channel?.name || 'Unknown Channel'}
               {channelAccount.phoneNumber && ` • ${channelAccount.phoneNumber}`}
             </div>
           </div>
