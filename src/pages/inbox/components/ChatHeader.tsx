@@ -15,7 +15,6 @@ import {
 import {
   Hand,
   LogOut,
-  MessageCircle,
   MoreVertical,
   UserPlus,
   CheckCircle,
@@ -26,6 +25,7 @@ import { cn } from "@/lib/utils"
 import type { Conversation, ConversationStatus, Operator } from "../types"
 import { AssignConversationDialog } from "./AssignConversationDialog"
 import { ConversationStatusBadge } from "./ConversationStatusBadge"
+import { ChannelBadge } from "./ChannelBadge"
 
 interface ChatHeaderProps {
   conversation: Conversation
@@ -85,11 +85,13 @@ export function ChatHeader({
         )}
       >
         <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-            <MessageCircle className="size-5 text-green-600 dark:text-green-400" />
-          </div>
           <div>
             <div className="flex items-center gap-2">
+              <ChannelBadge
+                channelAccount={conversation.channelAccount}
+                variant="full"
+                showTooltip={false}
+              />
               <h2 className="font-semibold">{conversation.customerName}</h2>
               <ConversationStatusBadge status={conversation.status} />
             </div>

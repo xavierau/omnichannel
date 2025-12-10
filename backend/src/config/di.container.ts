@@ -43,6 +43,7 @@ import { registerMessagingProviders } from '@features/messaging/register-provide
 
 // Channel Account Services
 import { ChannelAccountService } from '@features/channel-accounts/channel-account.service';
+import { WebhookConfigurationService } from '@features/channel-accounts/services/webhook-configuration.service';
 
 // Webhook Services
 import { WebhookService } from '@features/webhooks/webhook.service';
@@ -67,6 +68,11 @@ import { BroadcastScheduler } from '../jobs/broadcast.scheduler';
 import { InboxMessageQueue } from '../jobs/inbox-message.queue';
 import { TemplateSubmissionQueue } from '../jobs/template-submission.queue';
 import { ITemplateSubmissionQueue } from '../jobs/interfaces/template-submission-queue.interface';
+import { OutgoingWebhookQueue } from '../jobs/outgoing-webhook.queue';
+
+// Outgoing Webhooks
+import { OutgoingWebhookDispatcher } from '@features/outgoing-webhooks/infrastructure/outgoing-webhook.dispatcher';
+import { OutgoingWebhookService } from '@features/outgoing-webhooks/services/outgoing-webhook.service';
 
 // Teams
 import { TeamRepository } from '@features/teams/repositories/team.repository';
@@ -114,6 +120,14 @@ import { EmailService } from '@features/invitations/email.service';
 import { InvitationService } from '@features/invitations/invitation.service';
 import { InvitationController } from '@features/invitations/invitation.controller';
 
+// API Keys
+import { ApiKeyRepository } from '@features/api-keys/repositories/api-key.repository';
+import { ApiKeyService } from '@features/api-keys/services/api-key.service';
+import { ApiKeyController } from '@features/api-keys/controllers/api-key.controller';
+
+// Agent API
+import { AgentApiController } from '@features/agent-api/controllers/agent-api.controller';
+
 // Database
 import { AppDataSource } from './database.config';
 
@@ -156,6 +170,7 @@ container.registerSingleton(MessagingRateLimiterService);
 
 // Register Channel Account Services
 container.registerSingleton(ChannelAccountService);
+container.registerSingleton(WebhookConfigurationService);
 
 // Register Webhook Services
 container.registerSingleton(WebhookService);
@@ -185,6 +200,12 @@ container.register<ITemplateSubmissionQueue>(
   ITemplateSubmissionQueue,
   { useToken: TemplateSubmissionQueue }
 );
+
+// Outgoing Webhook Queue and Services
+// Order: Dispatcher -> Queue -> Service (queue depends on dispatcher, service depends on queue)
+container.registerSingleton(OutgoingWebhookDispatcher);
+container.registerSingleton(OutgoingWebhookQueue);
+container.registerSingleton(OutgoingWebhookService);
 
 // Register Teams Repositories
 container.registerSingleton(TeamRepository);
@@ -248,5 +269,13 @@ container.registerSingleton(InvitationRepository);
 container.registerSingleton(EmailService);
 container.registerSingleton(InvitationService);
 container.registerSingleton(InvitationController);
+
+// Register API Keys
+container.registerSingleton(ApiKeyRepository);
+container.registerSingleton(ApiKeyService);
+container.registerSingleton(ApiKeyController);
+
+// Register Agent API
+container.registerSingleton(AgentApiController);
 
 export { container };

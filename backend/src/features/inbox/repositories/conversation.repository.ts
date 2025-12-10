@@ -92,7 +92,7 @@ export class ConversationRepository {
   async findById(tenantId: string, id: string): Promise<Conversation | null> {
     return this.repository.findOne({
       where: { id, tenantId },
-      relations: ['customer', 'assignedTo', 'channelAccount'],
+      relations: ['customer', 'assignedTo', 'channelAccount', 'channelAccount.channel'],
     });
   }
 
@@ -113,7 +113,7 @@ export class ConversationRepository {
   ): Promise<Conversation | null> {
     return this.repository.findOne({
       where: { tenantId, customerId, channelAccountId },
-      relations: ['customer', 'assignedTo', 'channelAccount'],
+      relations: ['customer', 'assignedTo', 'channelAccount', 'channelAccount.channel'],
     });
   }
 
@@ -166,6 +166,7 @@ export class ConversationRepository {
       .leftJoinAndSelect('conversation.customer', 'customer')
       .leftJoinAndSelect('conversation.assignedTo', 'assignedTo')
       .leftJoinAndSelect('conversation.channelAccount', 'channelAccount')
+      .leftJoinAndSelect('channelAccount.channel', 'channel')
       .where('conversation.tenant_id = :tenantId', { tenantId })
       .andWhere('conversation.channel_account_id IN (:...channelAccountIds)', {
         channelAccountIds: accessibleChannelAccountIds,

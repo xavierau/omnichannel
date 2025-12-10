@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.templateSubmitLimiter = exports.broadcastBulkLimiter = exports.broadcastActionLimiter = exports.csrfTokenLimiter = exports.refreshLimiter = exports.passwordResetLimiter = exports.registerLimiter = exports.authLimiter = exports.generalLimiter = void 0;
+exports.agentApiLimiter = exports.templateSubmitLimiter = exports.broadcastBulkLimiter = exports.broadcastActionLimiter = exports.csrfTokenLimiter = exports.refreshLimiter = exports.passwordResetLimiter = exports.registerLimiter = exports.authLimiter = exports.generalLimiter = void 0;
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const constants_1 = require("../config/constants");
 /**
@@ -151,4 +151,59 @@ exports.templateSubmitLimiter = (0, express_rate_limit_1.default)({
     keyGenerator: (req) => getClientKey(req, 'template_submit'),
     validate: { xForwardedForHeader: false },
     handler: createRateLimitHandler('Too many template submissions. Please wait before submitting more templates.'),
+});
+/**
+ * Extract API key identifier for rate limiting.
+ * Uses the key prefix (first 12 chars) or a hash of the full key
+ * to provide consistent rate limiting per API key.
+ *
+ * Falls back to IP if no API key is present.
+ */
+function getApiKeyIdentifier(req) {
+    // Try to get the API key from Authorization header or X-API-Key
+    const authHeader = req.headers['authorization'];
+    let apiKey;
+    if (authHeader && typeof authHeader === 'string') {
+        const parts = authHeader.split(' ');
+        if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
+            apiKey = parts[1];
+        }
+    }
+    if (!apiKey) {
+        const xApiKey = req.headers['x-api-key'];
+        if (xApiKey && typeof xApiKey === 'string') {
+            apiKey = xApiKey;
+        }
+    }
+    if (apiKey) {
+        // Use the key prefix (first 12 chars) for rate limiting
+        // This is not sensitive and allows tracking per key
+        const prefix = apiKey.substring(0, 12);
+        return `agent_api:key:${prefix}`;
+    }
+    // Fall back to IP-based limiting
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    return `agent_api:ip:${ip.replace(/[:.]/g, '_')}`;
+}
+/**
+ * Rate limiter for Agent API endpoints.
+ *
+ * Security:
+ * - Prevents brute force attacks on API key authentication
+ * - Limits abuse from compromised API keys
+ * - Rate limits per API key (using key prefix) rather than IP
+ *   to properly track API key usage
+ *
+ * Configuration:
+ * - 100 requests per minute per API key
+ * - Stricter than general rate limiting due to authentication risk
+ */
+exports.agentApiLimiter = (0, express_rate_limit_1.default)({
+    windowMs: constants_1.RATE_LIMIT_CONSTANTS.AGENT_API.WINDOW_MS,
+    max: constants_1.RATE_LIMIT_CONSTANTS.AGENT_API.MAX_REQUESTS,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => getApiKeyIdentifier(req),
+    validate: { xForwardedForHeader: false },
+    handler: createRateLimitHandler('Too many API requests. Please slow down and try again later.'),
 });

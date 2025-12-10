@@ -5,6 +5,8 @@ const express_1 = require("express");
 const tsyringe_1 = require("tsyringe");
 const channel_account_controller_1 = require("./channel-account.controller");
 const authenticate_1 = require("../../middleware/authenticate");
+const validate_dto_1 = require("../../middleware/validate-dto");
+const update_webhook_settings_dto_1 = require("./dto/update-webhook-settings.dto");
 /**
  * Create routes for channel account management.
  *
@@ -33,5 +35,16 @@ function createChannelAccountRoutes() {
     router.post('/:id/sync-templates', (req, res, next) => controller.syncTemplates(req, res, next));
     // Get webhook configuration for Meta setup
     router.get('/:id/webhook-config', (req, res, next) => controller.getWebhookConfig(req, res, next));
+    // =========================================================================
+    // Webhook Settings Routes
+    // =========================================================================
+    // Get webhook settings
+    router.get('/:id/webhook-settings', (req, res, next) => controller.getWebhookSettings(req, res, next));
+    // Update webhook settings
+    router.patch('/:id/webhook-settings', (0, validate_dto_1.validateDto)(update_webhook_settings_dto_1.UpdateWebhookSettingsDto), (req, res, next) => controller.updateWebhookSettings(req, res, next));
+    // Regenerate webhook secret
+    router.post('/:id/webhook-secret/regenerate', (req, res, next) => controller.regenerateWebhookSecret(req, res, next));
+    // Test webhook
+    router.post('/:id/webhook-test', (req, res, next) => controller.testWebhook(req, res, next));
     return router;
 }

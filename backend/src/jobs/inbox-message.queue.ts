@@ -10,6 +10,7 @@ import { MetaMediaService } from '../features/messaging/services/meta-media.serv
 import { MessagingRateLimiterService } from '../features/messaging/services/rate-limiter.service';
 import { InboxSseService } from '../features/inbox/services/inbox-sse.service';
 import { MessagingWindowService } from '../features/inbox/services/messaging-window.service';
+import { OutgoingWebhookService } from '../features/outgoing-webhooks/services/outgoing-webhook.service';
 import { logger, auditLogger } from '../config/logger.config';
 import {
   MessageDirection,
@@ -267,7 +268,8 @@ export class InboxMessageQueue {
     @inject(MetaMediaService) private metaMediaService: MetaMediaService,
     @inject(MessagingRateLimiterService) private rateLimiterService: MessagingRateLimiterService,
     @inject(InboxSseService) private sseService: InboxSseService,
-    @inject(MessagingWindowService) private messagingWindowService: MessagingWindowService
+    @inject(MessagingWindowService) private messagingWindowService: MessagingWindowService,
+    @inject(OutgoingWebhookService) private outgoingWebhookService: OutgoingWebhookService
   ) {
     this.queue = createQueue('inbox-messages');
     this.setupProcessors();
@@ -927,6 +929,28 @@ export class InboxMessageQueue {
       customerId: customer.id,
       isNewConversation,
     });
+
+    // 7. Trigger outgoing webhook for unassigned conversations
+    // This notifies external services (n8n, AI agents) when a message arrives
+    // for a conversation that is not assigned to any operator
+    if (conversation.assignedToId === null) {
+      try {
+        await this.outgoingWebhookService.dispatchUnassignedMessageWebhook(
+          message,
+          conversation,
+          customer,
+          channelAccountId
+        );
+      } catch (webhookError) {
+        // Log but don't fail the inbound processing if webhook dispatch fails
+        logger.error('Failed to dispatch outgoing webhook', {
+          error: webhookError instanceof Error ? webhookError.message : String(webhookError),
+          conversationId: conversation.id,
+          messageId: message.id,
+          channelAccountId,
+        });
+      }
+    }
   }
 
   /**

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ITemplateSubmissionQueue = exports.TEMPLATE_SUBMISSION_JOB = exports.TemplateSubmissionQueue = exports.InboxMessageQueue = exports.BroadcastScheduler = exports.JobType = exports.BroadcastQueue = void 0;
+exports.OUTGOING_WEBHOOK_QUEUE_NAME = exports.OutgoingWebhookJobType = exports.OutgoingWebhookQueue = exports.ITemplateSubmissionQueue = exports.TEMPLATE_SUBMISSION_JOB = exports.TemplateSubmissionQueue = exports.InboxMessageQueue = exports.BroadcastScheduler = exports.JobType = exports.BroadcastQueue = void 0;
 var broadcast_queue_1 = require("./broadcast.queue");
 Object.defineProperty(exports, "BroadcastQueue", { enumerable: true, get: function () { return broadcast_queue_1.BroadcastQueue; } });
 Object.defineProperty(exports, "JobType", { enumerable: true, get: function () { return broadcast_queue_1.JobType; } });
@@ -13,3 +13,7 @@ Object.defineProperty(exports, "TemplateSubmissionQueue", { enumerable: true, ge
 Object.defineProperty(exports, "TEMPLATE_SUBMISSION_JOB", { enumerable: true, get: function () { return template_submission_queue_1.TEMPLATE_SUBMISSION_JOB; } });
 var template_submission_queue_interface_1 = require("./interfaces/template-submission-queue.interface");
 Object.defineProperty(exports, "ITemplateSubmissionQueue", { enumerable: true, get: function () { return template_submission_queue_interface_1.ITemplateSubmissionQueue; } });
+var outgoing_webhook_queue_1 = require("./outgoing-webhook.queue");
+Object.defineProperty(exports, "OutgoingWebhookQueue", { enumerable: true, get: function () { return outgoing_webhook_queue_1.OutgoingWebhookQueue; } });
+Object.defineProperty(exports, "OutgoingWebhookJobType", { enumerable: true, get: function () { return outgoing_webhook_queue_1.OutgoingWebhookJobType; } });
+Object.defineProperty(exports, "OUTGOING_WEBHOOK_QUEUE_NAME", { enumerable: true, get: function () { return outgoing_webhook_queue_1.OUTGOING_WEBHOOK_QUEUE_NAME; } });

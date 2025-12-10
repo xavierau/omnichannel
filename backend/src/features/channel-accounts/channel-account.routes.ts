@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { container } from 'tsyringe';
 import { ChannelAccountController } from './channel-account.controller';
 import { authenticate } from '../../middleware/authenticate';
+import { validateDto } from '../../middleware/validate-dto';
+import { UpdateWebhookSettingsDto } from './dto/update-webhook-settings.dto';
 
 /**
  * Create routes for channel account management.
@@ -44,6 +46,32 @@ export function createChannelAccountRoutes(): Router {
   // Get webhook configuration for Meta setup
   router.get('/:id/webhook-config', (req, res, next) =>
     controller.getWebhookConfig(req, res, next)
+  );
+
+  // =========================================================================
+  // Webhook Settings Routes
+  // =========================================================================
+
+  // Get webhook settings
+  router.get('/:id/webhook-settings', (req, res, next) =>
+    controller.getWebhookSettings(req, res, next)
+  );
+
+  // Update webhook settings
+  router.patch(
+    '/:id/webhook-settings',
+    validateDto(UpdateWebhookSettingsDto),
+    (req, res, next) => controller.updateWebhookSettings(req, res, next)
+  );
+
+  // Regenerate webhook secret
+  router.post('/:id/webhook-secret/regenerate', (req, res, next) =>
+    controller.regenerateWebhookSecret(req, res, next)
+  );
+
+  // Test webhook
+  router.post('/:id/webhook-test', (req, res, next) =>
+    controller.testWebhook(req, res, next)
   );
 
   return router;

@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChannelAccountController = void 0;
 const tsyringe_1 = require("tsyringe");
 const channel_account_service_1 = require("./channel-account.service");
+const webhook_configuration_service_1 = require("./services/webhook-configuration.service");
 const logger_config_1 = require("../../config/logger.config");
 /**
  * Controller for channel account management.
@@ -23,8 +24,10 @@ const logger_config_1 = require("../../config/logger.config");
  */
 let ChannelAccountController = class ChannelAccountController {
     channelAccountService;
-    constructor(channelAccountService) {
+    webhookConfigurationService;
+    constructor(channelAccountService, webhookConfigurationService) {
         this.channelAccountService = channelAccountService;
+        this.webhookConfigurationService = webhookConfigurationService;
     }
     /**
      * GET /api/channel-accounts
@@ -298,10 +301,131 @@ let ChannelAccountController = class ChannelAccountController {
             next(error);
         }
     }
+    // =========================================================================
+    // Webhook Settings Endpoints
+    // =========================================================================
+    /**
+     * GET /api/channel-accounts/:id/webhook-settings
+     * Get webhook settings for a channel account.
+     *
+     * Returns the current webhook URL, whether a secret exists,
+     * and whether webhook events are enabled.
+     */
+    async getWebhookSettings(req, res, next) {
+        try {
+            const tenantId = req.user?.tenantId;
+            const { id } = req.params;
+            if (!tenantId) {
+                res.status(401).json({ error: 'Unauthorized' });
+                return;
+            }
+            const settings = await this.webhookConfigurationService.getWebhookSettings(id, tenantId);
+            res.json({ data: settings });
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    /**
+     * PATCH /api/channel-accounts/:id/webhook-settings
+     * Update webhook settings for a channel account.
+     *
+     * Accepts webhookUrl and/or webhookEventsEnabled.
+     * If setting webhookUrl for the first time, auto-generates a secret.
+     */
+    async updateWebhookSettings(req, res, next) {
+        try {
+            const tenantId = req.user?.tenantId;
+            const { id } = req.params;
+            if (!tenantId) {
+                res.status(401).json({ error: 'Unauthorized' });
+                return;
+            }
+            const dto = req.body;
+            const settings = await this.webhookConfigurationService.updateWebhookSettings(id, tenantId, dto);
+            logger_config_1.logger.info('Webhook settings updated via API', {
+                channelAccountId: id,
+                tenantId,
+            });
+            res.json({ data: settings });
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    /**
+     * POST /api/channel-accounts/:id/webhook-secret/regenerate
+     * Regenerate the webhook secret for a channel account.
+     *
+     * Returns the new secret - this is the ONLY time it will be visible.
+     * The user must save it immediately.
+     */
+    async regenerateWebhookSecret(req, res, next) {
+        try {
+            const tenantId = req.user?.tenantId;
+            const { id } = req.params;
+            if (!tenantId) {
+                res.status(401).json({ error: 'Unauthorized' });
+                return;
+            }
+            const result = await this.webhookConfigurationService.regenerateWebhookSecret(id, tenantId);
+            logger_config_1.logger.info('Webhook secret regenerated via API', {
+                channelAccountId: id,
+                tenantId,
+            });
+            res.json({
+                data: {
+                    secret: result.secret,
+                    message: 'This is the only time the secret will be displayed. Please save it securely.',
+                },
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    /**
+     * POST /api/channel-accounts/:id/webhook-test
+     * Test the webhook configuration by sending a test payload.
+     *
+     * Returns success/failure status.
+     */
+    async testWebhook(req, res, next) {
+        try {
+            const tenantId = req.user?.tenantId;
+            const { id } = req.params;
+            if (!tenantId) {
+                res.status(401).json({ error: 'Unauthorized' });
+                return;
+            }
+            const result = await this.webhookConfigurationService.testWebhook(id, tenantId);
+            if (result.success) {
+                res.json({
+                    data: {
+                        success: true,
+                        message: 'Test webhook sent successfully',
+                    },
+                });
+            }
+            else {
+                res.status(400).json({
+                    data: {
+                        success: false,
+                        error: result.error,
+                    },
+                });
+            }
+        }
+        catch (error) {
+            next(error);
+        }
+    }
 };
 exports.ChannelAccountController = ChannelAccountController;
 exports.ChannelAccountController = ChannelAccountController = __decorate([
     (0, tsyringe_1.singleton)(),
     __param(0, (0, tsyringe_1.inject)(channel_account_service_1.ChannelAccountService)),
-    __metadata("design:paramtypes", [channel_account_service_1.ChannelAccountService])
+    __param(1, (0, tsyringe_1.inject)(webhook_configuration_service_1.WebhookConfigurationService)),
+    __metadata("design:paramtypes", [channel_account_service_1.ChannelAccountService,
+        webhook_configuration_service_1.WebhookConfigurationService])
 ], ChannelAccountController);

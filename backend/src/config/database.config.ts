@@ -36,6 +36,9 @@ import { CustomFieldDefinition } from '@features/custom-fields/custom-field.enti
 // Invitations entity
 import { Invitation } from '@features/invitations/invitation.entity';
 
+// API Keys entity
+import { ApiKey } from '@features/api-keys/entities/api-key.entity';
+
 import { logger } from './logger.config';
 import { DB_CONSTANTS } from './constants';
 
@@ -136,6 +139,8 @@ const dataSourceOptions: PostgresConnectionOptions = {
     CustomFieldDefinition,
     // Invitations entity
     Invitation,
+    // API Keys entity
+    ApiKey,
   ],
   migrations: [__dirname + '/../database/migrations/*.{js,ts}'],
   subscribers: [],

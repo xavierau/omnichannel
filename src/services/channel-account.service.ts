@@ -100,6 +100,26 @@ export interface SyncTemplatesResult {
   errors?: string[]
 }
 
+export interface WebhookSettings {
+  webhookUrl: string | null
+  hasWebhookSecret: boolean
+  webhookEventsEnabled: boolean
+}
+
+export interface UpdateWebhookSettingsDto {
+  webhookUrl?: string | null
+  webhookEventsEnabled?: boolean
+}
+
+export interface WebhookTestResult {
+  success: boolean
+  error?: string
+}
+
+export interface RegenerateWebhookSecretResult {
+  secret: string
+}
+
 // ============================================================================
 // Service
 // ============================================================================
@@ -194,6 +214,52 @@ export const channelAccountService = {
   async getWebhookConfig(id: string): Promise<WebhookConfig> {
     const response = await apiGet<ApiResponse<WebhookConfig>>(
       `${API_BASE_URL}/${id}/webhook-config`
+    )
+    return response.data
+  },
+
+  /**
+   * Get webhook settings for a channel account
+   */
+  async getWebhookSettings(channelAccountId: string): Promise<WebhookSettings> {
+    const response = await apiGet<ApiResponse<WebhookSettings>>(
+      `${API_BASE_URL}/${channelAccountId}/webhook-settings`
+    )
+    return response.data
+  },
+
+  /**
+   * Update webhook settings for a channel account
+   */
+  async updateWebhookSettings(
+    channelAccountId: string,
+    data: UpdateWebhookSettingsDto
+  ): Promise<void> {
+    await apiPatch<ApiResponse<void>, UpdateWebhookSettingsDto>(
+      `${API_BASE_URL}/${channelAccountId}/webhook-settings`,
+      data
+    )
+  },
+
+  /**
+   * Regenerate the webhook secret for a channel account
+   * Returns the new secret (shown only once)
+   */
+  async regenerateWebhookSecret(
+    channelAccountId: string
+  ): Promise<RegenerateWebhookSecretResult> {
+    const response = await apiPost<ApiResponse<RegenerateWebhookSecretResult>>(
+      `${API_BASE_URL}/${channelAccountId}/webhook-secret/regenerate`
+    )
+    return response.data
+  },
+
+  /**
+   * Send a test payload to the configured webhook URL
+   */
+  async testWebhook(channelAccountId: string): Promise<WebhookTestResult> {
+    const response = await apiPost<ApiResponse<WebhookTestResult>>(
+      `${API_BASE_URL}/${channelAccountId}/webhook-test`
     )
     return response.data
   },

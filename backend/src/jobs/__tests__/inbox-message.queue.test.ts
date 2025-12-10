@@ -15,6 +15,7 @@ import { MetaMediaService } from '../../features/messaging/services/meta-media.s
 import { MessagingRateLimiterService } from '../../features/messaging/services/rate-limiter.service';
 import { InboxSseService } from '../../features/inbox/services/inbox-sse.service';
 import { MessagingWindowService } from '../../features/inbox/services/messaging-window.service';
+import { OutgoingWebhookService } from '../../features/outgoing-webhooks/services/outgoing-webhook.service';
 import { ConversationMessage } from '../../features/inbox/entities/conversation-message.entity';
 import { Conversation } from '../../features/inbox/entities/conversation.entity';
 import {
@@ -244,6 +245,10 @@ describe('InboxMessageQueue', () => {
       extractRetryAfter: jest.fn().mockReturnValue(undefined),
     } as unknown as jest.Mocked<MessagingRateLimiterService>;
 
+    const mockOutgoingWebhookService = {
+      dispatchUnassignedMessageWebhook: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<OutgoingWebhookService>;
+
     inboxMessageQueue = new InboxMessageQueue(
       mockConversationRepo,
       mockMessageRepo,
@@ -253,7 +258,8 @@ describe('InboxMessageQueue', () => {
       mockMetaMediaService,
       mockRateLimiterService,
       mockSseService,
-      mockMessagingWindowService
+      mockMessagingWindowService,
+      mockOutgoingWebhookService
     );
   });
 
@@ -541,6 +547,10 @@ describe('InboxMessageQueue Job Processors', () => {
       extractRetryAfter: jest.fn().mockReturnValue(undefined),
     } as unknown as jest.Mocked<MessagingRateLimiterService>;
 
+    const mockOutgoingWebhookService = {
+      dispatchUnassignedMessageWebhook: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<OutgoingWebhookService>;
+
     inboxMessageQueue = new InboxMessageQueue(
       mockConversationRepo,
       mockMessageRepo,
@@ -550,7 +560,8 @@ describe('InboxMessageQueue Job Processors', () => {
       mockMetaMediaService,
       mockRateLimiterService,
       mockSseService,
-      mockMessagingWindowService
+      mockMessagingWindowService,
+      mockOutgoingWebhookService
     );
   });
 

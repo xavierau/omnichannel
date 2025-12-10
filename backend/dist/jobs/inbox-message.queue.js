@@ -24,6 +24,7 @@ const meta_media_service_1 = require("../features/messaging/services/meta-media.
 const rate_limiter_service_1 = require("../features/messaging/services/rate-limiter.service");
 const inbox_sse_service_1 = require("../features/inbox/services/inbox-sse.service");
 const messaging_window_service_1 = require("../features/inbox/services/messaging-window.service");
+const outgoing_webhook_service_1 = require("../features/outgoing-webhooks/services/outgoing-webhook.service");
 const logger_config_1 = require("../config/logger.config");
 const enums_1 = require("../features/inbox/enums");
 /**
@@ -175,8 +176,9 @@ let InboxMessageQueue = class InboxMessageQueue {
     rateLimiterService;
     sseService;
     messagingWindowService;
+    outgoingWebhookService;
     queue;
-    constructor(conversationRepository, messageRepository, customerRepository, channelAccountRepository, messagingService, metaMediaService, rateLimiterService, sseService, messagingWindowService) {
+    constructor(conversationRepository, messageRepository, customerRepository, channelAccountRepository, messagingService, metaMediaService, rateLimiterService, sseService, messagingWindowService, outgoingWebhookService) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.customerRepository = customerRepository;
@@ -186,6 +188,7 @@ let InboxMessageQueue = class InboxMessageQueue {
         this.rateLimiterService = rateLimiterService;
         this.sseService = sseService;
         this.messagingWindowService = messagingWindowService;
+        this.outgoingWebhookService = outgoingWebhookService;
         this.queue = (0, bull_config_1.createQueue)('inbox-messages');
         this.setupProcessors();
         this.setupEventListeners();
@@ -652,6 +655,23 @@ let InboxMessageQueue = class InboxMessageQueue {
             customerId: customer.id,
             isNewConversation,
         });
+        // 7. Trigger outgoing webhook for unassigned conversations
+        // This notifies external services (n8n, AI agents) when a message arrives
+        // for a conversation that is not assigned to any operator
+        if (conversation.assignedToId === null) {
+            try {
+                await this.outgoingWebhookService.dispatchUnassignedMessageWebhook(message, conversation, customer, channelAccountId);
+            }
+            catch (webhookError) {
+                // Log but don't fail the inbound processing if webhook dispatch fails
+                logger_config_1.logger.error('Failed to dispatch outgoing webhook', {
+                    error: webhookError instanceof Error ? webhookError.message : String(webhookError),
+                    conversationId: conversation.id,
+                    messageId: message.id,
+                    channelAccountId,
+                });
+            }
+        }
     }
     /**
      * Process media content: download from Meta CDN and upload to S3.
@@ -930,6 +950,7 @@ exports.InboxMessageQueue = InboxMessageQueue = __decorate([
     __param(6, (0, tsyringe_1.inject)(rate_limiter_service_1.MessagingRateLimiterService)),
     __param(7, (0, tsyringe_1.inject)(inbox_sse_service_1.InboxSseService)),
     __param(8, (0, tsyringe_1.inject)(messaging_window_service_1.MessagingWindowService)),
+    __param(9, (0, tsyringe_1.inject)(outgoing_webhook_service_1.OutgoingWebhookService)),
     __metadata("design:paramtypes", [conversation_repository_1.ConversationRepository,
         conversation_message_repository_1.ConversationMessageRepository,
         customer_repository_1.CustomerRepository,
@@ -938,5 +959,6 @@ exports.InboxMessageQueue = InboxMessageQueue = __decorate([
         meta_media_service_1.MetaMediaService,
         rate_limiter_service_1.MessagingRateLimiterService,
         inbox_sse_service_1.InboxSseService,
-        messaging_window_service_1.MessagingWindowService])
+        messaging_window_service_1.MessagingWindowService,
+        outgoing_webhook_service_1.OutgoingWebhookService])
 ], InboxMessageQueue);

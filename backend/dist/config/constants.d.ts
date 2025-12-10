@@ -54,6 +54,10 @@ export declare const RATE_LIMIT_CONSTANTS: {
         readonly WINDOW_MS: number;
         readonly MAX_REQUESTS: 5;
     };
+    readonly AGENT_API: {
+        readonly WINDOW_MS: number;
+        readonly MAX_REQUESTS: 100;
+    };
 };
 export declare const DB_CONSTANTS: {
     readonly CONNECTION_POOL_MAX: 20;

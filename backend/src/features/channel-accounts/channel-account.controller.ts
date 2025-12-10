@@ -5,6 +5,7 @@ import {
   CreateChannelAccountDto,
   UpdateChannelAccountDto,
 } from './channel-account.service';
+import { WebhookConfigurationService } from './services/webhook-configuration.service';
 import { logger } from '../../config/logger.config';
 
 /**
@@ -15,7 +16,10 @@ import { logger } from '../../config/logger.config';
 @singleton()
 export class ChannelAccountController {
   constructor(
-    @inject(ChannelAccountService) private channelAccountService: ChannelAccountService
+    @inject(ChannelAccountService)
+    private readonly channelAccountService: ChannelAccountService,
+    @inject(WebhookConfigurationService)
+    private readonly webhookConfigurationService: WebhookConfigurationService
   ) {}
 
   /**
@@ -322,6 +326,149 @@ export class ChannelAccountController {
         res.status(404).json({ error: error.message });
         return;
       }
+      next(error);
+    }
+  }
+
+  // =========================================================================
+  // Webhook Settings Endpoints
+  // =========================================================================
+
+  /**
+   * GET /api/channel-accounts/:id/webhook-settings
+   * Get webhook settings for a channel account.
+   *
+   * Returns the current webhook URL, whether a secret exists,
+   * and whether webhook events are enabled.
+   */
+  async getWebhookSettings(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const tenantId = req.user?.tenantId;
+      const { id } = req.params;
+
+      if (!tenantId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const settings = await this.webhookConfigurationService.getWebhookSettings(id, tenantId);
+
+      res.json({ data: settings });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * PATCH /api/channel-accounts/:id/webhook-settings
+   * Update webhook settings for a channel account.
+   *
+   * Accepts webhookUrl and/or webhookEventsEnabled.
+   * If setting webhookUrl for the first time, auto-generates a secret.
+   */
+  async updateWebhookSettings(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const tenantId = req.user?.tenantId;
+      const { id } = req.params;
+
+      if (!tenantId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const dto = req.body;
+
+      const settings = await this.webhookConfigurationService.updateWebhookSettings(
+        id,
+        tenantId,
+        dto
+      );
+
+      logger.info('Webhook settings updated via API', {
+        channelAccountId: id,
+        tenantId,
+      });
+
+      res.json({ data: settings });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/channel-accounts/:id/webhook-secret/regenerate
+   * Regenerate the webhook secret for a channel account.
+   *
+   * Returns the new secret - this is the ONLY time it will be visible.
+   * The user must save it immediately.
+   */
+  async regenerateWebhookSecret(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const tenantId = req.user?.tenantId;
+      const { id } = req.params;
+
+      if (!tenantId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const result = await this.webhookConfigurationService.regenerateWebhookSecret(id, tenantId);
+
+      logger.info('Webhook secret regenerated via API', {
+        channelAccountId: id,
+        tenantId,
+      });
+
+      res.json({
+        data: {
+          secret: result.secret,
+          message:
+            'This is the only time the secret will be displayed. Please save it securely.',
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/channel-accounts/:id/webhook-test
+   * Test the webhook configuration by sending a test payload.
+   *
+   * Returns success/failure status.
+   */
+  async testWebhook(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const tenantId = req.user?.tenantId;
+      const { id } = req.params;
+
+      if (!tenantId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const result = await this.webhookConfigurationService.testWebhook(id, tenantId);
+
+      if (result.success) {
+        res.json({
+          data: {
+            success: true,
+            message: 'Test webhook sent successfully',
+          },
+        });
+      } else {
+        res.status(400).json({
+          data: {
+            success: false,
+            error: result.error,
+          },
+        });
+      }
+    } catch (error) {
       next(error);
     }
   }

@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { Conversation, ConversationStatus } from "../types"
+import { ChannelBadge } from "./ChannelBadge"
 
 interface ConversationListItemProps {
   conversation: Conversation
@@ -153,9 +154,16 @@ export const ConversationListItem = memo(function ConversationListItem({
           </span>
         </div>
 
-        {/* Phone number */}
-        <div className="text-xs text-muted-foreground truncate mt-0.5">
-          {customerWhatsappNumber}
+        {/* Channel badge and phone number */}
+        <div className="flex items-center gap-2 mt-0.5">
+          <ChannelBadge
+            channelAccount={conversation.channelAccount}
+            variant="compact"
+            showTooltip
+          />
+          <span className="text-xs text-muted-foreground truncate">
+            {customerWhatsappNumber}
+          </span>
         </div>
 
         {/* Message preview row */}

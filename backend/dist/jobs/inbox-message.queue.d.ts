@@ -8,6 +8,7 @@ import { MetaMediaService } from '../features/messaging/services/meta-media.serv
 import { MessagingRateLimiterService } from '../features/messaging/services/rate-limiter.service';
 import { InboxSseService } from '../features/inbox/services/inbox-sse.service';
 import { MessagingWindowService } from '../features/inbox/services/messaging-window.service';
+import { OutgoingWebhookService } from '../features/outgoing-webhooks/services/outgoing-webhook.service';
 import { TemplateVariables } from '../features/messaging/interfaces/messaging-provider.interface';
 /**
  * Job types for the inbox message queue.
@@ -130,8 +131,9 @@ export declare class InboxMessageQueue {
     private rateLimiterService;
     private sseService;
     private messagingWindowService;
+    private outgoingWebhookService;
     private queue;
-    constructor(conversationRepository: ConversationRepository, messageRepository: ConversationMessageRepository, customerRepository: CustomerRepository, channelAccountRepository: ChannelAccountRepository, messagingService: MessagingService, metaMediaService: MetaMediaService, rateLimiterService: MessagingRateLimiterService, sseService: InboxSseService, messagingWindowService: MessagingWindowService);
+    constructor(conversationRepository: ConversationRepository, messageRepository: ConversationMessageRepository, customerRepository: CustomerRepository, channelAccountRepository: ChannelAccountRepository, messagingService: MessagingService, metaMediaService: MetaMediaService, rateLimiterService: MessagingRateLimiterService, sseService: InboxSseService, messagingWindowService: MessagingWindowService, outgoingWebhookService: OutgoingWebhookService);
     /**
      * Queue an outbound message for delivery.
      *

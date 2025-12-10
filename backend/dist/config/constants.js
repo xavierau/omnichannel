@@ -84,6 +84,11 @@ exports.RATE_LIMIT_CONSTANTS = {
         WINDOW_MS: 60 * 1000, // 1 minute
         MAX_REQUESTS: 5,
     },
+    // Agent API rate limiting - stricter to prevent brute force attacks
+    AGENT_API: {
+        WINDOW_MS: 60 * 1000, // 1 minute
+        MAX_REQUESTS: 100, // 100 requests per minute per API key
+    },
 };
 exports.DB_CONSTANTS = {
     // Connection pool sizing

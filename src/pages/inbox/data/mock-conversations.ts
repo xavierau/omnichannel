@@ -1,8 +1,31 @@
-import type { Conversation, Message } from "../types"
+import type { Conversation, Message, ChannelAccount } from "../types"
 
 // Helper to create dates relative to now
 const hoursAgo = (hours: number) => new Date(Date.now() - hours * 60 * 60 * 1000)
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60 * 1000)
+
+// Mock channel accounts
+const mockWhatsAppSupport: ChannelAccount = {
+  id: "ca-1",
+  name: "Support Line",
+  phoneNumber: "+1 555-100-0001",
+  channel: {
+    id: "ch-1",
+    code: "whatsapp",
+    name: "WhatsApp",
+  },
+}
+
+const mockWhatsAppSales: ChannelAccount = {
+  id: "ca-2",
+  name: "Sales WhatsApp",
+  phoneNumber: "+1 555-100-0002",
+  channel: {
+    id: "ch-1",
+    code: "whatsapp",
+    name: "WhatsApp",
+  },
+}
 
 // Message generators
 const createMessage = (
@@ -203,6 +226,7 @@ export const mockConversations: Conversation[] = [
     customerWhatsappNumber: "+1 555-123-4567",
     customerAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
     channel: "whatsapp",
+    channelAccount: mockWhatsAppSupport,
     status: "active",
     assignedToId: "op-1",
     assignedToName: "Alice Chen",
@@ -220,6 +244,7 @@ export const mockConversations: Conversation[] = [
     customerWhatsappNumber: "+1 555-234-5678",
     customerAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
     channel: "whatsapp",
+    channelAccount: mockWhatsAppSales,
     status: "unassigned",
     assignedToId: null,
     assignedToName: null,
@@ -237,6 +262,7 @@ export const mockConversations: Conversation[] = [
     customerWhatsappNumber: "+1 555-345-6789",
     customerAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Michael",
     channel: "whatsapp",
+    channelAccount: mockWhatsAppSupport,
     status: "waiting",
     assignedToId: "op-2",
     assignedToName: "Bob Smith",
@@ -254,6 +280,7 @@ export const mockConversations: Conversation[] = [
     customerWhatsappNumber: "+1 555-456-7890",
     customerAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emily",
     channel: "whatsapp",
+    channelAccount: mockWhatsAppSupport,
     status: "active",
     assignedToId: "op-1",
     assignedToName: "Alice Chen",
@@ -271,6 +298,7 @@ export const mockConversations: Conversation[] = [
     customerWhatsappNumber: "+1 555-567-8901",
     customerAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=David",
     channel: "whatsapp",
+    channelAccount: mockWhatsAppSales,
     status: "active",
     assignedToId: "op-3",
     assignedToName: "Carol Davis",
@@ -288,6 +316,7 @@ export const mockConversations: Conversation[] = [
     customerWhatsappNumber: "+1 555-678-9012",
     customerAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Lisa",
     channel: "whatsapp",
+    channelAccount: mockWhatsAppSupport,
     status: "active",
     assignedToId: "op-2",
     assignedToName: "Bob Smith",
@@ -305,6 +334,7 @@ export const mockConversations: Conversation[] = [
     customerWhatsappNumber: "+1 555-789-0123",
     customerAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Robert",
     channel: "whatsapp",
+    channelAccount: mockWhatsAppSupport,
     status: "resolved",
     assignedToId: "op-1",
     assignedToName: "Alice Chen",
@@ -322,6 +352,7 @@ export const mockConversations: Conversation[] = [
     customerWhatsappNumber: "+1 555-890-1234",
     customerAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jennifer",
     channel: "whatsapp",
+    channelAccount: mockWhatsAppSales,
     status: "unassigned",
     assignedToId: null,
     assignedToName: null,
@@ -339,6 +370,7 @@ export const mockConversations: Conversation[] = [
     customerWhatsappNumber: "+1 555-901-2345",
     customerAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=William",
     channel: "whatsapp",
+    channelAccount: mockWhatsAppSupport,
     status: "active",
     assignedToId: "op-2",
     assignedToName: "Bob Smith",
@@ -356,6 +388,7 @@ export const mockConversations: Conversation[] = [
     customerWhatsappNumber: "+1 555-012-3456",
     customerAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Amanda",
     channel: "whatsapp",
+    channelAccount: mockWhatsAppSupport,
     status: "closed",
     assignedToId: "op-3",
     assignedToName: "Carol Davis",
@@ -373,6 +406,7 @@ export const mockConversations: Conversation[] = [
     customerWhatsappNumber: "+1 555-111-2222",
     customerAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Chris",
     channel: "whatsapp",
+    channelAccount: mockWhatsAppSales,
     status: "active",
     assignedToId: "op-3",
     assignedToName: "Carol Davis",
@@ -390,6 +424,7 @@ export const mockConversations: Conversation[] = [
     customerWhatsappNumber: "+1 555-333-4444",
     customerAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Michelle",
     channel: "whatsapp",
+    channelAccount: mockWhatsAppSupport,
     status: "unassigned",
     assignedToId: null,
     assignedToName: null,

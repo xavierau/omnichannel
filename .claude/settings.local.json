@@ -69,7 +69,10 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(echo:*)",
-      "Bash(DATABASE_PASSWORD=password npm run migration:run:*)"
+      "Bash(DATABASE_PASSWORD=password npm run migration:run:*)",
+      "Bash(npm run test:*)",
+      "mcp__chrome-devtools__get_console_message",
+      "Bash(kill:*)"
     ],
     "deny": [],
     "ask": []
