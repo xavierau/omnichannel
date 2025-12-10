@@ -261,4 +261,19 @@ export const templateService = {
   async deleteTranslation(templateId: string, translationId: string): Promise<void> {
     await apiDelete(`${API_BASE_URL}/${templateId}/translations/${translationId}`)
   },
+
+  /**
+   * Submit a translation to Meta for approval.
+   * The submission is queued and processed asynchronously.
+   * Status updates will be delivered via SSE (template:status:changed event).
+   */
+  async submitForApproval(
+    templateId: string,
+    translationId: string
+  ): Promise<void> {
+    await apiPost(
+      `${API_BASE_URL}/${templateId}/translations/${translationId}/submit`,
+      {}
+    )
+  },
 }

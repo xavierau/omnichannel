@@ -454,29 +454,64 @@ export function WhatsAppTemplatesPage() {
   )
 
   const handleSubmitApprovalTranslation = React.useCallback(
-    (group: WhatsAppTemplateGroup, translation: TemplateTranslation) => {
-      console.log("Submit for approval:", group.name, translation.language)
-      // Update translation status to pending
-      setTemplateGroups((prev) =>
-        prev.map((g) =>
-          g.id === group.id
-            ? {
-                ...g,
-                translations: g.translations.map((t) =>
-                  t.id === translation.id
-                    ? {
-                        ...t,
-                        status: "PENDING" as const,
-                        rejectionReason: undefined,
-                        updatedAt: new Date(),
-                      }
-                    : t
-                ),
-                updatedAt: new Date(),
-              }
-            : g
+    async (group: WhatsAppTemplateGroup, translation: TemplateTranslation) => {
+      const languageLabel = getLanguageLabel(translation.language)
+
+      try {
+        // Optimistically update UI to PENDING status
+        setTemplateGroups((prev) =>
+          prev.map((g) =>
+            g.id === group.id
+              ? {
+                  ...g,
+                  translations: g.translations.map((t) =>
+                    t.id === translation.id
+                      ? {
+                          ...t,
+                          status: "PENDING" as const,
+                          rejectionReason: undefined,
+                          updatedAt: new Date(),
+                        }
+                      : t
+                  ),
+                  updatedAt: new Date(),
+                }
+              : g
+          )
         )
-      )
+
+        // Submit to backend (queues for async processing)
+        await templateService.submitForApproval(group.id, translation.id)
+
+        // Show success toast
+        toast.success("Submission queued", {
+          description: `${group.name} (${languageLabel}) will be reviewed by Meta`,
+        })
+      } catch (error) {
+        // Revert optimistic update on error
+        setTemplateGroups((prev) =>
+          prev.map((g) =>
+            g.id === group.id
+              ? {
+                  ...g,
+                  translations: g.translations.map((t) =>
+                    t.id === translation.id
+                      ? {
+                          ...t,
+                          status: "REJECTED" as const,
+                          updatedAt: new Date(),
+                        }
+                      : t
+                  ),
+                  updatedAt: new Date(),
+                }
+              : g
+          )
+        )
+
+        const message = error instanceof Error ? error.message : "Unknown error"
+        toast.error("Submission failed", { description: message })
+      }
     },
     []
   )
