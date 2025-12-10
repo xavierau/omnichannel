@@ -85,6 +85,59 @@ export class AgentApiController {
   });
 
   /**
+   * GET /conversations/:id/messages
+   * Get paginated messages for a conversation.
+   *
+   * Validates:
+   * - Conversation exists in the tenant
+   * - API key has access to the conversation's channel account (if scoped)
+   *
+   * Returns messages in descending order (newest first).
+   * Supports pagination via query parameters: page (default: 1), limit (default: 50).
+   */
+  getMessages = asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.tenantId!;
+    const apiKey = req.apiKey as ApiKey;
+    const { id: conversationId } = req.params;
+    const validatedQuery = (req as Request & { validatedQuery?: Record<string, unknown> }).validatedQuery;
+
+    // Validate conversation exists and check scope
+    const conversation = await this.conversationRepository.findById(tenantId, conversationId);
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    this.validateChannelAccountScope(apiKey, conversation.channelAccountId);
+
+    // Get messages with pagination
+    const result = await this.messageRepository.findByConversation(conversationId, {
+      page: (validatedQuery?.page as number) || 1,
+      limit: (validatedQuery?.limit as number) || 50,
+    });
+
+    auditLogger.info('Agent API: Messages retrieved', {
+      action: 'agent_api.messages.get',
+      tenantId,
+      conversationId,
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      apiKeyId: apiKey.id,
+    });
+
+    res.json({
+      data: result.data,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+      },
+    });
+  });
+
+  /**
    * PATCH /conversations/:id/status
    * Update the status of a conversation.
    *

@@ -7,3 +7,4 @@ export {
   AgentTemplateContentDto,
 } from './send-message.dto';
 export type { AgentTemplateVariables } from './send-message.dto';
+export { AgentGetMessagesQueryDto } from './get-messages-query.dto';

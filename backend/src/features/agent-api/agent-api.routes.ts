@@ -3,13 +3,14 @@ import { container } from 'tsyringe';
 import { AgentApiController } from './controllers/agent-api.controller';
 import { apiKeyAuth, requireApiKeyPermission } from '@middleware/api-key-auth.middleware';
 import { agentApiLimiter } from '@middleware/rate-limiter';
-import { validateDto } from '@middleware/validate-dto';
+import { validateDto, validateQueryDto } from '@middleware/validate-dto';
 import { validateUuid } from '@middleware/validate-uuid';
 import { ApiKeyPermission } from '@features/api-keys/enums/api-key-permission.enum';
 import {
   AgentUpdateStatusDto,
   AgentAssignConversationDto,
   AgentSendMessageDto,
+  AgentGetMessagesQueryDto,
 } from './dto';
 
 const router = Router();
@@ -62,6 +63,30 @@ router.get(
   requireApiKeyPermission(ApiKeyPermission.CONVERSATION_READ),
   validateUuid(),
   (req, res, next) => getController().getConversation(req, res, next)
+);
+
+/**
+ * GET /agent/conversations/:id/messages
+ * Get paginated messages for a conversation.
+ *
+ * Required permission: conversation:read
+ *
+ * Query parameters:
+ * - page: Page number (default: 1)
+ * - limit: Messages per page (default: 50, max: 100)
+ *
+ * Returns:
+ * - 200: Array of messages with pagination metadata
+ * - 401: Invalid or missing API key
+ * - 403: API key lacks permission or channel account access
+ * - 404: Conversation not found
+ */
+router.get(
+  '/conversations/:id/messages',
+  requireApiKeyPermission(ApiKeyPermission.CONVERSATION_READ),
+  validateUuid(),
+  validateQueryDto(AgentGetMessagesQueryDto),
+  (req, res, next) => getController().getMessages(req, res, next)
 );
 
 /**
