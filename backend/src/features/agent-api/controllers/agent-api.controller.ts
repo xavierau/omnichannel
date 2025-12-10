@@ -49,6 +49,31 @@ export class AgentApiController {
   ) {}
 
   /**
+   * GET /operators
+   * Get list of operators (users) available for conversation assignment.
+   *
+   * Returns users who belong to active teams within the tenant.
+   * Useful for dynamic assignment logic in automation workflows.
+   */
+  getOperators = asyncHandler(async (req: Request, res: Response) => {
+    const tenantId = req.tenantId!;
+    const apiKey = req.apiKey as ApiKey;
+
+    const operators = await this.conversationService.getOperators(tenantId);
+
+    auditLogger.info('Agent API: Operators retrieved', {
+      action: 'agent_api.operators.list',
+      tenantId,
+      count: operators.length,
+      apiKeyId: apiKey.id,
+    });
+
+    res.json({
+      data: operators,
+    });
+  });
+
+  /**
    * GET /conversations/:id
    * Get a single conversation by ID with access validation.
    *

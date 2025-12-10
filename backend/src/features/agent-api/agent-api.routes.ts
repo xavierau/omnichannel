@@ -43,6 +43,30 @@ router.use(apiKeyAuth);
 const getController = () => container.resolve(AgentApiController);
 
 // ============================================================================
+// Operator Routes
+// ============================================================================
+
+/**
+ * GET /agent/operators
+ * List operators (users) available for conversation assignment.
+ *
+ * Required permission: conversation:read
+ *
+ * Returns users who belong to active teams within the tenant.
+ * Useful for implementing dynamic assignment logic in automation workflows.
+ *
+ * Returns:
+ * - 200: Array of operator objects with id, firstName, lastName, email, isActive
+ * - 401: Invalid or missing API key
+ * - 403: API key lacks permission
+ */
+router.get(
+  '/operators',
+  requireApiKeyPermission(ApiKeyPermission.CONVERSATION_READ),
+  (req, res, next) => getController().getOperators(req, res, next)
+);
+
+// ============================================================================
 // Conversation Routes
 // ============================================================================
 
