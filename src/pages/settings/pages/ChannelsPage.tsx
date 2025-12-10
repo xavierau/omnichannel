@@ -35,7 +35,7 @@ import {
 } from "@/services/channel-account.service"
 
 // Map ChannelAccount from API to WhatsAppConfig for UI display
-// Note: Credentials are not returned from API as they're encrypted
+// Note: Sensitive credentials (accessToken, appSecret, webhookVerifyToken) are not returned for security
 function mapChannelAccountToWhatsAppConfig(account: ChannelAccount): WhatsAppConfig {
   const statusMap: Record<ChannelAccountStatus, ChannelStatus> = {
     [ChannelAccountStatus.CONNECTED]: "connected",
@@ -52,12 +52,12 @@ function mapChannelAccountToWhatsAppConfig(account: ChannelAccount): WhatsAppCon
     errorMessage: account.errorMessage || undefined,
     createdAt: new Date(account.createdAt),
     updatedAt: new Date(account.updatedAt),
-    // Credentials are not returned from API - use empty placeholders
-    // These will be filled in by the user when editing
-    phoneNumberId: account.phoneNumberId || "",
-    whatsappBusinessAccountId: "",
+    // Use non-sensitive credentials from API if available, otherwise use empty placeholders
+    phoneNumberId: account.credentials?.phoneNumberId || account.phoneNumberId || "",
+    whatsappBusinessAccountId: account.credentials?.whatsappBusinessAccountId || "",
+    appId: account.credentials?.appId || "",
+    // Sensitive credentials must be re-entered when editing for security
     accessToken: "",
-    appId: "",
     appSecret: "",
     webhookVerifyToken: "",
   }
@@ -184,15 +184,20 @@ export function ChannelsPage() {
     try {
       if (editingConfig) {
         // Update existing channel account
+        // Only include credentials if sensitive fields (accessToken or appSecret) are provided
+        const hasCredentialUpdate = data.accessToken.trim() || data.appSecret.trim()
+
         const updated = await channelAccountService.updateChannelAccount(editingConfig.id, {
           name: data.name,
-          credentials: {
-            phoneNumberId: data.phoneNumberId,
-            whatsappBusinessAccountId: data.whatsappBusinessAccountId,
-            accessToken: data.accessToken,
-            appId: data.appId,
-            appSecret: data.appSecret,
-          },
+          ...(hasCredentialUpdate && {
+            credentials: {
+              phoneNumberId: data.phoneNumberId,
+              whatsappBusinessAccountId: data.whatsappBusinessAccountId,
+              accessToken: data.accessToken,
+              appId: data.appId,
+              appSecret: data.appSecret,
+            },
+          }),
         })
         setWhatsappConfigs((prev) =>
           prev.map((c) => (c.id === editingConfig.id ? mapChannelAccountToWhatsAppConfig(updated) : c))

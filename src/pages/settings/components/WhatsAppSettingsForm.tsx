@@ -147,11 +147,19 @@ export function WhatsAppSettingsForm({
         "Business Account ID must contain only digits"
     }
 
-    // Access Token: required, minimum 50 characters
-    if (!accessToken.trim()) {
-      newErrors.accessToken = "Access Token is required"
-    } else if (accessToken.trim().length < 50) {
-      newErrors.accessToken = "Access Token must be at least 50 characters"
+    // Access Token: required in create mode, optional in edit mode (unless provided)
+    if (!isEditMode) {
+      // Create mode: always required
+      if (!accessToken.trim()) {
+        newErrors.accessToken = "Access Token is required"
+      } else if (accessToken.trim().length < 50) {
+        newErrors.accessToken = "Access Token must be at least 50 characters"
+      }
+    } else {
+      // Edit mode: only validate if provided
+      if (accessToken.trim() && accessToken.trim().length < 50) {
+        newErrors.accessToken = "Access Token must be at least 50 characters"
+      }
     }
 
     // App ID: required, numeric only
@@ -161,11 +169,19 @@ export function WhatsAppSettingsForm({
       newErrors.appId = "App ID must contain only digits"
     }
 
-    // App Secret: required, minimum 32 characters
-    if (!appSecret.trim()) {
-      newErrors.appSecret = "App Secret is required"
-    } else if (appSecret.trim().length < 32) {
-      newErrors.appSecret = "App Secret must be at least 32 characters"
+    // App Secret: required in create mode, optional in edit mode (unless provided)
+    if (!isEditMode) {
+      // Create mode: always required
+      if (!appSecret.trim()) {
+        newErrors.appSecret = "App Secret is required"
+      } else if (appSecret.trim().length < 32) {
+        newErrors.appSecret = "App Secret must be at least 32 characters"
+      }
+    } else {
+      // Edit mode: only validate if provided
+      if (appSecret.trim() && appSecret.trim().length < 32) {
+        newErrors.appSecret = "App Secret must be at least 32 characters"
+      }
     }
 
     setErrors(newErrors)

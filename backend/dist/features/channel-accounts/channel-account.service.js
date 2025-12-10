@@ -90,7 +90,7 @@ let ChannelAccountService = class ChannelAccountService {
         const accounts = await this.channelAccountRepo.findByTenant(tenantId, {
             channelCode,
         });
-        return accounts.map((account) => this.toResponse(account));
+        return Promise.all(accounts.map((account) => this.toResponseWithCredentialInfo(account)));
     }
     /**
      * Get a channel account by ID.
@@ -104,7 +104,7 @@ let ChannelAccountService = class ChannelAccountService {
         if (!account) {
             return null;
         }
-        return this.toResponse(account);
+        return this.toResponseWithCredentialInfo(account);
     }
     /**
      * Get a channel account with decrypted credentials (for internal use).
@@ -306,7 +306,7 @@ let ChannelAccountService = class ChannelAccountService {
         });
         // Fetch fresh with relations
         const result = await this.channelAccountRepo.findByIdAndTenant(id, tenantId);
-        return this.toResponse(result);
+        return this.toResponseWithCredentialInfo(result);
     }
     /**
      * Delete a channel account.

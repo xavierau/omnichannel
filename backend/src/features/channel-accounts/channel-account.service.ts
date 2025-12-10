@@ -109,7 +109,9 @@ export class ChannelAccountService {
       channelCode,
     });
 
-    return accounts.map((account) => this.toResponse(account));
+    return Promise.all(
+      accounts.map((account) => this.toResponseWithCredentialInfo(account))
+    );
   }
 
   /**
@@ -126,7 +128,7 @@ export class ChannelAccountService {
       return null;
     }
 
-    return this.toResponse(account);
+    return this.toResponseWithCredentialInfo(account);
   }
 
   /**
@@ -381,7 +383,7 @@ export class ChannelAccountService {
 
     // Fetch fresh with relations
     const result = await this.channelAccountRepo.findByIdAndTenant(id, tenantId);
-    return this.toResponse(result!);
+    return this.toResponseWithCredentialInfo(result!);
   }
 
   /**

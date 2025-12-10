@@ -49,6 +49,12 @@ export interface ChannelAccount {
   webhookUrl: string | null
   createdAt: string
   updatedAt: string
+  // Non-sensitive credential info for display/editing
+  credentials?: {
+    phoneNumberId?: string
+    whatsappBusinessAccountId?: string
+    appId?: string
+  }
 }
 
 export interface WebhookConfig {
