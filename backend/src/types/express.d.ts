@@ -1,4 +1,5 @@
 import { User as UserEntity } from '@features/users/user.entity';
+import { ApiKey } from '@features/api-keys/entities/api-key.entity';
 
 declare global {
   namespace Express {
@@ -9,6 +10,8 @@ declare global {
     interface Request {
       user?: User;
       userPermissions?: string[];
+      /** API key entity when authenticated via API key */
+      apiKey?: ApiKey;
     }
   }
 }

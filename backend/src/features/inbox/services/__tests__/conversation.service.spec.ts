@@ -30,7 +30,9 @@ describe('ConversationService', () => {
   let service: ConversationService;
   let conversationRepository: jest.Mocked<ConversationRepository>;
   let assignmentRepository: jest.Mocked<ConversationAssignmentRepository>;
+  let sseService: jest.Mocked<any>;
   let teamService: jest.Mocked<TeamService>;
+  let userRepository: jest.Mocked<any>;
 
   const tenantId = 'tenant-123';
   const userId = 'user-456';
@@ -69,15 +71,25 @@ describe('ConversationService', () => {
       create: jest.fn(),
     } as unknown as jest.Mocked<ConversationAssignmentRepository>;
 
+    sseService = {
+      emitConversationEvent: jest.fn(),
+    };
+
     teamService = {
       getAccessibleChannelAccountIds: jest.fn(),
       hasAccessToChannelAccount: jest.fn(),
     } as unknown as jest.Mocked<TeamService>;
 
+    userRepository = {
+      findActiveUsersByTeamIds: jest.fn(),
+    };
+
     service = new ConversationService(
       conversationRepository,
       assignmentRepository,
-      teamService
+      sseService,
+      teamService,
+      userRepository
     );
   });
 

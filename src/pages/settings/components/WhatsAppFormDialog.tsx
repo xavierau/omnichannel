@@ -8,6 +8,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { WhatsAppSettingsForm } from "./WhatsAppSettingsForm"
+import { WebhookIntegrationsSection } from "./channel-accounts/WebhookIntegrationsSection"
+import { Separator } from "@/components/ui/separator"
 import type { WhatsAppConfig, WhatsAppFormData, TestConnectionResult } from "../types"
 
 interface WhatsAppFormDialogProps {
@@ -95,6 +97,14 @@ export function WhatsAppFormDialog({
           testResult={testResult}
           isEditMode={isEditMode}
         />
+
+        {/* Webhook Integrations Section - Only in edit mode */}
+        {isEditMode && config?.id && (
+          <>
+            <Separator className="my-6" />
+            <WebhookIntegrationsSection channelAccountId={config.id} />
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )

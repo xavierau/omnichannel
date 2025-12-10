@@ -191,3 +191,66 @@ export const templateSubmitLimiter = rateLimit({
     'Too many template submissions. Please wait before submitting more templates.'
   ),
 });
+
+/**
+ * Extract API key identifier for rate limiting.
+ * Uses the key prefix (first 12 chars) or a hash of the full key
+ * to provide consistent rate limiting per API key.
+ *
+ * Falls back to IP if no API key is present.
+ */
+function getApiKeyIdentifier(req: Request): string {
+  // Try to get the API key from Authorization header or X-API-Key
+  const authHeader = req.headers['authorization'];
+  let apiKey: string | undefined;
+
+  if (authHeader && typeof authHeader === 'string') {
+    const parts = authHeader.split(' ');
+    if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
+      apiKey = parts[1];
+    }
+  }
+
+  if (!apiKey) {
+    const xApiKey = req.headers['x-api-key'];
+    if (xApiKey && typeof xApiKey === 'string') {
+      apiKey = xApiKey;
+    }
+  }
+
+  if (apiKey) {
+    // Use the key prefix (first 12 chars) for rate limiting
+    // This is not sensitive and allows tracking per key
+    const prefix = apiKey.substring(0, 12);
+    return `agent_api:key:${prefix}`;
+  }
+
+  // Fall back to IP-based limiting
+  const ip = req.ip || req.socket.remoteAddress || 'unknown';
+  return `agent_api:ip:${ip.replace(/[:.]/g, '_')}`;
+}
+
+/**
+ * Rate limiter for Agent API endpoints.
+ *
+ * Security:
+ * - Prevents brute force attacks on API key authentication
+ * - Limits abuse from compromised API keys
+ * - Rate limits per API key (using key prefix) rather than IP
+ *   to properly track API key usage
+ *
+ * Configuration:
+ * - 100 requests per minute per API key
+ * - Stricter than general rate limiting due to authentication risk
+ */
+export const agentApiLimiter = rateLimit({
+  windowMs: RATE_LIMIT_CONSTANTS.AGENT_API.WINDOW_MS,
+  max: RATE_LIMIT_CONSTANTS.AGENT_API.MAX_REQUESTS,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => getApiKeyIdentifier(req),
+  validate: { xForwardedForHeader: false },
+  handler: createRateLimitHandler(
+    'Too many API requests. Please slow down and try again later.'
+  ),
+});

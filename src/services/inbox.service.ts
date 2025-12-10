@@ -88,11 +88,25 @@ export interface ConversationAssignee {
   email: string
 }
 
+export interface Channel {
+  id: string
+  code: string  // 'whatsapp', 'sms', 'messenger', 'telegram', 'email'
+  name: string  // 'WhatsApp', 'SMS', 'Messenger', 'Telegram', 'Email'
+}
+
+export interface ChannelAccount {
+  id: string
+  name: string  // e.g., "Support Line", "Marketing WhatsApp"
+  phoneNumber: string | null
+  channel: Channel
+}
+
 export interface Conversation {
   id: string
   customerId: string
   customer: ConversationCustomer
   channelAccountId: string
+  channelAccount?: ChannelAccount  // Optional for backward compatibility
   status: ConversationStatus
   assignedToId: string | null
   assignedTo: ConversationAssignee | null

@@ -30,6 +30,8 @@ const inbox_routes_1 = __importDefault(require("./features/inbox/inbox.routes"))
 const health_routes_1 = require("./features/health/health.routes");
 const custom_field_routes_1 = require("./features/custom-fields/custom-field.routes");
 const invitation_routes_1 = require("./features/invitations/invitation.routes");
+const agent_api_routes_1 = __importDefault(require("./features/agent-api/agent-api.routes"));
+const api_key_routes_1 = require("./features/api-keys/api-key.routes");
 /**
  * Creates and configures the Express application
  *
@@ -74,7 +76,7 @@ function createApp() {
         origin: process.env.FRONTEND_URL || 'http://localhost:5173',
         credentials: true, // Allow cookies (required for CSRF and refresh tokens)
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-API-Key'],
         exposedHeaders: ['X-CSRF-Token'],
     }));
     // Webhook routes MUST be registered before global body parsers
@@ -111,6 +113,10 @@ function createApp() {
     app.use('/api/inbox', inbox_routes_1.default);
     app.use('/api/custom-fields', (0, custom_field_routes_1.createCustomFieldRoutes)());
     app.use('/api/invitations', (0, invitation_routes_1.createInvitationRoutes)());
+    app.use('/api/api-keys', (0, api_key_routes_1.createApiKeyRoutes)());
+    // Agent API routes (API key authentication, no CSRF)
+    // Used by AI agents to interact with conversations
+    app.use('/api/agent', agent_api_routes_1.default);
     // Serve static files in production (frontend build)
     if (process.env.NODE_ENV === 'production') {
         const publicPath = path_1.default.join(__dirname, '..', 'public');

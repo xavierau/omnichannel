@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { Check, ChevronDown, Filter, Search, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,11 +20,14 @@ import {
   CONVERSATION_STATUSES,
   type ConversationFilters as ConversationFiltersType,
   type ConversationStatus,
+  type ChannelAccount,
 } from "../types"
+import { getChannelConfig } from "@/lib/channel-config"
 
 interface ConversationFiltersProps {
   filters: ConversationFiltersType
   onFiltersChange: (filters: ConversationFiltersType) => void
+  availableChannelAccounts: ChannelAccount[]
 }
 
 const ASSIGNMENT_OPTIONS = [
@@ -38,9 +41,11 @@ type AssignmentValue = (typeof ASSIGNMENT_OPTIONS)[number]["value"]
 export function ConversationFilters({
   filters,
   onFiltersChange,
+  availableChannelAccounts,
 }: ConversationFiltersProps) {
   const [statusPopoverOpen, setStatusPopoverOpen] = useState(false)
   const [assignmentPopoverOpen, setAssignmentPopoverOpen] = useState(false)
+  const [channelPopoverOpen, setChannelPopoverOpen] = useState(false)
 
   // Search input change handler with debounce consideration
   const handleSearchChange = useCallback(
@@ -96,12 +101,47 @@ export function ConversationFilters({
     [filters, onFiltersChange]
   )
 
+  // Toggle channel filter selection
+  const handleChannelToggle = useCallback(
+    (channelAccountId: string) => {
+      const newChannelAccountIds = filters.channelAccountIds.includes(channelAccountId)
+        ? filters.channelAccountIds.filter((id) => id !== channelAccountId)
+        : [...filters.channelAccountIds, channelAccountId]
+
+      onFiltersChange({
+        ...filters,
+        channelAccountIds: newChannelAccountIds,
+      })
+    },
+    [filters, onFiltersChange]
+  )
+
+  // Clear all channel filters
+  const handleClearChannels = useCallback(() => {
+    onFiltersChange({
+      ...filters,
+      channelAccountIds: [],
+    })
+  }, [filters, onFiltersChange])
+
+  // Memoize channel account display data
+  const channelAccountsWithConfig = useMemo(
+    () =>
+      availableChannelAccounts.map((account) => ({
+        ...account,
+        config: getChannelConfig(account.channel.code),
+      })),
+    [availableChannelAccounts]
+  )
+
   const selectedAssignmentLabel =
     ASSIGNMENT_OPTIONS.find((opt) => opt.value === filters.assignedTo)?.label ??
     "All Conversations"
 
   const hasActiveFilters =
-    filters.statuses.length > 0 || filters.assignedTo !== "all"
+    filters.statuses.length > 0 ||
+    filters.assignedTo !== "all" ||
+    filters.channelAccountIds.length > 0
 
   return (
     <div className="flex flex-col gap-3 p-4 border-b">
@@ -243,6 +283,87 @@ export function ConversationFilters({
           </PopoverContent>
         </Popover>
 
+        {/* Channel Account Filter */}
+        {availableChannelAccounts.length > 0 && (
+          <Popover open={channelPopoverOpen} onOpenChange={setChannelPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-8 gap-1",
+                  filters.channelAccountIds.length > 0 && "border-primary"
+                )}
+              >
+                <Filter className="size-3.5" />
+                Channel
+                {filters.channelAccountIds.length > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className="ml-1 px-1.5 py-0 h-5 min-w-5 text-xs"
+                  >
+                    {filters.channelAccountIds.length}
+                  </Badge>
+                )}
+                <ChevronDown className="size-3.5 ml-1" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-0" align="start">
+              <Command>
+                <CommandList>
+                  <CommandEmpty>No channels found.</CommandEmpty>
+                  <CommandGroup>
+                    {channelAccountsWithConfig.map((account) => {
+                      const isSelected = filters.channelAccountIds.includes(account.id)
+                      const Icon = account.config.icon
+                      return (
+                        <CommandItem
+                          key={account.id}
+                          onSelect={() => handleChannelToggle(account.id)}
+                          className="cursor-pointer"
+                        >
+                          <div
+                            className={cn(
+                              "mr-2 flex size-4 items-center justify-center rounded-sm border",
+                              isSelected
+                                ? "bg-primary border-primary text-primary-foreground"
+                                : "border-muted-foreground/30"
+                            )}
+                          >
+                            {isSelected && <Check className="size-3" />}
+                          </div>
+                          <div className="flex items-center gap-2 flex-1">
+                            <Icon
+                              className="size-3.5"
+                              style={{ color: account.config.color.primary }}
+                            />
+                            <span className="truncate">{account.name}</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {account.channel.name}
+                          </span>
+                        </CommandItem>
+                      )
+                    })}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+              {filters.channelAccountIds.length > 0 && (
+                <div className="border-t p-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClearChannels}
+                    className="w-full h-8 text-xs"
+                  >
+                    Clear filters
+                  </Button>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+        )}
+
         {/* Clear All Filters Button */}
         {hasActiveFilters && (
           <Button
@@ -253,6 +374,7 @@ export function ConversationFilters({
                 ...filters,
                 statuses: [],
                 assignedTo: "all",
+                channelAccountIds: [],
               })
             }
             className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"

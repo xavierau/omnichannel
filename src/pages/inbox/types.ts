@@ -11,6 +11,20 @@ export interface Operator {
   status: OperatorStatus
 }
 
+// Channel Types
+export interface Channel {
+  id: string
+  code: string  // 'whatsapp', 'sms', 'messenger', 'telegram', 'email'
+  name: string  // 'WhatsApp', 'SMS', 'Messenger', 'Telegram', 'Email'
+}
+
+export interface ChannelAccount {
+  id: string
+  name: string  // e.g., "Support Line", "Marketing WhatsApp"
+  phoneNumber: string | null
+  channel: Channel
+}
+
 // Conversation Types
 export type ConversationStatus = "unassigned" | "active" | "waiting" | "resolved" | "closed"
 export type ChannelType = "whatsapp"
@@ -22,6 +36,7 @@ export interface Conversation {
   customerWhatsappNumber: string
   customerAvatar?: string
   channel: ChannelType
+  channelAccount: ChannelAccount  // New field for full channel account details
   status: ConversationStatus
   assignedToId: string | null
   assignedToName: string | null
@@ -148,12 +163,14 @@ export interface ConversationFilters {
   search: string
   statuses: ConversationStatus[]
   assignedTo: "unassigned" | "mine" | "all"
+  channelAccountIds: string[]  // Filter by channel account IDs
 }
 
 export const defaultFilters: ConversationFilters = {
   search: "",
   statuses: [],
   assignedTo: "all",
+  channelAccountIds: [],
 }
 
 // Constants

@@ -24,6 +24,8 @@ import inboxRoutes from '@features/inbox/inbox.routes';
 import { createHealthRoutes } from '@features/health/health.routes';
 import { createCustomFieldRoutes } from '@features/custom-fields/custom-field.routes';
 import { createInvitationRoutes } from '@features/invitations/invitation.routes';
+import agentApiRoutes from '@features/agent-api/agent-api.routes';
+import { createApiKeyRoutes } from '@features/api-keys/api-key.routes';
 
 /**
  * Creates and configures the Express application
@@ -73,7 +75,7 @@ export function createApp(): Application {
       origin: process.env.FRONTEND_URL || 'http://localhost:5173',
       credentials: true, // Allow cookies (required for CSRF and refresh tokens)
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-API-Key'],
       exposedHeaders: ['X-CSRF-Token'],
     })
   );
@@ -118,6 +120,11 @@ export function createApp(): Application {
   app.use('/api/inbox', inboxRoutes);
   app.use('/api/custom-fields', createCustomFieldRoutes());
   app.use('/api/invitations', createInvitationRoutes());
+  app.use('/api/api-keys', createApiKeyRoutes());
+
+  // Agent API routes (API key authentication, no CSRF)
+  // Used by AI agents to interact with conversations
+  app.use('/api/agent', agentApiRoutes);
 
   // Serve static files in production (frontend build)
   if (process.env.NODE_ENV === 'production') {

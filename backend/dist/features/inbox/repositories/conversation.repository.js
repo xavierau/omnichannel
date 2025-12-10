@@ -70,7 +70,7 @@ let ConversationRepository = class ConversationRepository {
     async findById(tenantId, id) {
         return this.repository.findOne({
             where: { id, tenantId },
-            relations: ['customer', 'assignedTo', 'channelAccount'],
+            relations: ['customer', 'assignedTo', 'channelAccount', 'channelAccount.channel'],
         });
     }
     /**
@@ -86,7 +86,7 @@ let ConversationRepository = class ConversationRepository {
     async findByCustomerAndChannel(tenantId, customerId, channelAccountId) {
         return this.repository.findOne({
             where: { tenantId, customerId, channelAccountId },
-            relations: ['customer', 'assignedTo', 'channelAccount'],
+            relations: ['customer', 'assignedTo', 'channelAccount', 'channelAccount.channel'],
         });
     }
     /**
@@ -124,6 +124,7 @@ let ConversationRepository = class ConversationRepository {
             .leftJoinAndSelect('conversation.customer', 'customer')
             .leftJoinAndSelect('conversation.assignedTo', 'assignedTo')
             .leftJoinAndSelect('conversation.channelAccount', 'channelAccount')
+            .leftJoinAndSelect('channelAccount.channel', 'channel')
             .where('conversation.tenant_id = :tenantId', { tenantId })
             .andWhere('conversation.channel_account_id IN (:...channelAccountIds)', {
             channelAccountIds: accessibleChannelAccountIds,

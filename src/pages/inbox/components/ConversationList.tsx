@@ -7,6 +7,7 @@ import { ConversationListItem } from "./ConversationListItem"
 import type {
   Conversation,
   ConversationFilters as ConversationFiltersType,
+  ChannelAccount,
 } from "../types"
 
 interface ConversationListProps {
@@ -16,6 +17,7 @@ interface ConversationListProps {
   filters: ConversationFiltersType
   onFiltersChange: (filters: ConversationFiltersType) => void
   currentOperatorId?: string
+  availableChannelAccounts: ChannelAccount[]
 }
 
 interface GroupedConversations {
@@ -95,6 +97,14 @@ function filterConversations(
       return false
     }
 
+    // Channel account filter
+    if (
+      filters.channelAccountIds.length > 0 &&
+      !filters.channelAccountIds.includes(conversation.channelAccount.id)
+    ) {
+      return false
+    }
+
     return true
   })
 }
@@ -168,6 +178,7 @@ export function ConversationList({
   filters,
   onFiltersChange,
   currentOperatorId,
+  availableChannelAccounts,
 }: ConversationListProps) {
   // Apply filters and sort conversations
   const filteredConversations = useMemo(() => {
@@ -194,14 +205,19 @@ export function ConversationList({
   const hasFilters =
     filters.search !== "" ||
     filters.statuses.length > 0 ||
-    filters.assignedTo !== "all"
+    filters.assignedTo !== "all" ||
+    filters.channelAccountIds.length > 0
 
   const hasConversations = filteredConversations.length > 0
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Filters Section */}
-      <ConversationFilters filters={filters} onFiltersChange={onFiltersChange} />
+      <ConversationFilters
+        filters={filters}
+        onFiltersChange={onFiltersChange}
+        availableChannelAccounts={availableChannelAccounts}
+      />
 
       {/* Conversation List */}
       {hasConversations ? (

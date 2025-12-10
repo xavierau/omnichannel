@@ -199,7 +199,10 @@ describe('InboxMessageQueue', () => {
             isRateLimitError: jest.fn().mockReturnValue(false),
             extractRetryAfter: jest.fn().mockReturnValue(undefined),
         };
-        inboxMessageQueue = new inbox_message_queue_1.InboxMessageQueue(mockConversationRepo, mockMessageRepo, mockCustomerRepo, mockChannelAccountRepo, mockMessagingService, mockMetaMediaService, mockRateLimiterService, mockSseService, mockMessagingWindowService);
+        const mockOutgoingWebhookService = {
+            dispatchUnassignedMessageWebhook: jest.fn().mockResolvedValue(undefined),
+        };
+        inboxMessageQueue = new inbox_message_queue_1.InboxMessageQueue(mockConversationRepo, mockMessageRepo, mockCustomerRepo, mockChannelAccountRepo, mockMessagingService, mockMetaMediaService, mockRateLimiterService, mockSseService, mockMessagingWindowService, mockOutgoingWebhookService);
     });
     describe('queueOutboundMessage', () => {
         it('should add a job to the queue with correct job type and data', async () => {
@@ -442,7 +445,10 @@ describe('InboxMessageQueue Job Processors', () => {
             isRateLimitError: jest.fn().mockReturnValue(false),
             extractRetryAfter: jest.fn().mockReturnValue(undefined),
         };
-        inboxMessageQueue = new inbox_message_queue_1.InboxMessageQueue(mockConversationRepo, mockMessageRepo, mockCustomerRepo, mockChannelAccountRepo, mockMessagingService, mockMetaMediaService, mockRateLimiterService, mockSseService, mockMessagingWindowService);
+        const mockOutgoingWebhookService = {
+            dispatchUnassignedMessageWebhook: jest.fn().mockResolvedValue(undefined),
+        };
+        inboxMessageQueue = new inbox_message_queue_1.InboxMessageQueue(mockConversationRepo, mockMessageRepo, mockCustomerRepo, mockChannelAccountRepo, mockMessagingService, mockMetaMediaService, mockRateLimiterService, mockSseService, mockMessagingWindowService, mockOutgoingWebhookService);
     });
     describe('SEND_MESSAGE processor', () => {
         it('should send message successfully and update status to SENT', async () => {

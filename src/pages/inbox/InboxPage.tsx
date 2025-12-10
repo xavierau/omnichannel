@@ -90,12 +90,25 @@ function toFrontendMessage(apiMessage: ApiMessage): Message {
 
 // Convert API Conversation to frontend Conversation format
 function toFrontendConversation(apiConversation: ApiConversation, messages: Message[] = []): Conversation {
+  // Use API channelAccount if available, otherwise create fallback
+  const channelAccount = apiConversation.channelAccount || {
+    id: apiConversation.channelAccountId || "default",
+    name: "Default Channel",
+    phoneNumber: null,
+    channel: {
+      id: "1",
+      code: "whatsapp",
+      name: "WhatsApp",
+    },
+  }
+
   return {
     id: apiConversation.id,
     customerId: apiConversation.customerId,
     customerName: apiConversation.customer?.name || "Unknown",
     customerWhatsappNumber: apiConversation.customer?.whatsappNumber || "",
     channel: "whatsapp",
+    channelAccount,
     status: toFrontendStatus(apiConversation.status),
     assignedToId: apiConversation.assignedToId,
     assignedToName: apiConversation.assignedTo
@@ -323,6 +336,17 @@ export function InboxPage() {
     () => conversations.find((c) => c.id === selectedConversationId) || null,
     [conversations, selectedConversationId]
   )
+
+  // Extract unique channel accounts from conversations
+  const availableChannelAccounts = useMemo(() => {
+    const uniqueAccounts = new Map()
+    conversations.forEach((conv) => {
+      if (!uniqueAccounts.has(conv.channelAccount.id)) {
+        uniqueAccounts.set(conv.channelAccount.id, conv.channelAccount)
+      }
+    })
+    return Array.from(uniqueAccounts.values())
+  }, [conversations])
 
   // Computed filtered notes
   const filteredNotes = useMemo(() => {
@@ -640,6 +664,7 @@ export function InboxPage() {
             filters={filters}
             onFiltersChange={setFilters}
             currentOperatorId={currentOperator?.id || ""}
+            availableChannelAccounts={availableChannelAccounts}
           />
         </ResizablePanel>
 

@@ -51,3 +51,17 @@ export declare const broadcastBulkLimiter: import("express-rate-limit").RateLimi
  * 5 requests per minute per user.
  */
 export declare const templateSubmitLimiter: import("express-rate-limit").RateLimitRequestHandler;
+/**
+ * Rate limiter for Agent API endpoints.
+ *
+ * Security:
+ * - Prevents brute force attacks on API key authentication
+ * - Limits abuse from compromised API keys
+ * - Rate limits per API key (using key prefix) rather than IP
+ *   to properly track API key usage
+ *
+ * Configuration:
+ * - 100 requests per minute per API key
+ * - Stricter than general rate limiting due to authentication risk
+ */
+export declare const agentApiLimiter: import("express-rate-limit").RateLimitRequestHandler;

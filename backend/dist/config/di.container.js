@@ -38,6 +38,7 @@ const rate_limiter_service_1 = require("../features/messaging/services/rate-limi
 const register_providers_1 = require("../features/messaging/register-providers");
 // Channel Account Services
 const channel_account_service_1 = require("../features/channel-accounts/channel-account.service");
+const webhook_configuration_service_1 = require("../features/channel-accounts/services/webhook-configuration.service");
 // Webhook Services
 const webhook_service_1 = require("../features/webhooks/webhook.service");
 // Controllers
@@ -57,6 +58,10 @@ const broadcast_scheduler_1 = require("../jobs/broadcast.scheduler");
 const inbox_message_queue_1 = require("../jobs/inbox-message.queue");
 const template_submission_queue_1 = require("../jobs/template-submission.queue");
 const template_submission_queue_interface_1 = require("../jobs/interfaces/template-submission-queue.interface");
+const outgoing_webhook_queue_1 = require("../jobs/outgoing-webhook.queue");
+// Outgoing Webhooks
+const outgoing_webhook_dispatcher_1 = require("../features/outgoing-webhooks/infrastructure/outgoing-webhook.dispatcher");
+const outgoing_webhook_service_1 = require("../features/outgoing-webhooks/services/outgoing-webhook.service");
 // Teams
 const team_repository_1 = require("../features/teams/repositories/team.repository");
 const team_member_repository_1 = require("../features/teams/repositories/team-member.repository");
@@ -95,6 +100,12 @@ const invitation_repository_1 = require("../features/invitations/invitation.repo
 const email_service_1 = require("../features/invitations/email.service");
 const invitation_service_1 = require("../features/invitations/invitation.service");
 const invitation_controller_1 = require("../features/invitations/invitation.controller");
+// API Keys
+const api_key_repository_1 = require("../features/api-keys/repositories/api-key.repository");
+const api_key_service_1 = require("../features/api-keys/services/api-key.service");
+const api_key_controller_1 = require("../features/api-keys/controllers/api-key.controller");
+// Agent API
+const agent_api_controller_1 = require("../features/agent-api/controllers/agent-api.controller");
 // Database
 const database_config_1 = require("./database.config");
 // Register Repositories
@@ -131,6 +142,7 @@ tsyringe_1.container.registerSingleton(meta_media_service_1.MetaMediaService);
 tsyringe_1.container.registerSingleton(rate_limiter_service_1.MessagingRateLimiterService);
 // Register Channel Account Services
 tsyringe_1.container.registerSingleton(channel_account_service_1.ChannelAccountService);
+tsyringe_1.container.registerSingleton(webhook_configuration_service_1.WebhookConfigurationService);
 // Register Webhook Services
 tsyringe_1.container.registerSingleton(webhook_service_1.WebhookService);
 // Register Controllers
@@ -151,6 +163,11 @@ tsyringe_1.container.registerSingleton(inbox_message_queue_1.InboxMessageQueue);
 // Template Submission Queue
 tsyringe_1.container.registerSingleton(template_submission_queue_1.TemplateSubmissionQueue);
 tsyringe_1.container.register(template_submission_queue_interface_1.ITemplateSubmissionQueue, { useToken: template_submission_queue_1.TemplateSubmissionQueue });
+// Outgoing Webhook Queue and Services
+// Order: Dispatcher -> Queue -> Service (queue depends on dispatcher, service depends on queue)
+tsyringe_1.container.registerSingleton(outgoing_webhook_dispatcher_1.OutgoingWebhookDispatcher);
+tsyringe_1.container.registerSingleton(outgoing_webhook_queue_1.OutgoingWebhookQueue);
+tsyringe_1.container.registerSingleton(outgoing_webhook_service_1.OutgoingWebhookService);
 // Register Teams Repositories
 tsyringe_1.container.registerSingleton(team_repository_1.TeamRepository);
 tsyringe_1.container.registerSingleton(team_member_repository_1.TeamMemberRepository);
@@ -199,3 +216,9 @@ tsyringe_1.container.registerSingleton(invitation_repository_1.InvitationReposit
 tsyringe_1.container.registerSingleton(email_service_1.EmailService);
 tsyringe_1.container.registerSingleton(invitation_service_1.InvitationService);
 tsyringe_1.container.registerSingleton(invitation_controller_1.InvitationController);
+// Register API Keys
+tsyringe_1.container.registerSingleton(api_key_repository_1.ApiKeyRepository);
+tsyringe_1.container.registerSingleton(api_key_service_1.ApiKeyService);
+tsyringe_1.container.registerSingleton(api_key_controller_1.ApiKeyController);
+// Register Agent API
+tsyringe_1.container.registerSingleton(agent_api_controller_1.AgentApiController);
