@@ -933,23 +933,61 @@ export class InboxMessageQueue {
     // 7. Trigger outgoing webhook for unassigned conversations
     // This notifies external services (n8n, AI agents) when a message arrives
     // for a conversation that is not assigned to any operator
+    logger.info('Checking webhook trigger conditions', {
+      conversationId: conversation.id,
+      messageId: message.id,
+      channelAccountId,
+      assignedToId: conversation.assignedToId,
+      isUnassigned: conversation.assignedToId === null,
+    });
+
     if (conversation.assignedToId === null) {
+      logger.info('Conversation is unassigned, triggering outgoing webhook', {
+        conversationId: conversation.id,
+        messageId: message.id,
+        channelAccountId,
+        customerId: customer.id,
+      });
+
       try {
-        await this.outgoingWebhookService.dispatchUnassignedMessageWebhook(
+        const jobId = await this.outgoingWebhookService.dispatchUnassignedMessageWebhook(
           message,
           conversation,
           customer,
           channelAccountId
         );
+
+        if (jobId) {
+          logger.info('Outgoing webhook dispatch initiated', {
+            jobId,
+            conversationId: conversation.id,
+            messageId: message.id,
+            channelAccountId,
+          });
+        } else {
+          logger.info('Outgoing webhook skipped (no webhook configured)', {
+            conversationId: conversation.id,
+            messageId: message.id,
+            channelAccountId,
+          });
+        }
       } catch (webhookError) {
         // Log but don't fail the inbound processing if webhook dispatch fails
         logger.error('Failed to dispatch outgoing webhook', {
           error: webhookError instanceof Error ? webhookError.message : String(webhookError),
+          stack: webhookError instanceof Error ? webhookError.stack : undefined,
           conversationId: conversation.id,
           messageId: message.id,
           channelAccountId,
         });
       }
+    } else {
+      logger.debug('Skipping webhook trigger: conversation is assigned', {
+        conversationId: conversation.id,
+        messageId: message.id,
+        channelAccountId,
+        assignedToId: conversation.assignedToId,
+      });
     }
   }
 

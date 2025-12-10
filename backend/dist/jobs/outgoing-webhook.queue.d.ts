@@ -96,6 +96,14 @@ export declare class OutgoingWebhookQueue {
      */
     private isRetryableError;
     /**
+     * Calculate the next retry delay based on the current attempt number.
+     * Uses exponential backoff: 5s, 10s, 20s, 40s
+     *
+     * @param attemptsMade - Number of attempts already made
+     * @returns Delay in milliseconds
+     */
+    private calculateNextDelay;
+    /**
      * Setup event listeners for queue events.
      */
     private setupEventListeners;

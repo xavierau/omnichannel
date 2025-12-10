@@ -77,16 +77,27 @@ let OutgoingWebhookQueue = class OutgoingWebhookQueue {
      * @returns The job ID
      */
     async queueDispatch(data) {
+        const jobId = `webhook:${data.channelAccountId}:${data.payload.message.id}`;
+        logger_config_1.logger.info('Adding webhook dispatch job to queue', {
+            jobId,
+            event: data.payload.event,
+            messageId: data.payload.message.id,
+            conversationId: data.payload.conversation.id,
+            channelAccountId: data.channelAccountId,
+            tenantId: data.tenantId,
+            maxAttempts: WEBHOOK_JOB_OPTIONS.attempts,
+        });
         const job = await this.queue.add(OutgoingWebhookJobType.DISPATCH_WEBHOOK, data, {
             ...WEBHOOK_JOB_OPTIONS,
             // Use message ID + channel account for idempotency
-            jobId: `webhook:${data.channelAccountId}:${data.payload.message.id}`,
+            jobId,
         });
-        logger_config_1.logger.debug('Outgoing webhook queued', {
+        logger_config_1.logger.info('Outgoing webhook job queued successfully', {
             jobId: job.id,
             event: data.payload.event,
             messageId: data.payload.message.id,
             channelAccountId: data.channelAccountId,
+            jobStatus: await job.getState(),
         });
         return String(job.id);
     }
@@ -148,12 +159,17 @@ let OutgoingWebhookQueue = class OutgoingWebhookQueue {
      */
     async processDispatchJob(job) {
         const { webhookUrl, payload, secretEncrypted, secretIv, channelAccountId, tenantId } = job.data;
-        logger_config_1.logger.debug('Processing webhook dispatch job', {
+        const attemptsRemaining = (job.opts.attempts || 0) - job.attemptsMade;
+        logger_config_1.logger.info('Processing webhook dispatch job', {
             jobId: job.id,
             event: payload.event,
             messageId: payload.message.id,
+            conversationId: payload.conversation.id,
             channelAccountId,
+            tenantId,
             attemptsMade: job.attemptsMade,
+            attemptsRemaining,
+            maxAttempts: job.opts.attempts,
         });
         const result = await this.dispatcher.dispatch(webhookUrl, payload, secretEncrypted, secretIv);
         if (!result.success) {
@@ -164,10 +180,13 @@ let OutgoingWebhookQueue = class OutgoingWebhookQueue {
                     jobId: job.id,
                     event: payload.event,
                     messageId: payload.message.id,
+                    conversationId: payload.conversation.id,
                     channelAccountId,
                     attemptsMade: job.attemptsMade,
+                    attemptsRemaining: attemptsRemaining - 1,
                     statusCode: result.statusCode,
                     error: result.error,
+                    nextRetryDelay: this.calculateNextDelay(job.attemptsMade),
                 });
                 // Throw to trigger Bull retry
                 throw new Error(result.error || 'Webhook dispatch failed');
@@ -177,9 +196,11 @@ let OutgoingWebhookQueue = class OutgoingWebhookQueue {
                 jobId: job.id,
                 event: payload.event,
                 messageId: payload.message.id,
+                conversationId: payload.conversation.id,
                 channelAccountId,
                 statusCode: result.statusCode,
                 error: result.error,
+                attemptsMade: job.attemptsMade,
             });
             logger_config_1.auditLogger.info('Outgoing webhook failed', {
                 action: 'outgoing_webhook.dispatch.failed',
@@ -194,6 +215,15 @@ let OutgoingWebhookQueue = class OutgoingWebhookQueue {
             return;
         }
         // Success
+        logger_config_1.logger.info('Webhook dispatch succeeded', {
+            jobId: job.id,
+            event: payload.event,
+            messageId: payload.message.id,
+            conversationId: payload.conversation.id,
+            channelAccountId,
+            statusCode: result.statusCode,
+            attemptsMade: job.attemptsMade,
+        });
         logger_config_1.auditLogger.info('Outgoing webhook dispatched', {
             action: 'outgoing_webhook.dispatch.success',
             tenantId,
@@ -237,6 +267,17 @@ let OutgoingWebhookQueue = class OutgoingWebhookQueue {
         }
         // 4xx client errors are not retryable
         return false;
+    }
+    /**
+     * Calculate the next retry delay based on the current attempt number.
+     * Uses exponential backoff: 5s, 10s, 20s, 40s
+     *
+     * @param attemptsMade - Number of attempts already made
+     * @returns Delay in milliseconds
+     */
+    calculateNextDelay(attemptsMade) {
+        const baseDelay = 5000; // 5 seconds
+        return baseDelay * Math.pow(2, attemptsMade);
     }
     /**
      * Setup event listeners for queue events.

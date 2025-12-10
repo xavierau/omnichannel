@@ -69,11 +69,25 @@ export class OutgoingWebhookDispatcher {
     secretIv: string
   ): Promise<WebhookDispatchResult> {
     try {
+      logger.info('Starting webhook dispatch', {
+        webhookUrl: this.maskUrl(webhookUrl),
+        event: payload.event,
+        messageId: payload.message.id,
+        conversationId: payload.conversation.id,
+        tenantId: payload.tenantId,
+      });
+
       // SSRF Protection: Validate URL before making any requests
+      logger.debug('Validating webhook URL for SSRF protection', {
+        webhookUrl: this.maskUrl(webhookUrl),
+      });
+
       const urlValidation = await validateWebhookUrl(webhookUrl, ALLOW_HTTP_WEBHOOKS);
       if (!urlValidation.isValid) {
-        logger.warn('Webhook URL failed SSRF validation', {
+        logger.error('Webhook URL failed SSRF validation', {
           webhookUrl: this.maskUrl(webhookUrl),
+          event: payload.event,
+          messageId: payload.message.id,
           error: urlValidation.error,
           resolvedIp: urlValidation.resolvedIp,
         });
@@ -84,7 +98,13 @@ export class OutgoingWebhookDispatcher {
         };
       }
 
+      logger.debug('Webhook URL validation passed', {
+        webhookUrl: this.maskUrl(webhookUrl),
+        resolvedIp: urlValidation.resolvedIp,
+      });
+
       // Decrypt the webhook secret
+      logger.debug('Decrypting webhook secret');
       const secret = await this.credentialService.decryptString(secretEncrypted, secretIv);
 
       // Generate timestamp (Unix epoch seconds)
@@ -92,6 +112,7 @@ export class OutgoingWebhookDispatcher {
 
       // Serialize payload
       const payloadString = JSON.stringify(payload);
+      const payloadSize = Buffer.byteLength(payloadString, 'utf8');
 
       // Create signature: HMAC-SHA256(timestamp.payload, secret)
       const signatureInput = `${timestamp}.${payloadString}`;
@@ -100,15 +121,18 @@ export class OutgoingWebhookDispatcher {
         .update(signatureInput)
         .digest('hex')}`;
 
-      logger.debug('Dispatching outgoing webhook', {
+      logger.info('Sending webhook HTTP request', {
         webhookUrl: this.maskUrl(webhookUrl),
         event: payload.event,
         messageId: payload.message.id,
         conversationId: payload.conversation.id,
         timestamp,
+        payloadSize,
+        timeout: WEBHOOK_TIMEOUT_MS,
       });
 
       // Send the webhook
+      const startTime = Date.now();
       const response = await axios.post(webhookUrl, payload, {
         timeout: WEBHOOK_TIMEOUT_MS,
         headers: {
@@ -119,12 +143,16 @@ export class OutgoingWebhookDispatcher {
         // Accept 2xx responses as success
         validateStatus: (status) => status >= 200 && status < 300,
       });
+      const duration = Date.now() - startTime;
 
       logger.info('Outgoing webhook dispatched successfully', {
         webhookUrl: this.maskUrl(webhookUrl),
         event: payload.event,
         messageId: payload.message.id,
+        conversationId: payload.conversation.id,
         statusCode: response.status,
+        duration,
+        payloadSize,
       });
 
       return {
@@ -157,8 +185,13 @@ export class OutgoingWebhookDispatcher {
           webhookUrl: this.maskUrl(webhookUrl),
           event: payload.event,
           messageId: payload.message.id,
+          conversationId: payload.conversation.id,
+          tenantId: payload.tenantId,
           errorCode: axiosError.code,
           errorMessage,
+          errorType: 'network',
+          isTimeout: axiosError.code === 'ECONNABORTED',
+          stack: axiosError.stack,
         });
 
         return {
@@ -170,13 +203,21 @@ export class OutgoingWebhookDispatcher {
       // HTTP error response
       const statusCode = axiosError.response.status;
       const errorMessage = this.extractErrorMessage(axiosError.response.data);
+      const responseHeaders = axiosError.response.headers;
 
       logger.error('Outgoing webhook HTTP error', {
         webhookUrl: this.maskUrl(webhookUrl),
         event: payload.event,
         messageId: payload.message.id,
+        conversationId: payload.conversation.id,
+        tenantId: payload.tenantId,
         statusCode,
         errorMessage,
+        errorType: 'http',
+        responseContentType: responseHeaders?.['content-type'],
+        isClientError: statusCode >= 400 && statusCode < 500,
+        isServerError: statusCode >= 500,
+        isRateLimited: statusCode === 429,
       });
 
       return {
@@ -188,12 +229,18 @@ export class OutgoingWebhookDispatcher {
 
     // Unknown error (e.g., decryption failure)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const stack = error instanceof Error ? error.stack : undefined;
 
     logger.error('Outgoing webhook unexpected error', {
       webhookUrl: this.maskUrl(webhookUrl),
       event: payload.event,
       messageId: payload.message.id,
+      conversationId: payload.conversation.id,
+      tenantId: payload.tenantId,
       errorMessage,
+      errorType: 'unexpected',
+      errorName: error instanceof Error ? error.constructor.name : typeof error,
+      stack,
     });
 
     return {

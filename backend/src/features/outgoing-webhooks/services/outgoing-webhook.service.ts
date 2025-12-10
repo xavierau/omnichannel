@@ -58,11 +58,21 @@ export class OutgoingWebhookService {
   async maybeDispatchWebhook(params: MaybeDispatchWebhookParams): Promise<string | undefined> {
     const { message, conversation, customer, channelAccount } = params;
 
+    logger.debug('Evaluating webhook dispatch conditions', {
+      channelAccountId: channelAccount.id,
+      messageId: message.id,
+      conversationId: conversation.id,
+      hasWebhookUrl: !!channelAccount.webhookUrl,
+      hasWebhookSecret: !!(channelAccount.webhookSecretEncrypted && channelAccount.webhookSecretIv),
+    });
+
     // Check if webhook URL is configured
     if (!channelAccount.webhookUrl) {
-      logger.debug('Skipping webhook dispatch: no webhook URL configured', {
+      logger.info('Skipping webhook dispatch: no webhook URL configured', {
         channelAccountId: channelAccount.id,
+        channelAccountName: channelAccount.name,
         messageId: message.id,
+        conversationId: conversation.id,
       });
       return undefined;
     }
@@ -71,12 +81,22 @@ export class OutgoingWebhookService {
     if (!channelAccount.webhookSecretEncrypted || !channelAccount.webhookSecretIv) {
       logger.warn('Skipping webhook dispatch: webhook URL configured but no secret', {
         channelAccountId: channelAccount.id,
+        channelAccountName: channelAccount.name,
+        webhookUrl: this.maskWebhookUrl(channelAccount.webhookUrl),
         messageId: message.id,
+        conversationId: conversation.id,
       });
       return undefined;
     }
 
     // Build payload
+    logger.debug('Building webhook payload', {
+      channelAccountId: channelAccount.id,
+      messageId: message.id,
+      conversationId: conversation.id,
+      customerId: customer.id,
+    });
+
     const payload = this.buildPayload(message, conversation, customer, channelAccount);
 
     // Build job data
@@ -89,6 +109,14 @@ export class OutgoingWebhookService {
       tenantId: channelAccount.tenantId,
     };
 
+    logger.info('Queueing webhook dispatch job', {
+      event: payload.event,
+      webhookUrl: this.maskWebhookUrl(channelAccount.webhookUrl),
+      channelAccountId: channelAccount.id,
+      messageId: message.id,
+      conversationId: conversation.id,
+    });
+
     // Queue the dispatch
     const jobId = await this.webhookQueue.queueDispatch(jobData);
 
@@ -98,6 +126,7 @@ export class OutgoingWebhookService {
       messageId: message.id,
       conversationId: conversation.id,
       channelAccountId: channelAccount.id,
+      webhookUrl: this.maskWebhookUrl(channelAccount.webhookUrl),
     });
 
     return jobId;
@@ -121,6 +150,13 @@ export class OutgoingWebhookService {
     customer: Customer,
     channelAccountId: string
   ): Promise<string | undefined> {
+    logger.info('Starting unassigned message webhook dispatch', {
+      channelAccountId,
+      messageId: message.id,
+      conversationId: conversation.id,
+      customerId: customer.id,
+    });
+
     // Fetch channel account with all fields
     const channelAccount = await this.channelAccountRepository.findById(channelAccountId);
 
@@ -128,9 +164,19 @@ export class OutgoingWebhookService {
       logger.error('Channel account not found for webhook dispatch', {
         channelAccountId,
         messageId: message.id,
+        conversationId: conversation.id,
       });
       return undefined;
     }
+
+    logger.info('Channel account retrieved for webhook dispatch', {
+      channelAccountId: channelAccount.id,
+      channelAccountName: channelAccount.name,
+      hasWebhookUrl: !!channelAccount.webhookUrl,
+      hasWebhookSecret: !!(channelAccount.webhookSecretEncrypted && channelAccount.webhookSecretIv),
+      webhookUrl: channelAccount.webhookUrl ? this.maskWebhookUrl(channelAccount.webhookUrl) : 'not configured',
+      messageId: message.id,
+    });
 
     return this.maybeDispatchWebhook({
       message,
@@ -178,5 +224,24 @@ export class OutgoingWebhookService {
       },
       tenantId: channelAccount.tenantId,
     };
+  }
+
+  /**
+   * Mask webhook URL for logging to avoid leaking sensitive paths.
+   */
+  private maskWebhookUrl(url: string): string {
+    try {
+      const parsed = new URL(url);
+      // Keep host, mask path beyond first segment
+      const pathParts = parsed.pathname.split('/').filter(Boolean);
+      if (pathParts.length > 1) {
+        parsed.pathname = '/' + pathParts[0] + '/***';
+      }
+      // Remove query string
+      parsed.search = '';
+      return parsed.toString();
+    } catch {
+      return '***';
+    }
   }
 }

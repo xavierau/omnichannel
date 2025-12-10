@@ -47,11 +47,20 @@ let OutgoingWebhookService = class OutgoingWebhookService {
      */
     async maybeDispatchWebhook(params) {
         const { message, conversation, customer, channelAccount } = params;
+        logger_config_1.logger.debug('Evaluating webhook dispatch conditions', {
+            channelAccountId: channelAccount.id,
+            messageId: message.id,
+            conversationId: conversation.id,
+            hasWebhookUrl: !!channelAccount.webhookUrl,
+            hasWebhookSecret: !!(channelAccount.webhookSecretEncrypted && channelAccount.webhookSecretIv),
+        });
         // Check if webhook URL is configured
         if (!channelAccount.webhookUrl) {
-            logger_config_1.logger.debug('Skipping webhook dispatch: no webhook URL configured', {
+            logger_config_1.logger.info('Skipping webhook dispatch: no webhook URL configured', {
                 channelAccountId: channelAccount.id,
+                channelAccountName: channelAccount.name,
                 messageId: message.id,
+                conversationId: conversation.id,
             });
             return undefined;
         }
@@ -59,11 +68,20 @@ let OutgoingWebhookService = class OutgoingWebhookService {
         if (!channelAccount.webhookSecretEncrypted || !channelAccount.webhookSecretIv) {
             logger_config_1.logger.warn('Skipping webhook dispatch: webhook URL configured but no secret', {
                 channelAccountId: channelAccount.id,
+                channelAccountName: channelAccount.name,
+                webhookUrl: this.maskWebhookUrl(channelAccount.webhookUrl),
                 messageId: message.id,
+                conversationId: conversation.id,
             });
             return undefined;
         }
         // Build payload
+        logger_config_1.logger.debug('Building webhook payload', {
+            channelAccountId: channelAccount.id,
+            messageId: message.id,
+            conversationId: conversation.id,
+            customerId: customer.id,
+        });
         const payload = this.buildPayload(message, conversation, customer, channelAccount);
         // Build job data
         const jobData = {
@@ -74,6 +92,13 @@ let OutgoingWebhookService = class OutgoingWebhookService {
             channelAccountId: channelAccount.id,
             tenantId: channelAccount.tenantId,
         };
+        logger_config_1.logger.info('Queueing webhook dispatch job', {
+            event: payload.event,
+            webhookUrl: this.maskWebhookUrl(channelAccount.webhookUrl),
+            channelAccountId: channelAccount.id,
+            messageId: message.id,
+            conversationId: conversation.id,
+        });
         // Queue the dispatch
         const jobId = await this.webhookQueue.queueDispatch(jobData);
         logger_config_1.logger.info('Queued outgoing webhook dispatch', {
@@ -82,6 +107,7 @@ let OutgoingWebhookService = class OutgoingWebhookService {
             messageId: message.id,
             conversationId: conversation.id,
             channelAccountId: channelAccount.id,
+            webhookUrl: this.maskWebhookUrl(channelAccount.webhookUrl),
         });
         return jobId;
     }
@@ -98,15 +124,30 @@ let OutgoingWebhookService = class OutgoingWebhookService {
      * @returns The job ID if queued, undefined if skipped
      */
     async dispatchUnassignedMessageWebhook(message, conversation, customer, channelAccountId) {
+        logger_config_1.logger.info('Starting unassigned message webhook dispatch', {
+            channelAccountId,
+            messageId: message.id,
+            conversationId: conversation.id,
+            customerId: customer.id,
+        });
         // Fetch channel account with all fields
         const channelAccount = await this.channelAccountRepository.findById(channelAccountId);
         if (!channelAccount) {
             logger_config_1.logger.error('Channel account not found for webhook dispatch', {
                 channelAccountId,
                 messageId: message.id,
+                conversationId: conversation.id,
             });
             return undefined;
         }
+        logger_config_1.logger.info('Channel account retrieved for webhook dispatch', {
+            channelAccountId: channelAccount.id,
+            channelAccountName: channelAccount.name,
+            hasWebhookUrl: !!channelAccount.webhookUrl,
+            hasWebhookSecret: !!(channelAccount.webhookSecretEncrypted && channelAccount.webhookSecretIv),
+            webhookUrl: channelAccount.webhookUrl ? this.maskWebhookUrl(channelAccount.webhookUrl) : 'not configured',
+            messageId: message.id,
+        });
         return this.maybeDispatchWebhook({
             message,
             conversation,
@@ -147,6 +188,25 @@ let OutgoingWebhookService = class OutgoingWebhookService {
             },
             tenantId: channelAccount.tenantId,
         };
+    }
+    /**
+     * Mask webhook URL for logging to avoid leaking sensitive paths.
+     */
+    maskWebhookUrl(url) {
+        try {
+            const parsed = new URL(url);
+            // Keep host, mask path beyond first segment
+            const pathParts = parsed.pathname.split('/').filter(Boolean);
+            if (pathParts.length > 1) {
+                parsed.pathname = '/' + pathParts[0] + '/***';
+            }
+            // Remove query string
+            parsed.search = '';
+            return parsed.toString();
+        }
+        catch {
+            return '***';
+        }
     }
 };
 exports.OutgoingWebhookService = OutgoingWebhookService;

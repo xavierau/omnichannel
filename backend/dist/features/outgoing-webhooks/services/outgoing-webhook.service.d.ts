@@ -60,4 +60,8 @@ export declare class OutgoingWebhookService {
      * Build the webhook payload from domain entities.
      */
     private buildPayload;
+    /**
+     * Mask webhook URL for logging to avoid leaking sensitive paths.
+     */
+    private maskWebhookUrl;
 }
