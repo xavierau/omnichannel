@@ -39,7 +39,7 @@ function createApiKeyRoutes() {
      *
      * Requires authentication, tenant context, and api-keys:read:all permission.
      */
-    router.get('/', authenticate_1.authenticate, require_tenant_1.requireTenant, (0, authorize_1.requirePermission)('api-keys', 'read', 'all'), controller.listKeys);
+    router.get('/', authenticate_1.authenticate, require_tenant_1.requireTenant, (0, authorize_1.requirePermission)('api_keys', 'read', 'all'), controller.listKeys);
     /**
      * Create a new API key.
      * POST /api/api-keys
@@ -59,7 +59,7 @@ function createApiKeyRoutes() {
      * SECURITY WARNING: The rawKey in the response is only shown once.
      * It is never stored in plain text and cannot be retrieved again.
      */
-    router.post('/', authenticate_1.authenticate, require_tenant_1.requireTenant, csrf_protection_1.csrfValidateToken, (0, authorize_1.requirePermission)('api-keys', 'create', 'all'), (0, validate_dto_1.validateDto)(create_api_key_dto_1.CreateApiKeyDto), controller.createKey);
+    router.post('/', authenticate_1.authenticate, require_tenant_1.requireTenant, csrf_protection_1.csrfValidateToken, (0, authorize_1.requirePermission)('api_keys', 'create', 'all'), (0, validate_dto_1.validateDto)(create_api_key_dto_1.CreateApiKeyDto), controller.createKey);
     /**
      * Revoke (deactivate) an API key.
      * DELETE /api/api-keys/:id
@@ -75,7 +75,7 @@ function createApiKeyRoutes() {
      *
      * Note: This is a soft delete - the key is deactivated but not removed from the database.
      */
-    router.delete('/:id', authenticate_1.authenticate, require_tenant_1.requireTenant, csrf_protection_1.csrfValidateToken, (0, authorize_1.requirePermission)('api-keys', 'delete', 'all'), controller.revokeKey);
+    router.delete('/:id', authenticate_1.authenticate, require_tenant_1.requireTenant, csrf_protection_1.csrfValidateToken, (0, authorize_1.requirePermission)('api_keys', 'delete', 'all'), controller.revokeKey);
     return router;
 }
 exports.default = createApiKeyRoutes;

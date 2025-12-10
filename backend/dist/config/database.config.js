@@ -36,6 +36,8 @@ const conversation_assignment_entity_1 = require("../features/inbox/entities/con
 const custom_field_entity_1 = require("../features/custom-fields/custom-field.entity");
 // Invitations entity
 const invitation_entity_1 = require("../features/invitations/invitation.entity");
+// API Keys entity
+const api_key_entity_1 = require("../features/api-keys/entities/api-key.entity");
 const logger_config_1 = require("./logger.config");
 const constants_1 = require("./constants");
 /**
@@ -119,6 +121,8 @@ const dataSourceOptions = {
         custom_field_entity_1.CustomFieldDefinition,
         // Invitations entity
         invitation_entity_1.Invitation,
+        // API Keys entity
+        api_key_entity_1.ApiKey,
     ],
     migrations: [__dirname + '/../database/migrations/*.{js,ts}'],
     subscribers: [],
