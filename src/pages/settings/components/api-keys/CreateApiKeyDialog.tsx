@@ -123,7 +123,7 @@ export function CreateApiKeyDialog({
     resolver: zodResolver(createApiKeySchema),
     defaultValues: {
       name: "",
-      channelAccountId: undefined,
+      channelAccountId: "",
       permissions: [],
       hasExpiration: false,
       expiresAt: undefined,
@@ -137,7 +137,7 @@ export function CreateApiKeyDialog({
     if (open) {
       form.reset({
         name: "",
-        channelAccountId: undefined,
+        channelAccountId: "",
         permissions: [],
         hasExpiration: false,
         expiresAt: undefined,
@@ -220,9 +220,9 @@ export function CreateApiKeyDialog({
                   <FormLabel>Channel Account (Optional)</FormLabel>
                   <Select
                     onValueChange={(value) =>
-                      field.onChange(value === "" ? undefined : value)
+                      field.onChange(value === "__all__" ? undefined : value)
                     }
-                    value={field.value || ""}
+                    value={field.value || "__all__"}
                     disabled={isSubmitting}
                   >
                     <FormControl>
@@ -231,7 +231,7 @@ export function CreateApiKeyDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">
+                      <SelectItem value="__all__">
                         All channels (no restriction)
                       </SelectItem>
                       {channelAccounts.map((account) => (

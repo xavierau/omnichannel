@@ -42,7 +42,7 @@ export function createApiKeyRoutes(): Router {
     '/',
     authenticate,
     requireTenant,
-    requirePermission('api-keys', 'read', 'all'),
+    requirePermission('api_keys', 'read', 'all'),
     controller.listKeys
   );
 
@@ -70,7 +70,7 @@ export function createApiKeyRoutes(): Router {
     authenticate,
     requireTenant,
     csrfValidateToken,
-    requirePermission('api-keys', 'create', 'all'),
+    requirePermission('api_keys', 'create', 'all'),
     validateDto(CreateApiKeyDto),
     controller.createKey
   );
@@ -95,7 +95,7 @@ export function createApiKeyRoutes(): Router {
     authenticate,
     requireTenant,
     csrfValidateToken,
-    requirePermission('api-keys', 'delete', 'all'),
+    requirePermission('api_keys', 'delete', 'all'),
     controller.revokeKey
   );
 
