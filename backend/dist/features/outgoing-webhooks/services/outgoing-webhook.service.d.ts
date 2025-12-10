@@ -64,4 +64,9 @@ export declare class OutgoingWebhookService {
      * Mask webhook URL for logging to avoid leaking sensitive paths.
      */
     private maskWebhookUrl;
+    /**
+     * Convert a Date or date string to ISO string.
+     * Handles both Date objects and string timestamps from TypeORM.
+     */
+    private toISOString;
 }

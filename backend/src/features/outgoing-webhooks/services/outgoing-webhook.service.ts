@@ -203,13 +203,13 @@ export class OutgoingWebhookService {
         providerMessageId: message.providerMessageId || '',
         contentType: message.contentType,
         content: message.content,
-        receivedAt: message.sentAt?.toISOString() || message.createdAt.toISOString(),
+        receivedAt: this.toISOString(message.sentAt) || this.toISOString(message.createdAt) || new Date().toISOString(),
       },
       conversation: {
         id: conversation.id,
         status: conversation.status,
-        createdAt: conversation.createdAt.toISOString(),
-        lastMessageAt: conversation.lastMessageAt?.toISOString() || null,
+        createdAt: this.toISOString(conversation.createdAt) || new Date().toISOString(),
+        lastMessageAt: this.toISOString(conversation.lastMessageAt) || null,
       },
       customer: {
         id: customer.id,
@@ -243,5 +243,16 @@ export class OutgoingWebhookService {
     } catch {
       return '***';
     }
+  }
+
+  /**
+   * Convert a Date or date string to ISO string.
+   * Handles both Date objects and string timestamps from TypeORM.
+   */
+  private toISOString(value: Date | string | null | undefined): string | null {
+    if (!value) return null;
+    if (typeof value === 'string') return value;
+    if (value instanceof Date) return value.toISOString();
+    return null;
   }
 }
