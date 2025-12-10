@@ -72,7 +72,8 @@
       "Bash(DATABASE_PASSWORD=password npm run migration:run:*)",
       "Bash(npm run test:*)",
       "mcp__chrome-devtools__get_console_message",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []
