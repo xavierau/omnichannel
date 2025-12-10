@@ -55,6 +55,27 @@ let AgentApiController = class AgentApiController {
         this.inboxMessageQueue = inboxMessageQueue;
     }
     /**
+     * GET /operators
+     * Get list of operators (users) available for conversation assignment.
+     *
+     * Returns users who belong to active teams within the tenant.
+     * Useful for dynamic assignment logic in automation workflows.
+     */
+    getOperators = (0, async_handler_1.asyncHandler)(async (req, res) => {
+        const tenantId = req.tenantId;
+        const apiKey = req.apiKey;
+        const operators = await this.conversationService.getOperators(tenantId);
+        logger_config_1.auditLogger.info('Agent API: Operators retrieved', {
+            action: 'agent_api.operators.list',
+            tenantId,
+            count: operators.length,
+            apiKeyId: apiKey.id,
+        });
+        res.json({
+            data: operators,
+        });
+    });
+    /**
      * GET /conversations/:id
      * Get a single conversation by ID with access validation.
      *
@@ -82,6 +103,52 @@ let AgentApiController = class AgentApiController {
         });
         res.json({
             data: conversation,
+        });
+    });
+    /**
+     * GET /conversations/:id/messages
+     * Get paginated messages for a conversation.
+     *
+     * Validates:
+     * - Conversation exists in the tenant
+     * - API key has access to the conversation's channel account (if scoped)
+     *
+     * Returns messages in descending order (newest first).
+     * Supports pagination via query parameters: page (default: 1), limit (default: 50).
+     */
+    getMessages = (0, async_handler_1.asyncHandler)(async (req, res) => {
+        const tenantId = req.tenantId;
+        const apiKey = req.apiKey;
+        const { id: conversationId } = req.params;
+        const validatedQuery = req.validatedQuery;
+        // Validate conversation exists and check scope
+        const conversation = await this.conversationRepository.findById(tenantId, conversationId);
+        if (!conversation) {
+            throw new http_exceptions_1.NotFoundException('Conversation not found');
+        }
+        this.validateChannelAccountScope(apiKey, conversation.channelAccountId);
+        // Get messages with pagination
+        const result = await this.messageRepository.findByConversation(conversationId, {
+            page: validatedQuery?.page || 1,
+            limit: validatedQuery?.limit || 50,
+        });
+        logger_config_1.auditLogger.info('Agent API: Messages retrieved', {
+            action: 'agent_api.messages.get',
+            tenantId,
+            conversationId,
+            page: result.page,
+            limit: result.limit,
+            total: result.total,
+            apiKeyId: apiKey.id,
+        });
+        res.json({
+            data: result.data,
+            pagination: {
+                total: result.total,
+                page: result.page,
+                limit: result.limit,
+                totalPages: result.totalPages,
+            },
         });
     });
     /**

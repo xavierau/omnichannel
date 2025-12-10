@@ -30,6 +30,14 @@ export declare class AgentApiController {
     private inboxMessageQueue;
     constructor(conversationService: ConversationService, conversationRepository: ConversationRepository, messageRepository: ConversationMessageRepository, userRepository: UserRepository, inboxMessageQueue: InboxMessageQueue);
     /**
+     * GET /operators
+     * Get list of operators (users) available for conversation assignment.
+     *
+     * Returns users who belong to active teams within the tenant.
+     * Useful for dynamic assignment logic in automation workflows.
+     */
+    getOperators: (req: Request, res: Response, next: import("express").NextFunction) => void;
+    /**
      * GET /conversations/:id
      * Get a single conversation by ID with access validation.
      *
@@ -40,6 +48,18 @@ export declare class AgentApiController {
      * Returns the conversation with customer info.
      */
     getConversation: (req: Request, res: Response, next: import("express").NextFunction) => void;
+    /**
+     * GET /conversations/:id/messages
+     * Get paginated messages for a conversation.
+     *
+     * Validates:
+     * - Conversation exists in the tenant
+     * - API key has access to the conversation's channel account (if scoped)
+     *
+     * Returns messages in descending order (newest first).
+     * Supports pagination via query parameters: page (default: 1), limit (default: 50).
+     */
+    getMessages: (req: Request, res: Response, next: import("express").NextFunction) => void;
     /**
      * PATCH /conversations/:id/status
      * Update the status of a conversation.

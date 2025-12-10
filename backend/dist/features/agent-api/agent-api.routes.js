@@ -34,6 +34,24 @@ router.use(api_key_auth_middleware_1.apiKeyAuth);
 // Resolve controller instance
 const getController = () => tsyringe_1.container.resolve(agent_api_controller_1.AgentApiController);
 // ============================================================================
+// Operator Routes
+// ============================================================================
+/**
+ * GET /agent/operators
+ * List operators (users) available for conversation assignment.
+ *
+ * Required permission: conversation:read
+ *
+ * Returns users who belong to active teams within the tenant.
+ * Useful for implementing dynamic assignment logic in automation workflows.
+ *
+ * Returns:
+ * - 200: Array of operator objects with id, firstName, lastName, email, isActive
+ * - 401: Invalid or missing API key
+ * - 403: API key lacks permission
+ */
+router.get('/operators', (0, api_key_auth_middleware_1.requireApiKeyPermission)(api_key_permission_enum_1.ApiKeyPermission.CONVERSATION_READ), (req, res, next) => getController().getOperators(req, res, next));
+// ============================================================================
 // Conversation Routes
 // ============================================================================
 /**
@@ -49,6 +67,23 @@ const getController = () => tsyringe_1.container.resolve(agent_api_controller_1.
  * - 404: Conversation not found
  */
 router.get('/conversations/:id', (0, api_key_auth_middleware_1.requireApiKeyPermission)(api_key_permission_enum_1.ApiKeyPermission.CONVERSATION_READ), (0, validate_uuid_1.validateUuid)(), (req, res, next) => getController().getConversation(req, res, next));
+/**
+ * GET /agent/conversations/:id/messages
+ * Get paginated messages for a conversation.
+ *
+ * Required permission: conversation:read
+ *
+ * Query parameters:
+ * - page: Page number (default: 1)
+ * - limit: Messages per page (default: 50, max: 100)
+ *
+ * Returns:
+ * - 200: Array of messages with pagination metadata
+ * - 401: Invalid or missing API key
+ * - 403: API key lacks permission or channel account access
+ * - 404: Conversation not found
+ */
+router.get('/conversations/:id/messages', (0, api_key_auth_middleware_1.requireApiKeyPermission)(api_key_permission_enum_1.ApiKeyPermission.CONVERSATION_READ), (0, validate_uuid_1.validateUuid)(), (0, validate_dto_1.validateQueryDto)(dto_1.AgentGetMessagesQueryDto), (req, res, next) => getController().getMessages(req, res, next));
 /**
  * PATCH /agent/conversations/:id/status
  * Update the status of a conversation.
