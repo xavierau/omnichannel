@@ -27,6 +27,11 @@ export interface RegenerateSecretResponse {
 export interface WebhookTestResponse {
     success: boolean;
     error?: string;
+    statusCode?: number;
+    statusText?: string;
+    challengeId?: string;
+    responseTime?: number;
+    message?: string;
 }
 /**
  * Service responsible for webhook configuration management.

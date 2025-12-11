@@ -25,3 +25,6 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# n8n integration directory
+n8n/

@@ -224,12 +224,14 @@ let WebhookConfigurationService = class WebhookConfigurationService {
         try {
             // Decrypt the webhook secret
             const secret = await this.credentialService.decryptString(account.webhookSecretEncrypted, account.webhookSecretIv);
-            // Build test payload
+            // Build test payload with unique challenge ID
             const timestamp = Math.floor(Date.now() / 1000).toString();
+            const challengeId = crypto.randomBytes(16).toString('hex');
             const testPayload = {
-                event: 'test',
+                event: 'webhook.test',
                 timestamp: new Date().toISOString(),
                 channelAccountId: id,
+                challengeId,
                 message: 'This is a test webhook from your omnichannel platform',
             };
             const payloadString = JSON.stringify(testPayload);
@@ -239,8 +241,9 @@ let WebhookConfigurationService = class WebhookConfigurationService {
                 .createHmac('sha256', secret)
                 .update(signatureInput)
                 .digest('hex')}`;
-            // Send the webhook
-            await axios_1.default.post(account.webhookUrl, testPayload, {
+            // Send the webhook and measure response time
+            const startTime = Date.now();
+            const response = await axios_1.default.post(account.webhookUrl, testPayload, {
                 timeout: 30000,
                 headers: {
                     'Content-Type': 'application/json',
@@ -249,22 +252,48 @@ let WebhookConfigurationService = class WebhookConfigurationService {
                 },
                 validateStatus: (status) => status >= 200 && status < 300,
             });
-            logger_config_1.logger.info('Webhook test successful', {
+            const responseTime = Date.now() - startTime;
+            logger_config_1.logger.info('Webhook test request sent successfully', {
                 channelAccountId: id,
                 tenantId,
+                challengeId,
+                webhookUrl: account.webhookUrl,
+                responseStatus: response.status,
+                responseStatusText: response.statusText,
+                responseTime,
+                responseHeaders: response.headers,
+                responseData: response.data,
             });
-            return { success: true };
+            return {
+                success: true,
+                statusCode: response.status,
+                statusText: response.statusText,
+                challengeId,
+                responseTime,
+                message: `Webhook endpoint responded with ${response.status} ${response.statusText}. Check your webhook logs for challengeId: ${challengeId}`,
+            };
         }
         catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const isAxiosError = axios_1.default.isAxiosError(error);
             logger_config_1.logger.warn('Webhook test failed', {
                 channelAccountId: id,
                 tenantId,
                 error: errorMessage,
+                webhookUrl: account.webhookUrl,
+                ...(isAxiosError && {
+                    responseStatus: error.response?.status,
+                    responseStatusText: error.response?.statusText,
+                    responseData: error.response?.data,
+                }),
             });
             return {
                 success: false,
                 error: errorMessage,
+                ...(isAxiosError && {
+                    statusCode: error.response?.status,
+                    statusText: error.response?.statusText,
+                }),
             };
         }
     }
